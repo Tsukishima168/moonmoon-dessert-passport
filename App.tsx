@@ -113,7 +113,7 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
         </div>
       </div>
 
-      <div className={`absolute bottom-0 md:-bottom-10 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] flex justify-center z-0 animate-fade-in pointer-events-none transition-all duration-700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'}`}>
+      <div className={`absolute bottom-0 md:-bottom-10 lg:-bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] lg:max-w-[900px] flex justify-center z-0 animate-fade-in pointer-events-none transition-all duration-700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'}`}>
         {illustration ? (
           <img
             src={illustration}
@@ -212,7 +212,7 @@ const QuizScreen: React.FC<{
     <div className={`min-h-screen bg-brand-bg flex flex-col pt-24 px-6 pb-10 transition-all duration-300 ${isExiting ? 'opacity-0 translate-y-4' : 'opacity-100'}`}>
 
       <div className="w-full max-w-lg mx-auto mb-12">
-        <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2">
+        <div className="flex justify-between text-xs md:text-sm font-bold uppercase tracking-widest mb-2">
           <span>Question {currentQIndex + 1}</span>
           <span>{totalSteps} Total</span>
         </div>
@@ -224,12 +224,12 @@ const QuizScreen: React.FC<{
         </div>
       </div>
 
-      <div className="flex-1 max-w-lg mx-auto w-full flex flex-col justify-center">
-        <h2 className="text-4xl md:text-5xl font-sans font-bold text-brand-black mb-4 leading-tight">
+      <div className="flex-1 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full flex flex-col justify-center">
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-bold text-brand-black mb-4 leading-tight">
           {currentQuestion.question}
         </h2>
         {currentQuestion.subtitle && (
-          <p className="text-gray-500 font-sans mb-8 text-lg">{currentQuestion.subtitle}</p>
+          <p className="text-gray-500 font-sans mb-8 text-lg md:text-xl">{currentQuestion.subtitle}</p>
         )}
 
         <div className="space-y-3">
@@ -237,10 +237,10 @@ const QuizScreen: React.FC<{
             <button
               key={option.id}
               onClick={() => handleOptionSelect(option)}
-              className="group w-full p-6 bg-white border border-brand-black rounded-2xl flex items-center justify-between hover:bg-brand-lime hover:shadow-[4px_4px_0px_black] transition-all duration-200 active:translate-y-1 active:shadow-none"
+              className="group w-full p-6 md:p-7 lg:p-8 bg-white border border-brand-black rounded-2xl flex items-center justify-between hover:bg-brand-lime hover:shadow-[4px_4px_0px_black] transition-all duration-200 active:translate-y-1 active:shadow-none"
             >
               <div className="flex items-center gap-4 w-full">
-                <span className="text-lg font-bold font-sans text-brand-black">
+                <span className="text-lg md:text-xl lg:text-2xl font-bold font-sans text-brand-black">
                   {option.label}
                 </span>
               </div>
@@ -324,12 +324,12 @@ const ResultScreen: React.FC<{
     <div className="min-h-screen bg-brand-bg pt-20 px-6 pb-12 animate-fade-in flex flex-col items-center">
 
       <div className="text-center mb-6 max-w-sm">
-        <p className="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Your Soul Mate</p>
-        <h2 className="text-4xl font-sans font-bold text-brand-black leading-tight">{stickerResult.name}</h2>
+        <p className="font-mono text-xs md:text-sm text-gray-500 mb-2 uppercase tracking-widest">Your Soul Mate</p>
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-bold text-brand-black leading-tight">{stickerResult.name}</h2>
       </div>
 
       {/* Reward Card Container (Sticker Focus) */}
-      <div className="w-full max-w-md bg-white border border-brand-black p-4 rounded-[2rem] shadow-[8px_8px_0px_black] mb-6 rotate-1">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border border-brand-black p-4 md:p-6 rounded-[2rem] shadow-[8px_8px_0px_black] mb-6 rotate-1">
 
         <div className="flex justify-between items-center mb-3 px-1">
           <div className="flex gap-1">
@@ -364,7 +364,7 @@ const ResultScreen: React.FC<{
       </div>
 
       {/* Secondary Result: The Dessert (Soul Food) */}
-      <div className="w-full max-w-md bg-white/50 border border-black/10 rounded-2xl p-4 mb-8 flex items-center gap-4">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white/50 border border-black/10 rounded-2xl p-4 md:p-5 mb-8 flex items-center gap-4">
         <img src={dessertResult.imageUrl} className="w-16 h-16 rounded-lg object-cover border border-black grayscale" alt={dessertResult.name} />
         <div>
           <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Soul Food Recommendation</p>
@@ -373,7 +373,7 @@ const ResultScreen: React.FC<{
         </div>
       </div>
 
-      <div className="w-full max-w-md space-y-3">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
         <a href={LINKS.LINE_OA} target="_blank" rel="noreferrer" className="block">
           <Button fullWidth variant="black" size="lg" className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px]">
             <Stamp className="mr-2" size={18} />
