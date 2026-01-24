@@ -2,8 +2,9 @@ import { Question, DessertRecommendation, StickerReward } from './types';
 
 // Configuration URLs
 export const LINKS = {
-  MBTI_TEST: "https://kiwimu-mbti.vercel.app", 
+  MBTI_TEST: "https://kiwimu-mbti.vercel.app",
   LINE_OA: "https://lin.ee/vpkYztb",
+  INSTAGRAM: "https://www.instagram.com/moon_moon_dessert/",
   GOOGLE_MAPS: "https://www.google.com/maps?um=1&ie=UTF-8&fb=1&gl=tw&sa=X&geocode=KcW0F77Ld240MdR9ng9TTJF3&daddr=709%E8%87%BA%E5%8D%97%E5%B8%82%E5%AE%89%E5%8D%97%E5%8D%80%E6%9C%AC%E5%8E%9F%E8%A1%97%E4%B8%80%E6%AE%B597%E5%B7%B7168%E8%99%9F",
 };
 
@@ -14,7 +15,7 @@ export const LANDING_ILLUSTRATIONS = [
   "https://res.cloudinary.com/dvizdsv4m/image/upload/v1768744157/Enter-04_mfdlsz.webp",
   "https://res.cloudinary.com/dvizdsv4m/image/upload/v1768744157/Enter-03_juymmq.webp",
   "https://res.cloudinary.com/dvizdsv4m/image/upload/v1768744157/Enter-02_t83hem.webp",
-]; 
+];
 
 // --- STICKER REWARDS (Characters) ---
 // These correspond to the winning "Style"

@@ -1,9 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATIONS, STICKERS } from './constants';
 import { Button } from './components/Button';
-import { trackEvent, trackDessertView, trackDessertFavorite, trackFilterUsage } from './analytics';
+import {
+  trackEvent,
+  trackDessertView,
+  trackButtonClick,
+  trackOutboundNavigation,
+  trackTimeSpent
+} from './analytics';
 
 // -- Sub-components --
 
@@ -45,8 +51,23 @@ const Header = () => (
       />
     </div>
 
-    <div className="pointer-events-auto">
-      <a href={LINKS.LINE_OA} target="_blank" rel="noreferrer">
+    <div className="pointer-events-auto flex items-center gap-2">
+      <a
+        href={LINKS.INSTAGRAM}
+        target="_blank"
+        rel="noreferrer"
+        onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'header_ig_button')}
+      >
+        <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black] w-10 px-0 flex items-center justify-center">
+          <Instagram size={18} />
+        </Button>
+      </a>
+      <a
+        href={LINKS.LINE_OA}
+        target="_blank"
+        rel="noreferrer"
+        onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'header_pass_button')}
+      >
         <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black]">
           Pass
         </Button>
@@ -60,6 +81,15 @@ const Header = () => (
 const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) => {
   const [showMenu, setShowMenu] = useState(false);
   const touchStartY = useRef(0);
+
+  // Track time spent on landing
+  useEffect(() => {
+    const startTime = Date.now();
+    return () => {
+      const duration = (Date.now() - startTime) / 1000;
+      trackTimeSpent('landing', duration);
+    };
+  }, []);
 
   const illustration = useMemo(() => {
     if (!LANDING_ILLUSTRATIONS || LANDING_ILLUSTRATIONS.length === 0) return null;
@@ -86,6 +116,7 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
   const handleArrowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(true);
+    trackEvent('landing_menu_opened', { method: 'arrow_click' });
   };
 
   // Track mouse movement for desktop parallax
@@ -178,15 +209,32 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
               </p>
 
               <div className="flex flex-col gap-3">
-                <Button onClick={onStartQuiz} variant="black" size="lg" fullWidth className="rounded-full shadow-lg text-base h-14 group hover:scale-[1.02] transition-all duration-300">
+                <Button
+                  onClick={() => {
+                    trackButtonClick('enter_exhibition', 'landing_menu');
+                    onStartQuiz();
+                  }}
+                  variant="black"
+                  size="lg"
+                  fullWidth
+                  className="rounded-full shadow-lg text-base h-14 group hover:scale-[1.02] transition-all duration-300"
+                >
                   Enter Exhibition
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <div className="flex gap-2">
-                  <a href={LINKS.MBTI_TEST} className="flex-1 block">
+                  <a
+                    href={LINKS.MBTI_TEST}
+                    className="flex-1 block"
+                    onClick={() => trackOutboundNavigation(LINKS.MBTI_TEST, 'landing_mbti')}
+                  >
                     <Button variant="secondary" size="sm" fullWidth className="bg-white/80 border-transparent hover:border-black shadow-sm h-10">MBTI</Button>
                   </a>
-                  <a href={LINKS.LINE_OA} className="flex-1 block">
+                  <a
+                    href={LINKS.LINE_OA}
+                    className="flex-1 block"
+                    onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'landing_line')}
+                  >
                     <Button variant="secondary" size="sm" fullWidth className="bg-white/80 border-transparent hover:border-black shadow-sm h-10">Line</Button>
                   </a>
                 </div>
@@ -238,6 +286,11 @@ const QuizScreen: React.FC<{
   const progress = ((currentQIndex + 1) / totalSteps) * 100;
 
   const handleOptionSelect = (option: Option) => {
+    trackEvent('question_answered', {
+      question_id: currentQuestion.id,
+      option_id: option.id
+    });
+
     const newAnswers = { ...answers, [currentQuestion.id]: option.id };
     const newSelectedOptions = [...selectedOptions, option];
 
@@ -332,6 +385,15 @@ const ResultScreen: React.FC<{
   onRetry: () => void
 }> = ({ selectedOptions, onRetry }) => {
 
+  // Track time spent on result screen
+  useEffect(() => {
+    const startTime = Date.now();
+    return () => {
+      const duration = (Date.now() - startTime) / 1000;
+      trackTimeSpent('result', duration);
+    };
+  }, []);
+
   const { dessertResult, stickerResult } = useMemo(() => {
     // 1. Calculate Scores
     const scores = { classic: 0, deep: 0, bright: 0, fruity: 0 };
@@ -413,6 +475,7 @@ const ResultScreen: React.FC<{
             src={stickerResult.imageUrl}
             alt={stickerResult.name}
             className="w-full h-full object-contain drop-shadow-xl"
+            onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
           />
         </div>
 
@@ -442,7 +505,13 @@ const ResultScreen: React.FC<{
       </div>
 
       <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
-        <a href={LINKS.LINE_OA} target="_blank" rel="noreferrer" className="block">
+        <a
+          href={LINKS.LINE_OA}
+          target="_blank"
+          rel="noreferrer"
+          className="block"
+          onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'result_line_button')}
+        >
           <Button fullWidth variant="black" size="lg" className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px]">
             <Stamp className="mr-2" size={18} />
             加 LINE 領取「登島紀念」與折扣
@@ -450,22 +519,50 @@ const ResultScreen: React.FC<{
         </a>
 
         <div className="flex gap-2">
-          <a href={LINKS.MBTI_TEST} target="_blank" rel="noreferrer" className="flex-1 block group">
+          <a
+            href={LINKS.MBTI_TEST}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 block group"
+            onClick={() => trackOutboundNavigation(LINKS.MBTI_TEST, 'result_mbti')}
+          >
             <div className="bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center">
               <BrainCircuit size={16} className="mb-1" />
               <span className="text-[10px] md:text-xs font-bold block leading-tight">深度<br />MBTI</span>
             </div>
           </a>
 
-          <a href={LINKS.GOOGLE_MAPS} target="_blank" rel="noreferrer" className="flex-1 block group">
+          <a
+            href={LINKS.GOOGLE_MAPS}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 block group"
+            onClick={() => trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'result_maps')}
+          >
             <div className="bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center">
               <MapPin size={16} className="mb-1" />
               <span className="text-[10px] md:text-xs font-bold block leading-tight">前往<br />店舖</span>
             </div>
           </a>
 
+          <a
+            href={LINKS.INSTAGRAM}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 block group"
+            onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'result_ig')}
+          >
+            <div className="bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center">
+              <Instagram size={16} className="mb-1" />
+              <span className="text-[10px] md:text-xs font-bold block leading-tight">追蹤<br />IG</span>
+            </div>
+          </a>
+
           <button
-            onClick={onRetry}
+            onClick={() => {
+              trackButtonClick('retry_quiz', 'result_page');
+              onRetry();
+            }}
             className="flex-1 bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center"
           >
             <RotateCcw size={16} className="mb-1" />

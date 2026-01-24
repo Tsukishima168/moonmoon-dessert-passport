@@ -95,9 +95,45 @@ export const trackSearch = (searchTerm: string, resultsCount: number) => {
 /**
  * Track page view (manual tracking if needed)
  */
+/**
+ * Track button click
+ */
+export const trackButtonClick = (buttonName: string, location: string) => {
+  trackEvent('button_click', {
+    button_name: buttonName,
+    location: location,
+  });
+};
+
+/**
+ * Track outbound link navigation
+ */
+export const trackOutboundNavigation = (url: string, label: string) => {
+  trackEvent('outbound_click', {
+    url: url,
+    label: label,
+  });
+  // Optional: open window here if we wanted to control navigation, but usually we just track before click propagates or use separate handler
+};
+
+/**
+ * Track time spent on a screen
+ */
+export const trackTimeSpent = (screenName: string, seconds: number) => {
+  trackEvent('time_spent', {
+    screen_name: screenName,
+    duration_seconds: seconds,
+  });
+};
+
+/**
+ * Track page view (manual tracking for SPA)
+ */
 export const trackPageView = (pagePath: string, pageTitle: string) => {
   if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('config', 'GA_MEASUREMENT_ID', {
+    // Should match the ID in index.html, or just use plain 'config' if the ID is already set globally? 
+    // Usually subsequent config calls update the state. Using the specific ID is safer.
+    window.gtag('config', 'G-ZF71VP9Z8Y', {
       page_path: pagePath,
       page_title: pageTitle,
     });
