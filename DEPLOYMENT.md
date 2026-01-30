@@ -2,7 +2,13 @@
 
 本指南將幫助您將 MoonMoon Dessert Passport 部署到 Vercel，並設定 Google Analytics 4 追蹤。
 
-This guide will help you deploy MoonMoon Dessert Passport to Vercel and set up Google Analytics 4 tracking.
+**上線前請先完成** [LAUNCH_CHECKLIST.md](./LAUNCH_CHECKLIST.md) 的內容與流程檢查。
+
+### MVP 快速上線流程
+1. 完成 **LAUNCH_CHECKLIST.md** 第一、二節（內容 + 技術）
+2. 本機執行 `npm run build`、`npm run preview` 確認無誤
+3. 依下方步驟將專案推上 GitHub 並在 Vercel 匯入部署
+4. 上線後用手機走一遍流程，並在 GA4 即時報表確認事件
 
 ---
 
@@ -47,19 +53,14 @@ This guide will help you deploy MoonMoon Dessert Passport to Vercel and set up G
 
 ## 🔧 設定步驟 | Setup Steps
 
-### Step 1: 更新 GA4 Measurement ID
+### Step 1: GA4 Measurement ID（選填）
 
-1. 開啟檔案：`index.html`
-2. 搜尋 `GA_MEASUREMENT_ID`（共 2 處）
-3. 將 `GA_MEASUREMENT_ID` 替換為您的實際 Measurement ID
-   ```html
-   <!-- 第一處：第 14 行 -->
-   <script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR-ID"></script>
-   
-   <!-- 第二處：第 19 行 -->
-   gtag('config', 'G-YOUR-ID', {
-   ```
-4. 儲存檔案
+專案已預設一組 GA4 ID（`G-ZF71VP9Z8Y`）。若要改用自己的：
+
+1. 開啟 `index.html`
+2. 搜尋 `G-ZF71VP9Z8Y`（共 2 處：gtag 的 script src 與 config）
+3. 替換為您的 Measurement ID（格式 `G-XXXXXXXXXX`）
+4. 儲存後重新部署
 
 ### Step 2: 更新 GitHub Repository（如果您更新了 index.html）
 
@@ -100,12 +101,11 @@ This guide will help you deploy MoonMoon Dessert Passport to Vercel and set up G
    - **Build Command**: `npm run build`（已自動填入）
    - **Output Directory**: `dist`（已自動填入）
 
-4. **設定環境變數**
-   - 展開 "Environment Variables" 區塊
-   - 新增變數：
+4. **設定環境變數（選填）**
+   - MVP 不需後端即可完整使用，目前可略過。
+   - 若之後會使用 Gemini 相關功能，再新增：
      - Name: `GEMINI_API_KEY`
-     - Value: 貼上您的 Gemini API Key（從 `.env.local` 檔案中複製）
-   - 點擊 "Add"
+     - Value: 您的 API Key
 
 5. **部署**
    - 點擊 "Deploy"
@@ -186,9 +186,13 @@ When you push new commits to GitHub, Vercel will automatically redeploy!
 ## 🛠 疑難排解 | Troubleshooting
 
 ### 部署失敗
-- 檢查是否所有檔案都已上傳到 GitHub
-- 確認 `package.json` 存在
-- 查看 Vercel 的建置日誌 (Build Logs)
+1. **查看 Vercel 建置日誌**：專案 → Deployments → 點失敗的那次 → 看 "Building" 底下的錯誤訊息。
+2. **常見原因與處理**：
+   - **`npm install` 或 `npm run build` 報錯**：確認專案已完整推上 GitHub（含 `package.json`、`package-lock.json`、`index.css`、`vite.config.ts`）。
+   - **找不到 index.css**：專案已補上 `index.css`，請重新 push 後再部署。
+   - **Node 版本**：Vercel 預設為 Node 18；若錯誤與 Node 有關，可在 Vercel 專案 Settings → General → Node.js Version 改為 20。
+   - **環境變數**：MVP 不需設定 `GEMINI_API_KEY`；若建置程式有讀取，未設定時會以空字串處理，不應導致建置失敗。
+3. 若仍失敗，請把 Vercel 建置日誌中的**紅色錯誤訊息**複製下來，方便進一步排查。
 
 ### GA4 沒有資料
 - 確認 `index.html` 中的 Measurement ID 正確
@@ -197,8 +201,8 @@ When you push new commits to GitHub, Vercel will automatically redeploy!
 - 等待 5-10 秒，GA4 即時報表有延遲
 
 ### 環境變數問題
-- 確認在 Vercel 設定中正確新增 `GEMINI_API_KEY`
-- 重新部署專案：Settings → Deployments → 點擊最新的 → "Redeploy"
+- MVP 可不設定 `GEMINI_API_KEY`；若建置需要該變數，再於 Vercel 新增
+- 重新部署：Settings → Deployments → 點擊最新的 → "Redeploy"
 
 ---
 
