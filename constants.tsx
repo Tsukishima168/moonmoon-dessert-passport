@@ -1,12 +1,129 @@
-import { Question, DessertRecommendation, StickerReward } from './types';
+import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier } from './types';
 
 // Configuration URLs
 export const LINKS = {
   MBTI_TEST: "https://kiwimu-mbti.vercel.app",
   LINE_OA: "https://lin.ee/vpkYztb",
   INSTAGRAM: "https://www.instagram.com/moon_moon_dessert/",
-  GOOGLE_MAPS: "https://www.google.com/maps?um=1&ie=UTF-8&fb=1&gl=tw&sa=X&geocode=KcW0F77Ld240MdR9ng9TTJF3&daddr=709%E8%87%BA%E5%8D%97%E5%B8%82%E5%AE%89%E5%8D%97%E5%8D%80%E6%9C%AC%E5%8E%9F%E8%A1%97%E4%B8%80%E6%AE%B597%E5%B7%B7168%E8%99%9F",
+  GOOGLE_MAPS: "https://g.page/r/CdR9ng9TTJF3EBM/review",
+  NAVIGATION: "https://moon-map-original.vercel.app",
 };
+
+// Passport Stamp Collection System
+export const STAMPS: Stamp[] = [
+  // Quick stamps (1-7) - completable in-store within 30 minutes
+  {
+    id: 'quiz_completed',
+    name: '甜點測驗',
+    description: '完成甜點靈魂測驗',
+    icon: 'CheckCircle',
+    unlockMethod: 'qr' // auto-unlocked on result page
+  },
+  {
+    id: 'ig_followed',
+    name: 'IG 追蹤',
+    description: '追蹤 @moon_moon_dessert',
+    icon: 'Instagram',
+    unlockMethod: 'checkbox'
+  },
+  {
+    id: 'line_joined',
+    name: 'LINE@ 好友',
+    description: '加入月島官方帳號',
+    icon: 'MessageCircle',
+    unlockMethod: 'checkbox'
+  },
+  {
+    id: 'secret_qr_1',
+    name: '秘密角落 #1',
+    description: '找到店內隱藏 QR Code',
+    icon: 'MapPin',
+    unlockMethod: 'qr',
+    requiredParam: 'secret1'
+  },
+  {
+    id: 'secret_qr_2',
+    name: '秘密角落 #2',
+    description: '找到另一個隱藏 QR Code',
+    icon: 'MapPin',
+    unlockMethod: 'qr',
+    requiredParam: 'secret2'
+  },
+  {
+    id: 'social_share',
+    name: '社群分享',
+    description: '分享到 IG 或臉書限動',
+    icon: 'Share2',
+    unlockMethod: 'checkbox'
+  },
+  {
+    id: 'order_with_staff',
+    name: '跟店員點餐',
+    description: '向店員點餐並掃描 QR Code',
+    icon: 'ShoppingBag',
+    unlockMethod: 'qr',
+    requiredParam: 'order'
+  },
+
+  // Advanced stamps (8-10) - completable at home
+  {
+    id: 'mbti_completed',
+    name: 'MBTI 深度測驗',
+    description: '完成 MBTI 人格測驗',
+    icon: 'Brain',
+    unlockMethod: 'password'
+  },
+  {
+    id: 'google_review',
+    name: 'Google 評論',
+    description: '留下 5 星評論',
+    icon: 'Star',
+    unlockMethod: 'password'
+  },
+  {
+    id: 'referral_share',
+    name: '推薦好友',
+    description: '分享測驗或推薦朋友',
+    icon: 'Share2',
+    unlockMethod: 'checkbox'
+  }
+];
+
+export const REWARD_TIERS: RewardTier[] = [
+  {
+    id: 'tier_3',
+    requiredStamps: 3,
+    title: '飲品升級',
+    description: '免費升級飲品（+$30 等級）',
+    canRepeat: true,
+    redemptionMethod: 'show-screen'
+  },
+  {
+    id: 'tier_5',
+    requiredStamps: 5,
+    title: '手工餅乾',
+    description: '手工餅乾 1 片',
+    canRepeat: true,
+    redemptionMethod: 'show-screen'
+  },
+  {
+    id: 'tier_7',
+    requiredStamps: 7,
+    title: '經典布丁',
+    description: '經典烤布丁 1 個',
+    canRepeat: true,
+    redemptionMethod: 'show-screen'
+  },
+  {
+    id: 'tier_10',
+    requiredStamps: 10,
+    title: '原味千層',
+    description: '原味千層蛋糕 1 片（價值 $180）',
+    canRepeat: false,
+    redemptionMethod: 'line-redirect'
+  }
+];
+
 
 // Landing Page Illustrations Configuration
 export const LANDING_ILLUSTRATIONS = [
@@ -21,11 +138,11 @@ export const LANDING_ILLUSTRATIONS = [
 // These correspond to the winning "Style"
 export const STICKERS: StickerReward[] = [
   {
-    id: 'guardian',
+    id: 'traveler',
     style: '經典',
-    name: '月島守護者',
-    description: '沈穩可靠，像是月光一樣溫柔地守護大家。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/v1769227678/yellow-kiwimu_cw31vk.png', // Replace with specific character image
+    name: '月島旅人',
+    description: '沈穩可靠，像是月光一樣溫柔地陪伴每個人的旅程。',
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/v1769227678/yellow-kiwimu_cw31vk.png',
   },
   {
     id: 'poet',

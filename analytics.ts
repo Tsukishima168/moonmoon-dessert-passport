@@ -139,3 +139,15 @@ export const trackPageView = (pagePath: string, pageTitle: string) => {
     });
   }
 };
+
+/**
+ * Track entrance source (e.g. 門口 QR 掃描) — 用於區分「從大門進入」的流量
+ * 請在 App 載入時依 URL 參數呼叫，GA4 可依此事件統計門口進入人數。
+ */
+export const trackEntranceSource = (source: string, medium: string, campaign?: string) => {
+  trackEvent('entrance_scan', {
+    entrance_source: source,
+    entrance_medium: medium,
+    ...(campaign && { entrance_campaign: campaign }),
+  });
+};

@@ -1,4 +1,4 @@
-export type Screen = 'landing' | 'quiz' | 'result';
+export type Screen = 'landing' | 'quiz' | 'result' | 'passport';
 
 export interface Option {
   id: string;
@@ -42,4 +42,32 @@ export interface DessertRecommendation {
 
 export interface UserAnswers {
   [key: number]: string; // questionId: optionId
+}
+
+// Passport System Types
+export type StampUnlockMethod = 'qr' | 'password' | 'checkbox';
+
+export interface Stamp {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // lucide-react icon name
+  unlockMethod: StampUnlockMethod;
+  requiredParam?: string; // for QR codes
+}
+
+export interface PassportState {
+  unlockedStamps: string[]; // array of stamp IDs
+  redeemedRewards: string[]; // array of reward tier IDs
+  createdAt: number;
+  lastUpdatedAt: number;
+}
+
+export interface RewardTier {
+  id: string;
+  requiredStamps: number;
+  title: string;
+  description: string;
+  canRepeat: boolean;
+  redemptionMethod: 'show-screen' | 'line-redirect';
 }

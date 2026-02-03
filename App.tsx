@@ -1,14 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATIONS, STICKERS } from './constants';
 import { Button } from './components/Button';
+import PassportScreen from './PassportScreen';
+import { unlockStamp, getUnlockedStampCount } from './passportUtils';
 import {
   trackEvent,
   trackDessertView,
   trackButtonClick,
   trackOutboundNavigation,
-  trackTimeSpent
+  trackTimeSpent,
+  trackEntranceSource
 } from './analytics';
 
 // -- Sub-components --
@@ -41,46 +44,123 @@ const StickerBadge = ({
 };
 
 // -- Header --
-const Header = () => (
-  <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
-    <div className="flex items-center gap-2 pointer-events-auto">
-      <img
-        src="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768743629/Dessert-Chinese_u8uoxt.png"
-        alt="月島甜點店"
-        className="h-5 md:h-6 w-auto object-contain brightness-0"
-      />
-    </div>
+const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
+  const [stampCount, setStampCount] = useState(0);
 
-    <div className="pointer-events-auto flex items-center gap-2">
-      <a
-        href={LINKS.INSTAGRAM}
-        target="_blank"
-        rel="noreferrer"
-        onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'header_ig_button')}
-      >
-        <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black] w-10 px-0 flex items-center justify-center">
-          <Instagram size={18} />
-        </Button>
-      </a>
-      <a
-        href={LINKS.LINE_OA}
-        target="_blank"
-        rel="noreferrer"
-        onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'header_pass_button')}
-      >
-        <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black]">
-          Pass
-        </Button>
-      </a>
-    </div>
-  </header>
-);
+  useEffect(() => {
+    setStampCount(getUnlockedStampCount());
+    // Update stamp count when localStorage changes
+    const interval = setInterval(() => {
+      setStampCount(getUnlockedStampCount());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
+      <div className="flex items-center gap-2 pointer-events-auto">
+        <img
+          src="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768743629/Dessert-Chinese_u8uoxt.png"
+          alt="月島甜點店"
+          className="h-5 md:h-6 w-auto object-contain brightness-0"
+        />
+      </div>
+
+      <div className="pointer-events-auto flex items-center gap-2">
+        <button
+          onClick={() => {
+            trackButtonClick('open_passport', 'header');
+            onPassportClick();
+          }}
+          className="relative"
+          aria-label="打開護照收集印章"
+        >
+          <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black] flex items-center justify-center gap-1.5 px-3">
+            <BookOpen size={18} />
+            <span className="text-xs font-bold">護照</span>
+          </Button>
+          {stampCount > 0 && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-brand-lime border-2 border-white rounded-full flex items-center justify-center text-xs font-bold text-brand-black">
+              {stampCount}
+            </div>
+          )}
+        </button>
+        <a
+          href={LINKS.INSTAGRAM}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'header_ig_button')}
+        >
+          <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black] w-10 px-0 flex items-center justify-center">
+            <Instagram size={18} />
+          </Button>
+        </a>
+        <a
+          href={LINKS.LINE_OA}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'header_pass_button')}
+        >
+          <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black]">
+            Pass
+          </Button>
+        </a>
+      </div>
+    </header>
+  );
+};
 
 // -- Screens --
 
+// 建議書：開場問題（隨機輪播）
+const OPENING_QUESTIONS = [
+  '你最近一次真心感到被理解，是什麼時候？',
+  '你覺得自己值得擁有什麼樣的生活？',
+  '你有多久沒有好好照顧自己了？',
+];
+
 const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showSubtext, setShowSubtext] = useState(false);
+  const [easterEggModal, setEasterEggModal] = useState<{ type: null | 'moonmoon' | 'dessert', content?: any }>({ type: null });
   const touchStartY = useRef(0);
+
+  // Easter egg messages
+  const moonMoonStories = [
+    {
+      title: "關於聲音",
+      content: "你發現了嗎？\n\n其實 Moon Moon 不只是名字，更是品嚐美味時發出的聲音。\n\n願你在這裡的每一口，都能不自覺地發出這滿足的輕嘆。\n\n請慢用。"
+    },
+    {
+      title: "關於光芒",
+      content: "這座島嶼本身不發光，它靜靜地等待。\n\n月島就像一座安靜的島，而你就是那道月光。\n\n是你的到來投射了光芒，才讓這座島嶼擁有了溫柔的模樣。"
+    },
+    {
+      title: "關於初衷",
+      content: "其實取名「月島」藏著我們的小私心。\n\n那是汲取了月的溫柔，與島的安穩。\n\n我們搭建了這個避風港，希望你帶走的不只是甜點，還有一份能在心底靠岸的安心回憶。"
+    },
+    {
+      title: "關於陪伴",
+      content: "如果在角落看見一隻白色的小鳥，請別驚訝。\n\n他是 Kiwimu，一隻從鮮奶油裡誕生的精靈。\n\n他不像其他鳥兒飛向天空，而是選擇留在月島，靜靜陪伴你度過這段甜甜的時光。"
+    }
+  ];
+
+  const dessertFacts = [
+    "你知道嗎？提拉米蘇的名字在義大利文中意思是『帶我走』，因為它太好吃了會讓人想全部帶走。",
+    "馬卡龍不是法國發明的！它其實源自義大利，16 世紀才傳入法國宮廷。",
+    "巧克力曾經被當作貨幣使用，阿茲特克人用可可豆來交易商品。",
+    "甜甜圈中間的洞其實是為了讓甜甜圈更均勻受熱而設計的。"
+  ];
+
+  const openingQuestion = useMemo(
+    () => OPENING_QUESTIONS[Math.floor(Math.random() * OPENING_QUESTIONS.length)],
+    []
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowSubtext(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   // Track time spent on landing
   useEffect(() => {
@@ -136,12 +216,29 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
       onTouchEnd={handleTouchEnd}
       onMouseMove={handleMouseMove}
     >
+      {/* Background Gradients */}
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-brand-lime/20 rounded-full blur-[100px] animate-pulse-slow pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-[#FFD700]/10 rounded-full blur-[80px] animate-pulse-slow delay-1000 pointer-events-none" />
       {/* Center container for desktop */}
       <div className="h-full w-full max-w-[1400px] mx-auto flex flex-col relative">
-        <div style={{ transform: `translate(${mousePos.x * -1}px, ${mousePos.y * -1}px)`, transition: 'transform 0.1s ease-out' }}>
+        <div
+          style={{ transform: `translate(${mousePos.x * -1}px, ${mousePos.y * -1}px)`, transition: 'transform 0.1s ease-out' }}
+          onClick={() => {
+            const randomStory = moonMoonStories[Math.floor(Math.random() * moonMoonStories.length)];
+            setEasterEggModal({ type: 'moonmoon', content: randomStory });
+          }}
+          className="cursor-pointer"
+        >
           <StickerBadge text="Moon Moon" rotate={-12} className="top-24 left-6 md:left-[15%] lg:left-[20%]" variant="white" />
         </div>
-        <div style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px)`, transition: 'transform 0.1s ease-out' }}>
+        <div
+          style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px)`, transition: 'transform 0.1s ease-out' }}
+          onClick={() => {
+            const randomFact = dessertFacts[Math.floor(Math.random() * dessertFacts.length)];
+            setEasterEggModal({ type: 'dessert', content: randomFact });
+          }}
+          className="cursor-pointer"
+        >
           <StickerBadge text="Dessert" rotate={15} className="top-32 right-6 md:right-[15%] lg:right-[20%]" variant="lime" />
         </div>
         <div style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)`, transition: 'transform 0.1s ease-out' }}>
@@ -149,16 +246,11 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
         </div>
 
         <div className="flex-none pt-28 md:pt-32 px-4 z-10 pointer-events-none relative flex flex-col items-center">
-          <div className="text-center space-y-2 mb-2">
-            <h1 className="text-6xl md:text-8xl font-serif leading-[0.9] text-brand-black">
+          <div className="text-center space-y-4 max-w-xl mx-auto">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold text-brand-black leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
               Don't<br />
               Hesitate<br />
-              to <span className="italic relative">
-                Eat!
-                <svg className="absolute w-full h-3 -bottom-1 left-0 text-brand-lime -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
-                  <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
-                </svg>
-              </span>
+              to <span className="italic">Eat!</span>
             </h1>
           </div>
         </div>
@@ -203,10 +295,11 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
             <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-5 md:p-6 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.15)] text-center ring-1 ring-black/5">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 opacity-60" />
 
-              <p className="font-sans font-medium text-brand-black mb-6 text-sm leading-relaxed">
+              <p className="font-sans font-medium text-brand-black mb-4 text-sm leading-relaxed">
                 Not just a bakery, but a soul gallery. <br />
                 Find your <span className="font-bold underline decoration-brand-lime decoration-4 underline-offset-2">destined flavor</span> in the exhibition.
               </p>
+              <p className="text-xs text-brand-black/80 mb-6">完成測驗解鎖第一枚印章，到店集章兌獎。</p>
 
               <div className="flex flex-col gap-3">
                 <Button
@@ -242,6 +335,67 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
             </div>
           </div>
         </div>
+
+        {/* Easter Egg Modal */}
+        {easterEggModal.type && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+            onClick={() => setEasterEggModal({ type: null })}
+          >
+            <div
+              className="bg-white rounded-3xl p-6 md:p-10 max-w-sm md:max-w-md w-full shadow-2xl transform animate-scale-in border-4 border-brand-black"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {easterEggModal.type === 'moonmoon' ? (
+                <>
+                  <h3 className="text-xl md:text-2xl font-bold text-brand-black text-center mb-6 md:mb-8 tracking-wide">
+                    你找到彩蛋了！
+                  </h3>
+                  <div className="mb-6 md:mb-8 space-y-4 md:space-y-6">
+                    <p className="text-xs font-bold text-brand-black/60 text-center uppercase tracking-widest">
+                      {easterEggModal.content?.title}
+                    </p>
+                    <p className="text-sm text-brand-black/80 leading-loose text-center whitespace-pre-line tracking-wide">
+                      {easterEggModal.content?.content}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setEasterEggModal({ type: null })}
+                    variant="black"
+                    fullWidth
+                    size="lg"
+                    className="rounded-xl tracking-wider"
+                  >
+                    謝謝你的發現
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl md:text-2xl font-bold text-brand-black text-center mb-6 md:mb-8 tracking-wide">
+                    甜點冷知識
+                  </h3>
+                  <div className="mb-6 md:mb-8 space-y-4 md:space-y-6">
+                    <p className="text-sm text-brand-black/80 leading-loose bg-brand-lime/5 p-4 md:p-6 rounded-xl tracking-wide">
+                      {easterEggModal.content}
+                    </p>
+                    <p className="text-xs text-center text-brand-black/50 italic tracking-wide">
+                      點擊 DESSERT 按鈕可以看到更多冷知識哦
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setEasterEggModal({ type: null })}
+                    variant="black"
+                    fullWidth
+                    size="lg"
+                    className="rounded-xl tracking-wider"
+                  >
+                    學到了
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -382,12 +536,18 @@ const QuizScreen: React.FC<{
 
 const ResultScreen: React.FC<{
   selectedOptions: Option[],
-  onRetry: () => void
-}> = ({ selectedOptions, onRetry }) => {
+  onRetry: () => void,
+  onOpenPassport?: () => void
+}> = ({ selectedOptions, onRetry, onOpenPassport }) => {
 
   // Track time spent on result screen
   useEffect(() => {
     const startTime = Date.now();
+
+    // Auto-unlock quiz completion stamp
+    unlockStamp('quiz_completed');
+    trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'quiz_completion' });
+
     return () => {
       const duration = (Date.now() - startTime) / 1000;
       trackTimeSpent('result', duration);
@@ -426,8 +586,39 @@ const ResultScreen: React.FC<{
     // 4. Find Sticker Reward
     const sticker = STICKERS.find(s => s.style === winningCategory) || STICKERS[0];
 
-    return { dessertResult: selection, stickerResult: sticker };
+    return { dessertResult: selection, stickerResult: sticker, winningCategory };
   }, [selectedOptions]);
+
+  // 建議書：深度解讀（人際 / 財富 / 健康）
+  const styleReading = useMemo(() => {
+    const readings: Record<'經典' | '深色' | '亮色' | '果香', { relation: string; wealth: string; health: string; dessertWhy: string }> = {
+      經典: {
+        relation: '你是一個可靠的傾聽者，朋友總是在需要時想到你',
+        wealth: '你相信穩健的價值，不追求浮誇，但追求品質',
+        health: '你懂得用簡單的方式照顧自己，不需要複雜的儀式感',
+        dessertWhy: '看似簡單，但內在豐富而深刻',
+      },
+      深色: {
+        relation: '喜歡獨處思考，擁有看透本質的深邃靈魂',
+        wealth: '你重視內在價值，勝過外在的喧囂',
+        health: '你需要深度的休息與沈澱，才能重新充電',
+        dessertWhy: '微苦回甘，像深夜裡的自我對話',
+      },
+      亮色: {
+        relation: '充滿好奇心，總能在平凡中發現閃亮亮的新奇事物',
+        wealth: '你願意嘗試新可能，對價值保持開放',
+        health: '你透過探索與新鮮感來照顧自己的心情',
+        dessertWhy: '層次分明、清新明亮，像一道光',
+      },
+      果香: {
+        relation: '自帶療癒氣場，所到之處都會開出快樂的小花',
+        wealth: '你相信分享與連結，本身就是最大的價值',
+        health: '你用溫暖與甜味給自己與他人充電',
+        dessertWhy: '繽紛有生命力，裝滿快樂的靈感',
+      },
+    };
+    return readings[dessertResult?.style ?? '經典'];
+  }, [dessertResult?.style]);
 
   // Track result view
   useEffect(() => {
@@ -488,74 +679,205 @@ const ResultScreen: React.FC<{
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Your Mission</p>
             <p className="text-sm font-bold text-brand-black">
               截圖出示給店員看<br />
-              獲得<span className="bg-brand-lime px-1">「{stickerResult.name}」</span>貼紙
+              獲得<span className="bg-brand-lime px-1">「月島限定小貼紙」</span>
             </p>
           </div>
         </div>
       </div>
 
+      {/* 集章：解鎖第一枚 + 打開護照 CTA */}
+      {onOpenPassport && (
+        <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-4 bg-brand-lime/25 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
+          <p className="text-sm font-bold text-brand-black mb-2">✅ 你已解鎖第一枚印章 · 甜點測驗</p>
+          <p className="text-xs text-brand-black/80 mb-4">到店繼續集章、集滿可兌換飲品升級、手工餅乾與千層蛋糕。</p>
+          <Button
+            fullWidth
+            variant="black"
+            size="lg"
+            className="rounded-xl shadow-[4px_4px_0px_#D4FF00]"
+            onClick={() => {
+              trackButtonClick('open_passport', 'result_stamp_cta');
+              onOpenPassport();
+            }}
+          >
+            <BookOpen className="mr-2" size={20} />
+            打開護照看集章進度
+          </Button>
+        </div>
+      )}
+
+
+
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-5 bg-brand-lime/15 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
+        <p className="text-xs font-bold text-brand-black uppercase tracking-widest mb-2">出示你的結果給店員，獲得：</p>
+        <ul className="text-sm font-sans text-brand-black space-y-1.5 mb-3">
+          <li>限時折扣（首次到店）</li>
+          <li>拍照打卡區（分享你的甜點時刻）</li>
+        </ul>
+        <p className="text-xs text-gray-600">到店後掃描 QR Code 可解鎖護照印章；集滿章數可兌換獎勵。</p>
+      </div>
+
       {/* Secondary Result: The Dessert (Soul Food) */}
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white/50 border border-black/10 rounded-2xl p-4 md:p-5 mb-8 flex items-center gap-4">
-        <img src={dessertResult.imageUrl} className="w-16 h-16 rounded-lg object-cover border border-black grayscale" alt={dessertResult.name} />
-        <div>
-          <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Soul Food Recommendation</p>
-          <p className="font-bold text-sm text-brand-black">{dessertResult.name}</p>
-          <p className="text-xs text-gray-500 mt-1">搭配飲品：{recommendedDrink}</p>
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border-2 border-brand-black rounded-2xl p-5 mb-8 flex items-center gap-5 shadow-[4px_4px_0px_black] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_black] transition-all duration-300">
+        <div className="relative">
+          <div className="absolute inset-0 bg-brand-lime rounded-lg translate-x-1 translate-y-1"></div>
+          <img
+            src={dessertResult.imageUrl}
+            className="w-20 h-20 rounded-lg object-cover border border-brand-black relative z-10"
+            alt={dessertResult.name}
+          />
+        </div>
+
+        <div className="flex-1">
+          <span className="inline-block bg-brand-black text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full mb-1 tracking-wider">
+            Soul Food
+          </span>
+          <h3 className="font-bold text-lg text-brand-black font-sans leading-tight mb-1">{dessertResult.name}</h3>
+          <div className="flex items-center text-xs font-bold text-gray-500 gap-1.5">
+            <span>搭配飲品：{recommendedDrink}</span>
+          </div>
         </div>
       </div>
 
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
-        <a
-          href={LINKS.LINE_OA}
-          target="_blank"
-          rel="noreferrer"
-          className="block"
-          onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'result_line_button')}
-        >
-          <Button fullWidth variant="black" size="lg" className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px]">
-            <Stamp className="mr-2" size={18} />
-            加 LINE 領取「登島紀念」與折扣
-          </Button>
-        </a>
 
-        <div className="flex gap-2">
+      {/* 🌟 Enhanced LINE@ Landing Bonus - Screenshot to Rewards Flow */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 bg-gradient-to-br from-brand-lime/20 to-brand-lime/5 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
+        {/* Header Banner */}
+        <div className="bg-brand-lime border-b-2 border-brand-black px-5 py-3 text-center">
+          <p className="text-sm md:text-base font-bold text-brand-black flex items-center justify-center gap-2">
+            <Sparkles size={18} className="animate-pulse" />
+            獲得專屬登島優惠
+            <Sparkles size={18} className="animate-pulse" />
+          </p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Step-by-step Instructions */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-brand-black mb-1">截圖此頁面</p>
+                <p className="text-xs text-gray-600">保存你的專屬角色結果</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-brand-black mb-1">傳送到 LINE@</p>
+                <p className="text-xs text-gray-600">點擊下方按鈕開啟對話</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-brand-black mb-1">留言「登陸」</p>
+                <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-brand-black/20 shadow-sm">
+                  <span className="font-bold text-sm font-serif">登陸</span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText('登陸');
+                        const btn = e.currentTarget;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✓';
+                        setTimeout(() => btn.textContent = originalText, 1500);
+                      }
+                    }}
+                    className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    COPY
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Rewards Preview */}
+          <div className="bg-white rounded-xl p-4 border-2 border-dashed border-brand-black/30">
+            <p className="text-xs font-bold text-brand-black uppercase tracking-wider mb-3 text-center">你將獲得</p>
+            <div className="space-y-2 text-sm text-brand-black">
+              <div className="flex items-center gap-2">
+                <span className="font-bold">月島小優惠</span>
+                <span className="text-xs text-gray-500">（限時折扣）</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">專屬角色手機桌布</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">來自月島的一封信</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced CTA Button */}
+          <a
+            href={LINKS.LINE_OA}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'result_landing_bonus_cta')}
+          >
+            <Button
+              fullWidth
+              variant="black"
+              size="lg"
+              className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px] transition-all duration-200"
+            >
+              <Stamp className="mr-2" size={20} />
+              前往 LINE@ 領取登島禮包
+            </Button>
+          </a>
+
+          <p className="text-[10px] text-center text-gray-500">
+            ⏰ 優惠限時提供，請盡快完成領取
+          </p>
+        </div>
+      </div>
+
+      {/* Secondary Actions Container */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
+        <p className="text-center text-sm text-gray-500 mb-1">
+          📖 集章、兌換獎勵請點右上角 <strong className="text-brand-black">護照</strong>
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
           <a
             href={LINKS.MBTI_TEST}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 block group"
             onClick={() => trackOutboundNavigation(LINKS.MBTI_TEST, 'result_mbti')}
           >
-            <div className="bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center">
-              <BrainCircuit size={16} className="mb-1" />
-              <span className="text-[10px] md:text-xs font-bold block leading-tight">深度<br />MBTI</span>
-            </div>
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <BrainCircuit size={18} className="mr-2" />
+              深度 MBTI
+            </Button>
           </a>
 
           <a
             href={LINKS.GOOGLE_MAPS}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 block group"
             onClick={() => trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'result_maps')}
           >
-            <div className="bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center">
-              <MapPin size={16} className="mb-1" />
-              <span className="text-[10px] md:text-xs font-bold block leading-tight">前往<br />店舖</span>
-            </div>
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <MapPin size={18} className="mr-2" />
+              前往店舖
+            </Button>
           </a>
 
           <a
             href={LINKS.INSTAGRAM}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 block group"
             onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'result_ig')}
           >
-            <div className="bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center">
-              <Instagram size={16} className="mb-1" />
-              <span className="text-[10px] md:text-xs font-bold block leading-tight">追蹤<br />IG</span>
-            </div>
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <Instagram size={18} className="mr-2" />
+              追蹤 IG
+            </Button>
           </a>
 
           <button
@@ -563,14 +885,15 @@ const ResultScreen: React.FC<{
               trackButtonClick('retry_quiz', 'result_page');
               onRetry();
             }}
-            className="flex-1 bg-white border border-brand-black rounded-xl px-2 py-3 text-center hover:bg-brand-gray transition-colors h-full flex flex-col justify-center items-center"
           >
-            <RotateCcw size={16} className="mb-1" />
-            <span className="text-[10px] md:text-xs font-bold block leading-tight">重測<br />一次</span>
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <RotateCcw size={18} className="mr-2" />
+              重測一次
+            </Button>
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
@@ -623,9 +946,56 @@ function App() {
     window.scrollTo(0, 0);
   };
 
+  // GA4：記錄進入來源（所有 UTM 皆發送 entrance_scan），方便依放置位置分析
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source');
+    const utmMedium = params.get('utm_medium') || 'qr';
+    const utmCampaign = params.get('utm_campaign');
+    if (utmSource) {
+      trackEntranceSource(utmSource, utmMedium, utmCampaign || undefined);
+    }
+  }, []);
+
+  // Handle URL parameters for stamp unlocking
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stampParam = params.get('stamp');
+
+    if (stampParam) {
+      // Auto-unlock stamp based on URL parameter
+      if (stampParam === 'quiz') {
+        unlockStamp('quiz_completed');
+        trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
+      } else if (stampParam === 'secret1') {
+        unlockStamp('secret_qr_1');
+        trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_1', source: 'qr_scan' });
+      } else if (stampParam === 'secret2') {
+        unlockStamp('secret_qr_2');
+        trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_2', source: 'qr_scan' });
+      }
+
+      // Show passport after unlocking
+      setScreen('passport');
+
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const openPassport = () => {
+    setScreen('passport');
+    trackEvent('passport_opened', { from_screen: screen });
+  };
+
+  const closePassport = () => {
+    setScreen('landing');
+    trackEvent('passport_closed');
+  };
+
   return (
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
-      <Header />
+      <Header onPassportClick={openPassport} />
 
       <main>
         {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}
@@ -640,8 +1010,10 @@ function App() {
           <ResultScreen
             selectedOptions={selectedOptions}
             onRetry={restart}
+            onOpenPassport={openPassport}
           />
         )}
+        {screen === 'passport' && <PassportScreen onClose={closePassport} />}
       </main>
     </div>
   );
