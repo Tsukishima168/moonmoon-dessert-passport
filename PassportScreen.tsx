@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, LINKS } from './constants';
 import { Stamp } from './types';
@@ -6,7 +6,8 @@ import {
     getPassportState,
     unlockStamp,
     isStampUnlocked,
-    getUnlockedStampCount
+    getUnlockedStampCount,
+    markRewardRedeemed
 } from './passportUtils';
 import { Button } from './components/Button';
 import { trackEvent, trackOutboundNavigation } from './analytics';
@@ -29,14 +30,21 @@ interface PassportScreenProps {
     onClose: () => void;
 }
 
+const EXTERNAL_STAMPS = new Set(['ig_followed', 'line_joined', 'google_review']);
+
 const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [unlockedCount, setUnlockedCount] = useState(0);
     const [passwordInput, setPasswordInput] = useState('');
     const [selectedStampForPassword, setSelectedStampForPassword] = useState<Stamp | null>(null);
     const [checkboxStamps, setCheckboxStamps] = useState<Record<string, boolean>>({});
+    const [externalStampStatus, setExternalStampStatus] = useState<Record<string, 'ready' | 'visited'>>({});
+    const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
+    const [redeemHoldingId, setRedeemHoldingId] = useState<string | null>(null);
+    const redeemHoldTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
         setUnlockedCount(getUnlockedStampCount());
+        setRedeemedRewards(getPassportState().redeemedRewards || []);
     }, []);
 
     const handleStampClick = (stamp: Stamp) => {
@@ -44,20 +52,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             return; // Already unlocked
         }
 
-        // Direct navigation for external link badges
-        if (stamp.id === 'ig_followed') {
-            window.open(LINKS.INSTAGRAM, '_blank');
-            trackOutboundNavigation(LINKS.INSTAGRAM, 'passport_badge_click');
-            return;
-        }
-        if (stamp.id === 'line_joined') {
-            window.open(LINKS.LINE_OA, '_blank');
-            trackOutboundNavigation(LINKS.LINE_OA, 'passport_badge_click');
-            return;
-        }
-        if (stamp.id === 'google_review') {
-            window.open(LINKS.GOOGLE_MAPS, '_blank');
-            trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'passport_badge_click');
+        // External link stamps: jump -> return -> complete
+        if (EXTERNAL_STAMPS.has(stamp.id)) {
+            if (!externalStampStatus[stamp.id]) {
+                setExternalStampStatus(prev => ({ ...prev, [stamp.id]: 'ready' }));
+            }
             return;
         }
 
@@ -71,6 +70,28 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         }
     };
 
+    const handleExternalGo = (stamp: Stamp) => {
+        let link = LINKS.GOOGLE_MAPS; // default for google_review
+        if (stamp.id === 'ig_followed') link = LINKS.INSTAGRAM;
+        if (stamp.id === 'line_joined') link = LINKS.LINE_OA;
+
+        setExternalStampStatus(prev => ({ ...prev, [stamp.id]: 'visited' }));
+        trackEvent('stamp_external_started', { stamp_id: stamp.id });
+        window.open(link, '_blank');
+        trackOutboundNavigation(link, 'passport_badge_click');
+    };
+
+    const handleExternalComplete = (stampId: string) => {
+        unlockStamp(stampId);
+        setUnlockedCount(getUnlockedStampCount());
+        setExternalStampStatus(prev => {
+            const next = { ...prev };
+            delete next[stampId];
+            return next;
+        });
+        trackEvent('stamp_unlocked', { stamp_id: stampId, method: 'external_return' });
+    };
+
     const handlePasswordSubmit = () => {
         if (!selectedStampForPassword) return;
 
@@ -79,9 +100,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         if (selectedStampForPassword.id === 'mbti_completed') {
             // MBTI test password (can be customized)
             isValid = passwordInput.toUpperCase().startsWith('MBTI');
-        } else if (selectedStampForPassword.id === 'google_review') {
-            // Google review secret code
-            isValid = passwordInput.toUpperCase().includes('KIWIMU');
         }
 
         if (isValid) {
@@ -102,6 +120,37 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             setCheckboxStamps(prev => ({ ...prev, [stampId]: false }));
             trackEvent('stamp_unlocked', { stamp_id: stampId, method: 'checkbox' });
         }
+    };
+
+    const handleRewardRedeem = (tierId: string) => {
+        if (!redeemedRewards.includes(tierId)) {
+            markRewardRedeemed(tierId);
+            setRedeemedRewards(prev => [...prev, tierId]);
+            trackEvent('reward_redeemed', { tier_id: tierId });
+        }
+    };
+
+    const startRedeemHold = (tierId: string) => {
+        if (redeemedRewards.includes(tierId)) {
+            return;
+        }
+        setRedeemHoldingId(tierId);
+        if (redeemHoldTimerRef.current) {
+            clearTimeout(redeemHoldTimerRef.current);
+        }
+        redeemHoldTimerRef.current = window.setTimeout(() => {
+            handleRewardRedeem(tierId);
+            setRedeemHoldingId(null);
+            redeemHoldTimerRef.current = null;
+        }, 2000);
+    };
+
+    const cancelRedeemHold = () => {
+        if (redeemHoldTimerRef.current) {
+            clearTimeout(redeemHoldTimerRef.current);
+            redeemHoldTimerRef.current = null;
+        }
+        setRedeemHoldingId(null);
     };
 
     const availableRewards = REWARD_TIERS.filter(tier => unlockedCount >= tier.requiredStamps);
@@ -199,7 +248,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     {STAMPS.map((stamp) => {
                         const unlocked = isStampUnlocked(stamp.id);
                         const Icon = iconMap[stamp.icon] || CheckCircle;
-                        const isChecked = checkboxStamps[stamp.id];
+                        const isExternal = EXTERNAL_STAMPS.has(stamp.id);
+                        const externalStatus = externalStampStatus[stamp.id];
+                        const isChecked = isExternal ? Boolean(externalStatus) : checkboxStamps[stamp.id];
 
                         return (
                             <div
@@ -229,7 +280,32 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 <h3 className="text-xs md:text-sm font-bold text-brand-black mb-1 leading-tight">{stamp.name}</h3>
                                 <p className="text-[10px] md:text-xs text-gray-600 leading-snug">{stamp.description}</p>
 
-                                {stamp.unlockMethod === 'checkbox' && !unlocked && isChecked && (
+                                {/* External link stamps: jump -> return -> complete */}
+                                {isExternal && !unlocked && externalStatus === 'ready' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleExternalGo(stamp);
+                                        }}
+                                        className="mt-2 w-full bg-brand-lime text-brand-black text-xs py-1.5 rounded-lg hover:bg-brand-lime/80 font-bold border border-brand-black"
+                                    >
+                                        前往完成
+                                    </button>
+                                )}
+                                {isExternal && !unlocked && externalStatus === 'visited' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleExternalComplete(stamp.id);
+                                        }}
+                                        className="mt-2 w-full bg-brand-black text-white text-xs py-1.5 rounded-lg hover:bg-brand-black/80 font-bold"
+                                    >
+                                        完成
+                                    </button>
+                                )}
+
+                                {/* Regular checkbox confirmation for other stamps */}
+                                {stamp.unlockMethod === 'checkbox' && !unlocked && !isExternal && isChecked && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -256,7 +332,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             <div className="max-w-2xl mx-auto mb-8">
                 <h2 className="text-xl font-bold text-brand-black mb-4">階段獎勵</h2>
 
-                {availableRewards.map((reward) => (
+                {availableRewards.map((reward) => {
+                    const isRedeemed = redeemedRewards.includes(reward.id);
+                    return (
                     <div key={reward.id} className="mb-4 bg-white border-2 border-brand-black rounded-xl p-5 shadow-[4px_4px_0px_black]">
                         <div className="flex items-start justify-between mb-3">
                             <div>
@@ -273,23 +351,27 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 <p className="text-sm font-bold text-brand-black">✅ 已達成！出示此頁面給店員即可兌換</p>
                             </div>
                         ) : (
-                            <a
-                                href={`${LINKS.LINE_OA}?text=${encodeURIComponent('我已完成月島護照 10 章收集！\n想要兌換原味千層蛋糕 🎁')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'passport_tier10_redeem')}
-                            >
-                                <Button
-                                    fullWidth
-                                    variant="black"
-                                    className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:shadow-[2px_2px_0px_#D4FF00]"
-                                >
-                                    🎁 前往 LINE@ 領取兌換券
-                                </Button>
-                            </a>
+                            isRedeemed ? (
+                                <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-4 text-center">
+                                    <p className="text-sm font-bold text-gray-600">✅ 已兌換</p>
+                                </div>
+                            ) : (
+                                <div className="bg-brand-black/5 border-2 border-brand-black rounded-lg p-4 text-center">
+                                    <p className="text-xs font-bold text-brand-black mb-2">⚠️ 請交由店員操作</p>
+                                    <button
+                                        onPointerDown={() => startRedeemHold(reward.id)}
+                                        onPointerUp={cancelRedeemHold}
+                                        onPointerLeave={cancelRedeemHold}
+                                        onPointerCancel={cancelRedeemHold}
+                                        className="w-full bg-brand-black text-white text-xs py-3 rounded-lg font-bold hover:bg-brand-black/80"
+                                    >
+                                        {redeemHoldingId === reward.id ? '按住中...（2 秒）' : '店員長按 2 秒核銷'}
+                                    </button>
+                                </div>
+                            )
                         )}
                     </div>
-                ))}
+                )})}
 
                 {nextReward && (
                     <div className="bg-white/50 border border-gray-300 rounded-xl p-5">

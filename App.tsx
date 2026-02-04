@@ -5,6 +5,7 @@ import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATIONS, STICKERS } from 
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import { unlockStamp, getUnlockedStampCount } from './passportUtils';
+import { consumeMbtiClaim } from './mbtiClaim';
 import {
   trackEvent,
   trackDessertView,
@@ -903,6 +904,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>('landing');
   const [answers, setAnswers] = useState<UserAnswers>({});
   const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
+  const prevScreenRef = useRef<Screen>('landing');
 
   // Randomly select one question set on load
   const [activeQuestionSet, setActiveQuestionSet] = useState(QUESTION_SETS[0]);
@@ -961,35 +963,85 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const stampParam = params.get('stamp');
+    const claimParam = params.get('claim');
+    const debugParam = params.get('debug');
 
-    if (stampParam) {
-      // Auto-unlock stamp based on URL parameter
-      if (stampParam === 'quiz') {
-        unlockStamp('quiz_completed');
-        trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
-      } else if (stampParam === 'secret1') {
-        unlockStamp('secret_qr_1');
-        trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_1', source: 'qr_scan' });
-      } else if (stampParam === 'secret2') {
-        unlockStamp('secret_qr_2');
-        trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_2', source: 'qr_scan' });
+    if (!stampParam && !claimParam) {
+      return;
+    }
+
+    void (async () => {
+      if (debugParam === '1') {
+        try {
+          localStorage.setItem('moonmoon_passport', JSON.stringify({
+            unlockedStamps: [
+              'quiz_completed',
+              'ig_followed',
+              'line_joined',
+              'secret_qr_1',
+              'secret_qr_2',
+              'social_share',
+              'order_with_staff',
+              'mbti_completed',
+              'google_review',
+              'referral_share'
+            ],
+            redeemedRewards: [],
+            createdAt: Date.now(),
+            lastUpdatedAt: Date.now()
+          }));
+          trackEvent('debug_passport_unlocked', { mode: 'all_stamps' });
+        } catch (err) {
+          console.warn('Failed to set debug passport state:', err);
+        }
+      }
+
+      if (stampParam) {
+        // Auto-unlock stamp based on URL parameter
+        if (stampParam === 'quiz') {
+          unlockStamp('quiz_completed');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
+        } else if (stampParam === 'secret1') {
+          unlockStamp('secret_qr_1');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_1', source: 'qr_scan' });
+        } else if (stampParam === 'secret2') {
+          unlockStamp('secret_qr_2');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_2', source: 'qr_scan' });
+        } else if (stampParam === 'order') {
+          unlockStamp('order_with_staff');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'order_with_staff', source: 'qr_scan' });
+        }
+      }
+
+      if (claimParam) {
+        const result = await consumeMbtiClaim(claimParam);
+        if (result.ok) {
+          unlockStamp('mbti_completed');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'mbti_claim' });
+        } else {
+          trackEvent('stamp_claim_failed', { reason: result.reason });
+        }
       }
 
       // Show passport after unlocking
+      prevScreenRef.current = screen;
       setScreen('passport');
 
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
-    }
+    })();
   }, []);
 
   const openPassport = () => {
+    if (screen !== 'passport') {
+      prevScreenRef.current = screen;
+    }
     setScreen('passport');
     trackEvent('passport_opened', { from_screen: screen });
   };
 
   const closePassport = () => {
-    setScreen('landing');
+    setScreen(prevScreenRef.current || 'landing');
     trackEvent('passport_closed');
   };
 

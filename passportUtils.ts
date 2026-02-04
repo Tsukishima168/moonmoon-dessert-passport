@@ -2,6 +2,22 @@ import { PassportState } from './types';
 
 const STORAGE_KEY = 'moonmoon_passport';
 
+function safeSetItem(key: string, value: string) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (error) {
+        console.error('Error writing passport state:', error);
+    }
+}
+
+function safeRemoveItem(key: string) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.error('Error clearing passport state:', error);
+    }
+}
+
 export function getPassportState(): PassportState {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -25,7 +41,7 @@ export function unlockStamp(stampId: string): void {
     if (!state.unlockedStamps.includes(stampId)) {
         state.unlockedStamps.push(stampId);
         state.lastUpdatedAt = Date.now();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        safeSetItem(STORAGE_KEY, JSON.stringify(state));
     }
 }
 
@@ -34,7 +50,7 @@ export function markRewardRedeemed(tierId: string): void {
     if (!state.redeemedRewards.includes(tierId)) {
         state.redeemedRewards.push(tierId);
         state.lastUpdatedAt = Date.now();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        safeSetItem(STORAGE_KEY, JSON.stringify(state));
     }
 }
 
@@ -51,5 +67,5 @@ export function getUnlockedStampCount(): number {
 
 
 export function resetPassport(): void {
-    localStorage.removeItem(STORAGE_KEY);
+    safeRemoveItem(STORAGE_KEY);
 }

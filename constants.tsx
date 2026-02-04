@@ -78,7 +78,7 @@ export const STAMPS: Stamp[] = [
     name: 'Google 評論',
     description: '留下 5 星評論',
     icon: 'Star',
-    unlockMethod: 'password'
+    unlockMethod: 'checkbox'
   },
   {
     id: 'referral_share',
