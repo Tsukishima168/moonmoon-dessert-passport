@@ -127,11 +127,11 @@ export const REWARD_TIERS: RewardTier[] = [
 
 // Landing Page Illustrations Configuration
 export const LANDING_ILLUSTRATIONS = [
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_600/v1768744158/Enter-05_nrt403.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_600/v1768744157/Enter-01_ekvbfe.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_600/v1768744157/Enter-04_mfdlsz.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_600/v1768744157/Enter-03_juymmq.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_600/v1768744157/Enter-02_t83hem.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744158/Enter-05_nrt403.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-01_ekvbfe.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-04_mfdlsz.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-03_juymmq.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-02_t83hem.webp",
 ];
 
 // --- STICKER REWARDS (Characters) ---
@@ -142,28 +142,28 @@ export const STICKERS: StickerReward[] = [
     style: '經典',
     name: '月島旅人',
     description: '沈穩可靠，像是月光一樣溫柔地陪伴每個人的旅程。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1769227678/yellow-kiwimu_cw31vk.png',
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227678/yellow-kiwimu_cw31vk.png',
   },
   {
     id: 'poet',
     style: '深色',
     name: '深夜詩人',
     description: '喜歡獨處思考，擁有看透本質的深邃靈魂。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1769227679/blue-kiwimu_uey4fq.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227679/blue-kiwimu_uey4fq.png', // Replace with specific character image
   },
   {
     id: 'explorer',
     style: '亮色',
     name: '閃光探險家',
     description: '充滿好奇心，總是能在平凡中發現閃亮亮的新奇事物。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1769227677/green-kiwiwmu_xsuu4k.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227677/green-kiwiwmu_xsuu4k.png', // Replace with specific character image
   },
   {
     id: 'healer',
     style: '果香',
     name: '甜美治癒師',
     description: '自帶療癒氣場，所到之處都會開出快樂的小花。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1769227677/pink-kiwimu_rhluj0.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227677/pink-kiwimu_rhluj0.png', // Replace with specific character image
   },
 ];
 
