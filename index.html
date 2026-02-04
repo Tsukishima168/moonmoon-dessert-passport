@@ -11,7 +11,8 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="月島甜點護照 | MoonMoon Passport" />
   <meta property="og:description" content="30 秒測驗找到你的靈魂甜點與月島角色，到店出示領限定貼紙。集滿護照印章兌換獎勵。" />
-  <meta property="og:image" content="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768744158/Enter-05_nrt403.webp" />
+  <meta property="og:image"
+    content="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768744158/Enter-05_nrt403.webp" />
   <meta property="og:locale" content="zh_TW" />
   <!-- Twitter Card（選填，部分 App 會用） -->
   <meta name="twitter:card" content="summary_large_image" />
@@ -22,10 +23,9 @@
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  
+
   <!-- Optimized Google Fonts - reduced weights, swap display -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Inter:wght@400;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Inter:wght@400;700&display=swap"
     rel="stylesheet">
 
   <!-- Google Analytics 4 - defer to not block rendering -->
@@ -44,7 +44,62 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Static Skeleton Screen: Shows immediately before React hydrates -->
+    <div
+      style="height: 100dvh; width: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden; background-color: #F8F8F5;">
+      <!-- Background Gradients -->
+      <div
+        style="position: absolute; top: -20%; left: -10%; width: 60%; height: 60%; background-color: rgba(212, 255, 0, 0.2); border-radius: 9999px; filter: blur(100px);">
+      </div>
+      <div
+        style="position: absolute; bottom: -10%; right: -5%; width: 50%; height: 50%; background-color: rgba(255, 215, 0, 0.1); border-radius: 9999px; filter: blur(80px);">
+      </div>
+
+      <!-- Main Content Skeleton -->
+      <div
+        style="flex: none; padding-top: 7rem; padding-left: 1rem; padding-right: 1rem; z-index: 10; position: relative; display: flex; flex-direction: column; align-items: center;">
+        <div style="text-align: center; max-width: 36rem; margin-left: auto; margin-right: auto;">
+          <h1
+            style="font-size: 3rem; font-family: 'DM Serif Display', serif; font-weight: bold; color: #1a1a1a; line-height: 1.25;">
+            Don't<br />
+            Hesitate<br />
+            to <span style="font-style: italic;">Eat!</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Loading Indicator -->
+      <div
+        style="position: absolute; bottom: 20%; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 0.5rem; opacity: 0.5;">
+        <div
+          style="width: 8px; height: 8px; background-color: #1a1a1a; border-radius: 50%; animation: pulse 1s infinite;">
+        </div>
+        <div
+          style="width: 8px; height: 8px; background-color: #1a1a1a; border-radius: 50%; animation: pulse 1s infinite 0.2s;">
+        </div>
+        <div
+          style="width: 8px; height: 8px; background-color: #1a1a1a; border-radius: 50%; animation: pulse 1s infinite 0.4s;">
+        </div>
+      </div>
+
+      <style>
+        @keyframes pulse {
+
+          0%,
+          100% {
+            transform: scale(0.8);
+            opacity: 0.5;
+          }
+
+          50% {
+            transform: scale(1.2);
+            opacity: 1;
+          }
+        }
+      </style>
+    </div>
+  </div>
   <script type="module" src="/index.tsx"></script>
 </body>
 
