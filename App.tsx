@@ -12,7 +12,9 @@ import {
   trackButtonClick,
   trackOutboundNavigation,
   trackTimeSpent,
-  trackEntranceSource
+  trackEntranceSource,
+  buildUtmUrl,
+  trackUtmLanding
 } from './analytics';
 
 // -- Sub-components --
@@ -178,6 +180,16 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
     return LANDING_ILLUSTRATIONS[randomIndex];
   }, []);
 
+  const mbtiLandingUrl = useMemo(
+    () =>
+      buildUtmUrl(LINKS.MBTI_TEST, {
+        medium: 'landing',
+        campaign: '2026-q1-integration',
+        content: 'landing_mbti',
+      }),
+    []
+  );
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
@@ -318,9 +330,9 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
                 </Button>
                 <div className="flex gap-2">
                   <a
-                    href={LINKS.MBTI_TEST}
+                    href={mbtiLandingUrl}
                     className="flex-1 block"
-                    onClick={() => trackOutboundNavigation(LINKS.MBTI_TEST, 'landing_mbti')}
+                    onClick={() => trackOutboundNavigation(mbtiLandingUrl, 'landing_mbti')}
                   >
                     <Button variant="secondary" size="sm" fullWidth className="bg-white/80 border-transparent hover:border-black shadow-sm h-10">MBTI</Button>
                   </a>
@@ -540,6 +552,15 @@ const ResultScreen: React.FC<{
   onRetry: () => void,
   onOpenPassport?: () => void
 }> = ({ selectedOptions, onRetry, onOpenPassport }) => {
+  const mbtiResultUrl = useMemo(
+    () =>
+      buildUtmUrl(LINKS.MBTI_TEST, {
+        medium: 'result-cta',
+        campaign: '2026-q1-integration',
+        content: 'result_mbti',
+      }),
+    []
+  );
 
   // Track time spent on result screen
   useEffect(() => {
@@ -846,10 +867,10 @@ const ResultScreen: React.FC<{
 
         <div className="grid grid-cols-2 gap-3">
           <a
-            href={LINKS.MBTI_TEST}
+            href={mbtiResultUrl}
             target="_blank"
             rel="noreferrer"
-            onClick={() => trackOutboundNavigation(LINKS.MBTI_TEST, 'result_mbti')}
+            onClick={() => trackOutboundNavigation(mbtiResultUrl, 'result_mbti')}
           >
             <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
               <BrainCircuit size={18} className="mr-2" />
@@ -950,6 +971,7 @@ function App() {
 
   // GA4：記錄進入來源（所有 UTM 皆發送 entrance_scan），方便依放置位置分析
   useEffect(() => {
+    trackUtmLanding();
     const params = new URLSearchParams(window.location.search);
     const utmSource = params.get('utm_source');
     const utmMedium = params.get('utm_medium') || 'qr';
