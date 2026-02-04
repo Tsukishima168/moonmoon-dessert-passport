@@ -966,7 +966,7 @@ function App() {
     const claimParam = params.get('claim');
     const debugParam = params.get('debug');
 
-    if (!stampParam && !claimParam) {
+    if (!stampParam && !claimParam && debugParam !== '1') {
       return;
     }
 
