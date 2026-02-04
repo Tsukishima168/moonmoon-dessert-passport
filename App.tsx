@@ -1018,8 +1018,10 @@ function App() {
         if (result.ok) {
           unlockStamp('mbti_completed');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'mbti_claim' });
+          trackEvent('stamp_claim', { status: 'success', source: 'mbti_claim' });
         } else {
           trackEvent('stamp_claim_failed', { reason: result.reason });
+          trackEvent('stamp_claim', { status: 'failed', reason: result.reason });
         }
       }
 

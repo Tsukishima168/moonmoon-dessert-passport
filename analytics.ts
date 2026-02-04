@@ -4,6 +4,13 @@
  * This module provides type-safe event tracking for the MoonMoon Dessert Passport app.
  */
 
+const SITE_ID = 'passport';
+
+const withSiteId = (params?: Record<string, any>) => ({
+  site_id: SITE_ID,
+  ...(params || {})
+});
+
 // Extend the Window interface to include gtag
 declare global {
   interface Window {
@@ -24,7 +31,7 @@ export const trackEvent = (
   eventParams?: Record<string, any>
 ) => {
   if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', eventName, eventParams);
+    window.gtag('event', eventName, withSiteId(eventParams));
   } else {
     console.warn('GA4 tracking not initialized');
   }
