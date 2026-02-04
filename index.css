@@ -1,1 +1,26 @@
-/* App base styles – Tailwind 已於 index.html 以 CDN 載入 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App base styles */
+body {
+  background-color: #F4F4F0;
+  color: #111111;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar hide for clean UI */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Brutalist Border Utility */
+.border-b-3 {
+  border-bottom-width: 3px;
+}
