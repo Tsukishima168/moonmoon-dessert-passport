@@ -63,9 +63,10 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="flex items-center gap-2 pointer-events-auto">
         <img
-          src="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768743629/Dessert-Chinese_u8uoxt.png"
+          src="https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_150/v1768743629/Dessert-Chinese_u8uoxt.png"
           alt="月島甜點店"
           className="h-5 md:h-6 w-auto object-contain brightness-0"
+          loading="eager"
         />
       </div>
 
@@ -274,6 +275,8 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
               src={illustration}
               alt="Mascot"
               className="w-full h-auto object-contain drop-shadow-2xl max-h-[50vh] md:max-h-[60vh]"
+              loading="eager"
+              fetchpriority="high"
             />
           ) : (
             <div className="w-full h-[50vh] flex items-center justify-center text-gray-300 font-bold text-4xl opacity-20 rotate-12">
@@ -688,6 +691,7 @@ const ResultScreen: React.FC<{
             src={stickerResult.imageUrl}
             alt={stickerResult.name}
             className="w-full h-full object-contain drop-shadow-xl"
+            loading="lazy"
             onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
           />
         </div>
@@ -747,6 +751,7 @@ const ResultScreen: React.FC<{
             src={dessertResult.imageUrl}
             className="w-20 h-20 rounded-lg object-cover border border-brand-black relative z-10"
             alt={dessertResult.name}
+            loading="lazy"
           />
         </div>
 
