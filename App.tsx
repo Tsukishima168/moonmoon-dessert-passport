@@ -270,19 +270,13 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
         </div>
 
         <div className={`absolute bottom-0 md:-bottom-10 lg:-bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] lg:max-w-[900px] flex justify-center z-0 animate-fade-in pointer-events-none transition-all duration-700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'}`}>
-          {illustration ? (
-            <img
-              src={illustration}
-              alt="Mascot"
-              className="w-full h-auto object-contain drop-shadow-2xl max-h-[50vh] md:max-h-[60vh]"
-              loading="eager"
-              fetchpriority="high"
-            />
-          ) : (
-            <div className="w-full h-[50vh] flex items-center justify-center text-gray-300 font-bold text-4xl opacity-20 rotate-12">
-              MOON MOON
+          {/* Temporarily removed image for faster loading - will restore after Supabase integration */}
+          <div className="w-full h-[40vh] md:h-[50vh] flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-8xl md:text-9xl mb-4">🍰</div>
+              <p className="text-brand-black/30 font-bold text-xl tracking-widest">MOON MOON</p>
             </div>
-          )}
+          </div>
         </div>
 
         <div
@@ -743,16 +737,14 @@ const ResultScreen: React.FC<{
         <p className="text-xs text-gray-600">到店後掃描 QR Code 可解鎖護照印章；集滿章數可兌換獎勵。</p>
       </div>
 
-      {/* Secondary Result: The Dessert (Soul Food) */}
+      {/* Secondary Result: The Dessert (Soul Food) - Text only for faster loading */}
       <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border-2 border-brand-black rounded-2xl p-5 mb-8 flex items-center gap-5 shadow-[4px_4px_0px_black] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_black] transition-all duration-300">
         <div className="relative">
           <div className="absolute inset-0 bg-brand-lime rounded-lg translate-x-1 translate-y-1"></div>
-          <img
-            src={dessertResult.imageUrl}
-            className="w-20 h-20 rounded-lg object-cover border border-brand-black relative z-10"
-            alt={dessertResult.name}
-            loading="lazy"
-          />
+          {/* Emoji placeholder instead of image for faster loading */}
+          <div className="w-20 h-20 rounded-lg border border-brand-black relative z-10 bg-white flex items-center justify-center text-4xl">
+            🍰
+          </div>
         </div>
 
         <div className="flex-1">
