@@ -36,6 +36,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [unlockedCount, setUnlockedCount] = useState(0);
     const [passwordInput, setPasswordInput] = useState('');
     const [selectedStampForPassword, setSelectedStampForPassword] = useState<Stamp | null>(null);
+    const [showReviewTemplate, setShowReviewTemplate] = useState(false);
+    const [reviewTemplateCopied, setReviewTemplateCopied] = useState(false);
     const [checkboxStamps, setCheckboxStamps] = useState<Record<string, boolean>>({});
     const [externalStampStatus, setExternalStampStatus] = useState<Record<string, 'ready' | 'visited'>>({});
     const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
@@ -57,6 +59,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             if (!externalStampStatus[stamp.id]) {
                 setExternalStampStatus(prev => ({ ...prev, [stamp.id]: 'ready' }));
             }
+            return;
+        }
+
+        // Google review: show template first
+        if (stamp.id === 'google_review' && !isStampUnlocked(stamp.id)) {
+            setShowReviewTemplate(true);
             return;
         }
 
@@ -335,43 +343,44 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 {availableRewards.map((reward) => {
                     const isRedeemed = redeemedRewards.includes(reward.id);
                     return (
-                    <div key={reward.id} className="mb-4 bg-white border-2 border-brand-black rounded-xl p-5 shadow-[4px_4px_0px_black]">
-                        <div className="flex items-start justify-between mb-3">
-                            <div>
-                                <div className="inline-block bg-brand-lime px-2 py-0.5 rounded-full text-xs font-bold uppercase mb-2">
-                                    {reward.requiredStamps} 章達成
+                        <div key={reward.id} className="mb-4 bg-white border-2 border-brand-black rounded-xl p-5 shadow-[4px_4px_0px_black]">
+                            <div className="flex items-start justify-between mb-3">
+                                <div>
+                                    <div className="inline-block bg-brand-lime px-2 py-0.5 rounded-full text-xs font-bold uppercase mb-2">
+                                        {reward.requiredStamps} 章達成
+                                    </div>
+                                    <h3 className="text-lg font-bold text-brand-black">{reward.title}</h3>
+                                    <p className="text-sm text-gray-600">{reward.description}</p>
                                 </div>
-                                <h3 className="text-lg font-bold text-brand-black">{reward.title}</h3>
-                                <p className="text-sm text-gray-600">{reward.description}</p>
                             </div>
-                        </div>
 
-                        {reward.redemptionMethod === 'show-screen' ? (
-                            <div className="bg-brand-lime/20 border-2 border-brand-lime rounded-lg p-4 text-center">
-                                <p className="text-sm font-bold text-brand-black">✅ 已達成！出示此頁面給店員即可兌換</p>
-                            </div>
-                        ) : (
-                            isRedeemed ? (
-                                <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-4 text-center">
-                                    <p className="text-sm font-bold text-gray-600">✅ 已兌換</p>
+                            {reward.redemptionMethod === 'show-screen' ? (
+                                <div className="bg-brand-lime/20 border-2 border-brand-lime rounded-lg p-4 text-center">
+                                    <p className="text-sm font-bold text-brand-black">✅ 已達成！出示此頁面給店員即可兌換</p>
                                 </div>
                             ) : (
-                                <div className="bg-brand-black/5 border-2 border-brand-black rounded-lg p-4 text-center">
-                                    <p className="text-xs font-bold text-brand-black mb-2">⚠️ 請交由店員操作</p>
-                                    <button
-                                        onPointerDown={() => startRedeemHold(reward.id)}
-                                        onPointerUp={cancelRedeemHold}
-                                        onPointerLeave={cancelRedeemHold}
-                                        onPointerCancel={cancelRedeemHold}
-                                        className="w-full bg-brand-black text-white text-xs py-3 rounded-lg font-bold hover:bg-brand-black/80"
-                                    >
-                                        {redeemHoldingId === reward.id ? '按住中...（2 秒）' : '店員長按 2 秒核銷'}
-                                    </button>
-                                </div>
-                            )
-                        )}
-                    </div>
-                )})}
+                                isRedeemed ? (
+                                    <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-4 text-center">
+                                        <p className="text-sm font-bold text-gray-600">✅ 已兌換</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-brand-black/5 border-2 border-brand-black rounded-lg p-4 text-center">
+                                        <p className="text-xs font-bold text-brand-black mb-2">⚠️ 請交由店員操作</p>
+                                        <button
+                                            onPointerDown={() => startRedeemHold(reward.id)}
+                                            onPointerUp={cancelRedeemHold}
+                                            onPointerLeave={cancelRedeemHold}
+                                            onPointerCancel={cancelRedeemHold}
+                                            className="w-full bg-brand-black text-white text-xs py-3 rounded-lg font-bold hover:bg-brand-black/80"
+                                        >
+                                            {redeemHoldingId === reward.id ? '按住中...（2 秒）' : '店員長按 2 秒核銷'}
+                                        </button>
+                                    </div>
+                                )
+                            )}
+                        </div>
+                    )
+                })}
 
                 {nextReward && (
                     <div className="bg-white/50 border border-gray-300 rounded-xl p-5">
@@ -384,6 +393,83 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     </div>
                 )}
             </div>
+
+            {/* Password Modal */}
+            {/* Google Review Template Modal */}
+            {showReviewTemplate && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                        <h3 className="text-xl font-bold text-brand-black mb-2">📝 評論範本</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            為了幫助月島被更多人看見，請參考以下範本撰寫評論（可自由修改）
+                        </p>
+
+                        <div className="bg-brand-lime/10 border-2 border-brand-lime rounded-xl p-4 mb-4">
+                            <p className="text-sm text-brand-black whitespace-pre-line font-sans leading-relaxed">
+                                我是透過甜點測驗找到月島甜點的！測驗結果推薦我試試【在此填入你點的甜點】，真的很準確！
+                                <br /><br />
+                                🍰 推薦甜點：___________
+                                <br />
+                                🎭 我的測驗角色：___________
+                                <br /><br />
+                                月島的甜點不只好吃，每一款都有自己的故事。店內的 Kiwimu 角色超可愛，氛圍很療癒，很適合放鬆或拍照打卡。
+                                <br /><br />
+                                推薦給喜歡手作甜點、個性化體驗的你！
+                                <br /><br />
+                                #台南甜點 #安南區甜點 #月島 #MoonMoon #Kiwimu #MBTI甜點測驗
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const template = `我是透過甜點測驗找到月島甜點的！測驗結果推薦我試試【在此填入你點的甜點】，真的很準確！\n\n🍰 推薦甜點：___________\n🎭 我的測驗角色：___________\n\n月島的甜點不只好吃，每一款都有自己的故事。店內的 Kiwimu 角色超可愛，氛圍很療癒，很適合放鬆或拍照打卡。\n\n推薦給喜歡手作甜點、個性化體驗的你！\n\n#台南甜點 #安南區甜點 #月島 #MoonMoon #Kiwimu #MBTI甜點測驗`;
+                                if (navigator.clipboard) {
+                                    navigator.clipboard.writeText(template).then(() => {
+                                        setReviewTemplateCopied(true);
+                                        setTimeout(() => setReviewTemplateCopied(false), 2000);
+                                    });
+                                }
+                            }}
+                            className="w-full py-3 bg-brand-lime text-brand-black rounded-xl font-bold mb-3 border-2 border-brand-black hover:bg-brand-lime/80 transition-colors"
+                        >
+                            {reviewTemplateCopied ? '✓ 已複製！' : '📋 複製範本'}
+                        </button>
+
+                        <a
+                            href={LINKS.GOOGLE_MAPS}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => {
+                                trackEvent('stamp_external_started', { stamp_id: 'google_review' });
+                                trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'passport_google_review');
+                                // Keep modal open so user can go back and forth
+                            }}
+                            className="block w-full py-3 bg-brand-black text-white rounded-xl font-bold text-center hover:bg-brand-black/80 transition-colors mb-3"
+                        >
+                            前往 Google 評論
+                        </a>
+
+                        <button
+                            onClick={() => {
+                                unlockStamp('google_review');
+                                setUnlockedCount(getUnlockedStampCount());
+                                setShowReviewTemplate(false);
+                                trackEvent('stamp_unlocked', { stamp_id: 'google_review', method: 'review_completed' });
+                            }}
+                            className="w-full py-2 border-2 border-brand-black rounded-xl font-bold hover:bg-brand-gray transition-colors mb-2"
+                        >
+                            我已完成評論
+                        </button>
+
+                        <button
+                            onClick={() => setShowReviewTemplate(false)}
+                            className="w-full py-2 text-sm text-gray-600 hover:text-brand-black transition-colors"
+                        >
+                            取消
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Password Modal */}
             {selectedStampForPassword && (
