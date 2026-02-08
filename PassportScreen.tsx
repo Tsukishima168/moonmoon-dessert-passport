@@ -414,7 +414,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 <br /><br />
                                 月島的甜點不只好吃，每一款都有自己的故事。店內的 Kiwimu 角色超可愛，氛圍很療癒，很適合放鬆或拍照打卡。
                                 <br /><br />
-                                推薦給喜歡手作甜點、個性化體驗的你！
+                                推薦給喜歡精緻甜點、個性化體驗的你！
                                 <br /><br />
                                 #台南甜點 #安南區甜點 #月島 #MoonMoon #Kiwimu #MBTI甜點測驗
                             </p>
@@ -422,7 +422,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                         <button
                             onClick={() => {
-                                const template = `我是透過甜點測驗找到月島甜點的！測驗結果推薦我試試【在此填入你點的甜點】，真的很準確！\n\n🍰 推薦甜點：___________\n🎭 我的測驗角色：___________\n\n月島的甜點不只好吃，每一款都有自己的故事。店內的 Kiwimu 角色超可愛，氛圍很療癒，很適合放鬆或拍照打卡。\n\n推薦給喜歡手作甜點、個性化體驗的你！\n\n#台南甜點 #安南區甜點 #月島 #MoonMoon #Kiwimu #MBTI甜點測驗`;
+                                const template = `我是透過甜點測驗找到月島甜點的！測驗結果推薦我試試【在此填入你點的甜點】，真的很準確！\n\n🍰 推薦甜點：___________\n🎭 我的測驗角色：___________\n\n月島的甜點不只好吃，每一款都有自己的故事。店內的 Kiwimu 角色超可愛，氛圍很療癒，很適合放鬆或拍照打卡。\n\n推薦給喜歡精緻甜點、個性化體驗的你！\n\n#台南甜點 #安南區甜點 #月島 #MoonMoon #Kiwimu #MBTI甜點測驗`;
                                 if (navigator.clipboard) {
                                     navigator.clipboard.writeText(template).then(() => {
                                         setReviewTemplateCopied(true);
