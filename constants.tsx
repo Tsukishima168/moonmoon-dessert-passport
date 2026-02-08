@@ -14,8 +14,8 @@ export const STAMPS: Stamp[] = [
   // Quick stamps (1-7) - completable in-store within 30 minutes
   {
     id: 'quiz_completed',
-    name: '甜點測驗',
-    description: '完成甜點靈魂測驗',
+    name: '靈魂甜點',
+    description: '找到你的靈魂甜點',
     icon: 'CheckCircle',
     unlockMethod: 'qr' // auto-unlocked on result page
   },
@@ -51,8 +51,8 @@ export const STAMPS: Stamp[] = [
   },
   {
     id: 'social_share',
-    name: '社群分享',
-    description: '分享到 IG 或臉書限動',
+    name: '甜點連線',
+    description: 'IG 限動分享並標註 @moon_moon_dessert',
     icon: 'Share2',
     unlockMethod: 'checkbox'
   },
