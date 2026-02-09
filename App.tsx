@@ -63,7 +63,7 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="flex items-center gap-2 pointer-events-auto">
         <img
-          src="https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_150/v1768743629/Dessert-Chinese_u8uoxt.png"
+          src="https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_300/v1768743629/Dessert-Chinese_u8uoxt.png"
           alt="月島甜點店"
           className="h-5 md:h-6 w-auto object-contain brightness-0"
           loading="eager"

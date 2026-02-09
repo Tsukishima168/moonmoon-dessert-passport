@@ -127,11 +127,11 @@ export const REWARD_TIERS: RewardTier[] = [
 
 // Landing Page Illustrations Configuration
 export const LANDING_ILLUSTRATIONS = [
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744158/Enter-05_nrt403.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-01_ekvbfe.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-04_mfdlsz.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-03_juymmq.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_400/v1768744157/Enter-02_t83hem.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744158/Enter-05_nrt403.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-01_ekvbfe.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-04_mfdlsz.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-03_juymmq.webp",
+  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-02_t83hem.webp",
 ];
 
 // --- STICKER REWARDS (Characters) ---
@@ -142,28 +142,28 @@ export const STICKERS: StickerReward[] = [
     style: '經典',
     name: '月島旅人',
     description: '沈穩可靠，像是月光一樣溫柔地陪伴每個人的旅程。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227678/yellow-kiwimu_cw31vk.png',
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227678/yellow-kiwimu_cw31vk.png',
   },
   {
     id: 'poet',
     style: '深色',
     name: '深夜詩人',
     description: '喜歡獨處思考，擁有看透本質的深邃靈魂。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227679/blue-kiwimu_uey4fq.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227679/blue-kiwimu_uey4fq.png', // Replace with specific character image
   },
   {
     id: 'explorer',
     style: '亮色',
     name: '閃光探險家',
     description: '充滿好奇心，總是能在平凡中發現閃亮亮的新奇事物。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227677/green-kiwiwmu_xsuu4k.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227677/green-kiwiwmu_xsuu4k.png', // Replace with specific character image
   },
   {
     id: 'healer',
     style: '果香',
     name: '甜美治癒師',
     description: '自帶療癒氣場，所到之處都會開出快樂的小花。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_300/v1769227677/pink-kiwimu_rhluj0.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227677/pink-kiwimu_rhluj0.png', // Replace with specific character image
   },
 ];
 
@@ -173,97 +173,97 @@ export const DESSERTS: DessertRecommendation[] = [
     id: 'INTJ', mbti: 'INTJ', name: '北海道經典巴斯克', series: '巴斯克', style: '經典',
     hook: '極致的濃度直達靈魂核心，是理智與感官的完美角力。',
     drink_stable: '美式咖啡', drink_sensitive: '經典拿鐵', replacement: '檸檬巴斯克;茶香巴斯克',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866456/BASQUE_CLASSIC_c6fb92.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/BASQUE_CLASSIC_c6fb92.webp'
   },
   {
     id: 'INTP', mbti: 'INTP', name: '檸檬柚子千層蛋糕', series: '千層', style: '亮色',
     hook: '結構細膩且層次分明，適合在深度思考中尋求一絲清亮。',
     drink_stable: '日本柚子美式', drink_sensitive: '薄荷茶', replacement: '蜜香紅茶千層;草莓莓果千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866456/MILLE_CREPE_LEMON_dcxrgr.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/MILLE_CREPE_LEMON_dcxrgr.webp'
   },
   {
     id: 'ENTJ', mbti: 'ENTJ', name: '奶酒提拉米蘇', series: '提拉米蘇', style: '深色',
     hook: '微醺的權力展演，苦甜之間盡是掌控局勢的餘韻。',
     drink_stable: '美式咖啡', drink_sensitive: '焙茶拿鐵', replacement: '經典提拉米蘇;抹茶提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866456/TIRAMISU_BAILEYS_vkzkxr.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/TIRAMISU_BAILEYS_vkzkxr.webp'
   },
   {
     id: 'ENTP', mbti: 'ENTP', name: '柚子蘋果提拉米蘇', series: '提拉米蘇', style: '亮色',
     hook: '打破常規的驚喜風味，在每一次味覺挑戰中看見邊界。',
     drink_stable: '日本柚子美式', drink_sensitive: '烤布丁拿鐵', replacement: '奶酒提拉米蘇;抹茶提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866456/TIRAMISU_YUZU_pu1r82.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/TIRAMISU_YUZU_pu1r82.webp'
   },
   {
     id: 'INFJ', mbti: 'INFJ', name: '茶香巴斯克', series: '巴斯克', style: '深色',
     hook: '沈穩的茶韻撫平外界的嘈雜，帶你潛入最深的內在宇宙。',
     drink_stable: '博士茶', drink_sensitive: '抹茶拿鐵', replacement: '北海道經典巴斯克;檸檬巴斯克',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866455/BASQUE_TEA_izkwws.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/BASQUE_TEA_izkwws.webp'
   },
   {
     id: 'INFP', mbti: 'INFP', name: '北海道十勝戚風蛋糕', series: '戚風', style: '經典',
     hook: '輕盈柔軟的著陸點，在銳利的世界裡提供一場溫柔的安放。',
     drink_stable: '博士茶', drink_sensitive: '花草茶', replacement: '檸檬蘋果戚風;莓果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866455/CHIFFON_LEMON_ppn6t3.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/CHIFFON_LEMON_ppn6t3.webp'
   },
   {
     id: 'ENFJ', mbti: 'ENFJ', name: '檸檬蘋果戚風蛋糕', series: '戚風', style: '亮色',
     hook: '明亮如陽光的清新力量，溫暖並照亮每一個被遺忘的角落。',
     drink_stable: '西西里美式', drink_sensitive: '抹茶拿鐵', replacement: '北海道十勝戚風;莓果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866455/CHIFFON_LEMON_ppn6t3.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/CHIFFON_LEMON_ppn6t3.webp'
   },
   {
     id: 'ENFP', mbti: 'ENFP', name: '草莓莓果千層蛋糕', series: '千層', style: '果香',
     hook: '層次繽紛且富有生命力，裝滿奇奇怪怪且閃亮的靈感碎片。',
     drink_stable: '日本柚子美式', drink_sensitive: '花草茶', replacement: '檸檬柚子千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866455/MILLE_CREPE_STRAWBERRY_s6bf22.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/MILLE_CREPE_STRAWBERRY_s6bf22.webp'
   },
   {
     id: 'ISTJ', mbti: 'ISTJ', name: '經典十勝原味千層', series: '千層', style: '經典',
     hook: '結構的絕對精準與對承諾的執著，最值得信賴的味覺基石。',
     drink_stable: '美式咖啡', drink_sensitive: '經典拿鐵', replacement: '巧克力布朗尼千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866454/MILLE_CREPE_CLASSIC_ofjcvq.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/MILLE_CREPE_CLASSIC_ofjcvq.webp'
   },
   {
     id: 'ISFJ', mbti: 'ISFJ', name: '經典烤布丁', series: '單品', style: '經典',
     hook: '安全感的終極錨點，最純粹、最直接的溫柔安撫與回歸。',
     drink_stable: '蕎麥茶', drink_sensitive: '烤布丁拿鐵', replacement: '本口味目前為最佳配對',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866453/PUDDING_CLASSIC_fm8hng.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866453/PUDDING_CLASSIC_fm8hng.webp'
   },
   {
     id: 'ESTJ', mbti: 'ESTJ', name: '鹹蛋黃巴斯克', series: '巴斯克', style: '深色',
     hook: '鋼鐵意志與濃郁核心的結合，穩健中帶有不容忽視的力量。',
     drink_stable: '美式咖啡', drink_sensitive: '焙茶拿鐵', replacement: '北海道經典巴斯克;茶香巴斯克',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866453/BASQUE_SALTED_EGG_cwc3ah.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866453/BASQUE_SALTED_EGG_cwc3ah.webp'
   },
   {
     id: 'ESFJ', mbti: 'ESFJ', name: '莓果戚風蛋糕', series: '戚風', style: '果香',
     hook: '溫和友善的包覆感，與摯愛分享這份純粹快樂的本質。',
     drink_stable: '日本柚子美式', drink_sensitive: '經典拿鐵', replacement: '綜合水果戚風;檸檬蘋果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866454/CHIFFON_BERRY_wlmqgd.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/CHIFFON_BERRY_wlmqgd.webp'
   },
   {
     id: 'ISTP', mbti: 'ISTP', name: '經典提拉米蘇', series: '提拉米蘇', style: '經典',
     hook: '冷靜大膽的口感平衡，無需多言的硬派實力展現。',
     drink_stable: '美式咖啡', drink_sensitive: '焙茶拿鐵', replacement: '抹茶提拉米蘇;柚子蘋果提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866454/TIRAMISU_CLASSIC_puzwyg.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/TIRAMISU_CLASSIC_puzwyg.webp'
   },
   {
     id: 'ISFP', mbti: 'ISFP', name: '抹茶提拉米蘇', series: '提拉米蘇', style: '深色',
     hook: '細膩美感的微苦回甘，用最溫柔的方式對抗世界的喧囂。',
     drink_stable: '日本柚子美式', drink_sensitive: '花草茶', replacement: '經典提拉米蘇;奶酒提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866454/TIRAMISU_CLASSIC_puzwyg.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/TIRAMISU_CLASSIC_puzwyg.webp'
   },
   {
     id: 'ESTP', mbti: 'ESTP', name: '巧克力布朗尼千層', series: '千層', style: '深色',
     hook: '極致感官的爆發體驗，追求速度與最直白的生命熱情。',
     drink_stable: '西西里美式', drink_sensitive: '焙茶拿鐵', replacement: '經典十勝原味千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866454/MILLE_CREPE_CLASSIC_ofjcvq.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/MILLE_CREPE_CLASSIC_ofjcvq.webp'
   },
   {
     id: 'ESFP', mbti: 'ESFP', name: '綜合水果戚風蛋糕', series: '戚風', style: '果香',
     hook: '點亮全場的色彩盛宴，將每一刻都轉化為永恆的快樂慶典。',
     drink_stable: '日本柚子美式', drink_sensitive: '烤布丁拿鐵', replacement: '莓果戚風;檸檬蘋果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_200/v1767866453/CHIFFON_FRUIT_fswhqh.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866453/CHIFFON_FRUIT_fswhqh.webp'
   },
 ];
 
