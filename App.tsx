@@ -596,361 +596,363 @@ const ResultScreen: React.FC<{
       }
     }
   }, []);
-  const startTime = Date.now();
 
-  // Auto-unlock quiz completion stamp
-  unlockStamp('quiz_completed');
-  trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'quiz_completion' });
+  // Track time spent on result screen
+  useEffect(() => {
+    const startTime = Date.now();
+    // Auto-unlock quiz completion stamp
+    unlockStamp('quiz_completed');
+    trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'quiz_completion' });
 
-  return () => {
-    const duration = (Date.now() - startTime) / 1000;
-    trackTimeSpent('result', duration);
-  };
-}, []);
+    return () => {
+      const duration = (Date.now() - startTime) / 1000;
+      trackTimeSpent('result', duration);
+    };
+  }, []);
 
-const { dessertResult, stickerResult } = useMemo(() => {
-  // 1. Calculate Scores
-  const scores = { classic: 0, deep: 0, bright: 0, fruity: 0 };
-  selectedOptions.forEach(opt => {
-    scores.classic += opt.scores.classic;
-    scores.deep += opt.scores.deep;
-    scores.bright += opt.scores.bright;
-    scores.fruity += opt.scores.fruity;
-  });
-
-  // 2. Find Winning Category
-  let maxScore = -1;
-  let winningCategory: '經典' | '深色' | '亮色' | '果香' = '經典';
-
-  (Object.keys(scores) as Array<keyof typeof scores>).forEach(key => {
-    if (scores[key] > maxScore) {
-      maxScore = scores[key];
-      const map: Record<string, typeof winningCategory> = {
-        'classic': '經典', 'deep': '深色', 'bright': '亮色', 'fruity': '果香'
-      };
-      winningCategory = map[key];
-    }
-  });
-
-  // 3. Find Dessert Candidates
-  const candidates = DESSERTS.filter(d => d.style === winningCategory);
-  const finalCandidates = candidates.length > 0 ? candidates : DESSERTS;
-  const selection = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
-
-  // 4. Find Sticker Reward
-  const sticker = STICKERS.find(s => s.style === winningCategory) || STICKERS[0];
-
-  return { dessertResult: selection, stickerResult: sticker, winningCategory };
-}, [selectedOptions]);
-
-// 建議書：深度解讀（人際 / 財富 / 健康）
-const styleReading = useMemo(() => {
-  const readings: Record<'經典' | '深色' | '亮色' | '果香', { relation: string; wealth: string; health: string; dessertWhy: string }> = {
-    經典: {
-      relation: '你是一個可靠的傾聽者，朋友總是在需要時想到你',
-      wealth: '你相信穩健的價值，不追求浮誇，但追求品質',
-      health: '你懂得用簡單的方式照顧自己，不需要複雜的儀式感',
-      dessertWhy: '看似簡單，但內在豐富而深刻',
-    },
-    深色: {
-      relation: '喜歡獨處思考，擁有看透本質的深邃靈魂',
-      wealth: '你重視內在價值，勝過外在的喧囂',
-      health: '你需要深度的休息與沈澱，才能重新充電',
-      dessertWhy: '微苦回甘，像深夜裡的自我對話',
-    },
-    亮色: {
-      relation: '充滿好奇心，總能在平凡中發現閃亮亮的新奇事物',
-      wealth: '你願意嘗試新可能，對價值保持開放',
-      health: '你透過探索與新鮮感來照顧自己的心情',
-      dessertWhy: '層次分明、清新明亮，像一道光',
-    },
-    果香: {
-      relation: '自帶療癒氣場，所到之處都會開出快樂的小花',
-      wealth: '你相信分享與連結，本身就是最大的價值',
-      health: '你用溫暖與甜味給自己與他人充電',
-      dessertWhy: '繽紛有生命力，裝滿快樂的靈感',
-    },
-  };
-  return readings[dessertResult?.style ?? '經典'];
-}, [dessertResult?.style]);
-
-// Track result view
-useEffect(() => {
-  if (dessertResult && stickerResult) {
-    trackEvent('result_viewed', {
-      dessert_name: dessertResult.name,
-      dessert_style: dessertResult.style,
-      sticker_name: stickerResult.name,
-      sticker_style: stickerResult.style,
-      timestamp: new Date().toISOString()
+  const { dessertResult, stickerResult } = useMemo(() => {
+    // 1. Calculate Scores
+    const scores = { classic: 0, deep: 0, bright: 0, fruity: 0 };
+    selectedOptions.forEach(opt => {
+      scores.classic += opt.scores.classic;
+      scores.deep += opt.scores.deep;
+      scores.bright += opt.scores.bright;
+      scores.fruity += opt.scores.fruity;
     });
 
-    // Track as dessert view too
-    trackDessertView(dessertResult.id, dessertResult.name);
-  }
-}, [dessertResult, stickerResult]);
+    // 2. Find Winning Category
+    let maxScore = -1;
+    let winningCategory: '經典' | '深色' | '亮色' | '果香' = '經典';
 
-// Randomly select drink (Stable vs Sensitive) for display
-const recommendedDrink = useMemo(() => {
-  return Math.random() > 0.5 ? dessertResult.drink_stable : dessertResult.drink_sensitive;
-}, [dessertResult]);
+    (Object.keys(scores) as Array<keyof typeof scores>).forEach(key => {
+      if (scores[key] > maxScore) {
+        maxScore = scores[key];
+        const map: Record<string, typeof winningCategory> = {
+          'classic': '經典', 'deep': '深色', 'bright': '亮色', 'fruity': '果香'
+        };
+        winningCategory = map[key];
+      }
+    });
 
-return (
-  <div className="min-h-screen bg-brand-bg pt-20 px-6 pb-12 animate-fade-in flex flex-col items-center">
+    // 3. Find Dessert Candidates
+    const candidates = DESSERTS.filter(d => d.style === winningCategory);
+    const finalCandidates = candidates.length > 0 ? candidates : DESSERTS;
+    const selection = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
 
-    <div className="text-center mb-6 max-w-sm">
-      <p className="font-mono text-xs md:text-sm text-gray-500 mb-2 uppercase tracking-widest">Your Soul Mate</p>
-      <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-bold text-brand-black leading-tight">{stickerResult.name}</h2>
-    </div>
+    // 4. Find Sticker Reward
+    const sticker = STICKERS.find(s => s.style === winningCategory) || STICKERS[0];
 
-    {/* Reward Card Container (Sticker Focus) */}
-    <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border border-brand-black p-4 md:p-6 rounded-[2rem] shadow-[8px_8px_0px_black] mb-6 rotate-1">
+    return { dessertResult: selection, stickerResult: sticker, winningCategory };
+  }, [selectedOptions]);
 
-      <div className="flex justify-between items-center mb-3 px-1">
-        <div className="flex gap-1">
-          <span className="w-3 h-3 rounded-full bg-brand-lime border border-black"></span>
-          <span className="w-3 h-3 rounded-full bg-white border border-black"></span>
+  // 建議書：深度解讀（人際 / 財富 / 健康）
+  const styleReading = useMemo(() => {
+    const readings: Record<'經典' | '深色' | '亮色' | '果香', { relation: string; wealth: string; health: string; dessertWhy: string }> = {
+      經典: {
+        relation: '你是一個可靠的傾聽者，朋友總是在需要時想到你',
+        wealth: '你相信穩健的價值，不追求浮誇，但追求品質',
+        health: '你懂得用簡單的方式照顧自己，不需要複雜的儀式感',
+        dessertWhy: '看似簡單，但內在豐富而深刻',
+      },
+      深色: {
+        relation: '喜歡獨處思考，擁有看透本質的深邃靈魂',
+        wealth: '你重視內在價值，勝過外在的喧囂',
+        health: '你需要深度的休息與沈澱，才能重新充電',
+        dessertWhy: '微苦回甘，像深夜裡的自我對話',
+      },
+      亮色: {
+        relation: '充滿好奇心，總能在平凡中發現閃亮亮的新奇事物',
+        wealth: '你願意嘗試新可能，對價值保持開放',
+        health: '你透過探索與新鮮感來照顧自己的心情',
+        dessertWhy: '層次分明、清新明亮，像一道光',
+      },
+      果香: {
+        relation: '自帶療癒氣場，所到之處都會開出快樂的小花',
+        wealth: '你相信分享與連結，本身就是最大的價值',
+        health: '你用溫暖與甜味給自己與他人充電',
+        dessertWhy: '繽紛有生命力，裝滿快樂的靈感',
+      },
+    };
+    return readings[dessertResult?.style ?? '經典'];
+  }, [dessertResult?.style]);
+
+  // Track result view
+  useEffect(() => {
+    if (dessertResult && stickerResult) {
+      trackEvent('result_viewed', {
+        dessert_name: dessertResult.name,
+        dessert_style: dessertResult.style,
+        sticker_name: stickerResult.name,
+        sticker_style: stickerResult.style,
+        timestamp: new Date().toISOString()
+      });
+
+      // Track as dessert view too
+      trackDessertView(dessertResult.id, dessertResult.name);
+    }
+  }, [dessertResult, stickerResult]);
+
+  // Randomly select drink (Stable vs Sensitive) for display
+  const recommendedDrink = useMemo(() => {
+    return Math.random() > 0.5 ? dessertResult.drink_stable : dessertResult.drink_sensitive;
+  }, [dessertResult]);
+
+  return (
+    <div className="min-h-screen bg-brand-bg pt-20 px-6 pb-12 animate-fade-in flex flex-col items-center">
+
+      <div className="text-center mb-6 max-w-sm">
+        <p className="font-mono text-xs md:text-sm text-gray-500 mb-2 uppercase tracking-widest">Your Soul Mate</p>
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-bold text-brand-black leading-tight">{stickerResult.name}</h2>
+      </div>
+
+      {/* Reward Card Container (Sticker Focus) */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border border-brand-black p-4 md:p-6 rounded-[2rem] shadow-[8px_8px_0px_black] mb-6 rotate-1">
+
+        <div className="flex justify-between items-center mb-3 px-1">
+          <div className="flex gap-1">
+            <span className="w-3 h-3 rounded-full bg-brand-lime border border-black"></span>
+            <span className="w-3 h-3 rounded-full bg-white border border-black"></span>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Moon Character</span>
         </div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Moon Character</span>
-      </div>
 
-      {/* Sticker Image Area */}
-      <div className="aspect-square rounded-[1.5rem] overflow-hidden border border-brand-black mb-4 relative bg-gray-50 group flex items-center justify-center p-6">
-        <img
-          src={stickerResult.imageUrl}
-          alt={stickerResult.name}
-          className="w-full h-full object-contain drop-shadow-xl"
-          loading="lazy"
-          onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
-        />
-      </div>
+        {/* Sticker Image Area */}
+        <div className="aspect-square rounded-[1.5rem] overflow-hidden border border-brand-black mb-4 relative bg-gray-50 group flex items-center justify-center p-6">
+          <img
+            src={stickerResult.imageUrl}
+            alt={stickerResult.name}
+            className="w-full h-full object-contain drop-shadow-xl"
+            loading="lazy"
+            onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
+          />
+        </div>
 
-      <div className="px-2 pb-2">
-        <p className="text-gray-600 font-sans leading-relaxed text-sm mb-6 border-l-2 border-brand-lime pl-3">
-          {stickerResult.description}
-        </p>
-
-        <div className="p-4 bg-brand-gray/20 rounded-xl border border-dashed border-gray-400 text-center mb-2">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Your Mission</p>
-          <p className="text-sm font-bold text-brand-black">
-            截圖出示給店員看<br />
-            獲得<span className="bg-brand-lime px-1">「月島限定小貼紙」</span>
+        <div className="px-2 pb-2">
+          <p className="text-gray-600 font-sans leading-relaxed text-sm mb-6 border-l-2 border-brand-lime pl-3">
+            {stickerResult.description}
           </p>
-        </div>
-      </div>
-    </div>
 
-    {/* 集章：解鎖第一枚 + 打開護照 CTA */}
-    {onOpenPassport && (
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-4 bg-brand-lime/25 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
-        <p className="text-sm font-bold text-brand-black mb-2">✅ 你已解鎖第一枚印章 · 甜點測驗</p>
-        <p className="text-xs text-brand-black/80 mb-4">到店繼續集章、集滿可兌換飲品升級、手工餅乾與千層蛋糕。</p>
-        <Button
-          fullWidth
-          variant="black"
-          size="lg"
-          className="rounded-xl shadow-[4px_4px_0px_#D4FF00]"
-          onClick={() => {
-            trackButtonClick('open_passport', 'result_stamp_cta');
-            onOpenPassport();
-          }}
-        >
-          <BookOpen className="mr-2" size={20} />
-          打開護照看集章進度
-        </Button>
-      </div>
-    )}
-
-
-
-    <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-5 bg-brand-lime/15 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
-      <p className="text-xs font-bold text-brand-black uppercase tracking-widest mb-2">出示你的結果給店員，獲得：</p>
-      <ul className="text-sm font-sans text-brand-black space-y-1.5 mb-3">
-        <li>限時折扣（首次到店）</li>
-        <li>拍照打卡區（分享你的甜點時刻）</li>
-      </ul>
-      <p className="text-xs text-gray-600">到店後掃描 QR Code 可解鎖護照印章；集滿章數可兌換獎勵。</p>
-    </div>
-
-    {/* Secondary Result: The Dessert (Soul Food) */}
-    <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border-2 border-brand-black rounded-2xl p-5 mb-8 flex items-center gap-5 shadow-[4px_4px_0px_black] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_black] transition-all duration-300">
-      <div className="relative">
-        <div className="absolute inset-0 bg-brand-lime rounded-lg translate-x-1 translate-y-1"></div>
-        <img
-          src={dessertResult.imageUrl}
-          className="w-20 h-20 rounded-lg object-cover border border-brand-black relative z-10"
-          alt={dessertResult.name}
-          loading="lazy"
-        />
-      </div>
-
-      <div className="flex-1">
-        <span className="inline-block bg-brand-black text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full mb-1 tracking-wider">
-          Soul Food
-        </span>
-        <h3 className="font-bold text-lg text-brand-black font-sans leading-tight mb-1">{dessertResult.name}</h3>
-        <div className="flex items-center text-xs font-bold text-gray-500 gap-1.5">
-          <span>搭配飲品：{recommendedDrink}</span>
-        </div>
-      </div>
-    </div>
-
-
-    {/* 🌟 Enhanced LINE@ Landing Bonus - Screenshot to Rewards Flow */}
-    <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 bg-gradient-to-br from-brand-lime/20 to-brand-lime/5 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
-      {/* Header Banner */}
-      <div className="bg-brand-lime border-b-2 border-brand-black px-5 py-3 text-center">
-        <p className="text-sm md:text-base font-bold text-brand-black flex items-center justify-center gap-2">
-          <Sparkles size={18} className="animate-pulse" />
-          獲得專屬登島優惠
-          <Sparkles size={18} className="animate-pulse" />
-        </p>
-      </div>
-
-      <div className="p-5 space-y-4">
-        {/* Step-by-step Instructions */}
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">1</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-brand-black mb-1">截圖此頁面</p>
-              <p className="text-xs text-gray-600">保存你的專屬角色結果</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">2</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-brand-black mb-1">傳送到 LINE@</p>
-              <p className="text-xs text-gray-600">點擊下方按鈕開啟對話</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">3</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-brand-black mb-1">留言「登陸」</p>
-              <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-brand-black/20 shadow-sm">
-                <span className="font-bold text-sm font-serif">登陸</span>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (navigator.clipboard) {
-                      navigator.clipboard.writeText('登陸');
-                      const btn = e.currentTarget;
-                      const originalText = btn.textContent;
-                      btn.textContent = '✓';
-                      setTimeout(() => btn.textContent = originalText, 1500);
-                    }
-                  }}
-                  className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors"
-                >
-                  COPY
-                </button>
-              </div>
-            </div>
+          <div className="p-4 bg-brand-gray/20 rounded-xl border border-dashed border-gray-400 text-center mb-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Your Mission</p>
+            <p className="text-sm font-bold text-brand-black">
+              截圖出示給店員看<br />
+              獲得<span className="bg-brand-lime px-1">「月島限定小貼紙」</span>
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Rewards Preview */}
-        <div className="bg-white rounded-xl p-4 border-2 border-dashed border-brand-black/30">
-          <p className="text-xs font-bold text-brand-black uppercase tracking-wider mb-3 text-center">你將獲得</p>
-          <div className="space-y-2 text-sm text-brand-black">
-            <div className="flex items-center gap-2">
-              <span className="font-bold">月島小優惠</span>
-              <span className="text-xs text-gray-500">（限時折扣）</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold">專屬角色手機桌布</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold">來自月島的一封信</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced CTA Button */}
-        <a
-          href={LINKS.LINE_OA}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'result_landing_bonus_cta')}
-        >
+      {/* 集章：解鎖第一枚 + 打開護照 CTA */}
+      {onOpenPassport && (
+        <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-4 bg-brand-lime/25 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
+          <p className="text-sm font-bold text-brand-black mb-2">✅ 你已解鎖第一枚印章 · 甜點測驗</p>
+          <p className="text-xs text-brand-black/80 mb-4">到店繼續集章、集滿可兌換飲品升級、手工餅乾與千層蛋糕。</p>
           <Button
             fullWidth
             variant="black"
             size="lg"
-            className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px] transition-all duration-200"
+            className="rounded-xl shadow-[4px_4px_0px_#D4FF00]"
+            onClick={() => {
+              trackButtonClick('open_passport', 'result_stamp_cta');
+              onOpenPassport();
+            }}
           >
-            <Stamp className="mr-2" size={20} />
-            前往 LINE@ 領取登島禮包
+            <BookOpen className="mr-2" size={20} />
+            打開護照看集章進度
           </Button>
-        </a>
+        </div>
+      )}
 
-        <p className="text-[10px] text-center text-gray-500">
-          ⏰ 優惠限時提供，請盡快完成領取
+
+
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-5 bg-brand-lime/15 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
+        <p className="text-xs font-bold text-brand-black uppercase tracking-widest mb-2">出示你的結果給店員，獲得：</p>
+        <ul className="text-sm font-sans text-brand-black space-y-1.5 mb-3">
+          <li>限時折扣（首次到店）</li>
+          <li>拍照打卡區（分享你的甜點時刻）</li>
+        </ul>
+        <p className="text-xs text-gray-600">到店後掃描 QR Code 可解鎖護照印章；集滿章數可兌換獎勵。</p>
+      </div>
+
+      {/* Secondary Result: The Dessert (Soul Food) */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border-2 border-brand-black rounded-2xl p-5 mb-8 flex items-center gap-5 shadow-[4px_4px_0px_black] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_black] transition-all duration-300">
+        <div className="relative">
+          <div className="absolute inset-0 bg-brand-lime rounded-lg translate-x-1 translate-y-1"></div>
+          <img
+            src={dessertResult.imageUrl}
+            className="w-20 h-20 rounded-lg object-cover border border-brand-black relative z-10"
+            alt={dessertResult.name}
+            loading="lazy"
+          />
+        </div>
+
+        <div className="flex-1">
+          <span className="inline-block bg-brand-black text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full mb-1 tracking-wider">
+            Soul Food
+          </span>
+          <h3 className="font-bold text-lg text-brand-black font-sans leading-tight mb-1">{dessertResult.name}</h3>
+          <div className="flex items-center text-xs font-bold text-gray-500 gap-1.5">
+            <span>搭配飲品：{recommendedDrink}</span>
+          </div>
+        </div>
+      </div>
+
+
+      {/* 🌟 Enhanced LINE@ Landing Bonus - Screenshot to Rewards Flow */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 bg-gradient-to-br from-brand-lime/20 to-brand-lime/5 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
+        {/* Header Banner */}
+        <div className="bg-brand-lime border-b-2 border-brand-black px-5 py-3 text-center">
+          <p className="text-sm md:text-base font-bold text-brand-black flex items-center justify-center gap-2">
+            <Sparkles size={18} className="animate-pulse" />
+            獲得專屬登島優惠
+            <Sparkles size={18} className="animate-pulse" />
+          </p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Step-by-step Instructions */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-brand-black mb-1">截圖此頁面</p>
+                <p className="text-xs text-gray-600">保存你的專屬角色結果</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-brand-black mb-1">傳送到 LINE@</p>
+                <p className="text-xs text-gray-600">點擊下方按鈕開啟對話</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-brand-black mb-1">留言「登陸」</p>
+                <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-brand-black/20 shadow-sm">
+                  <span className="font-bold text-sm font-serif">登陸</span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText('登陸');
+                        const btn = e.currentTarget;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✓';
+                        setTimeout(() => btn.textContent = originalText, 1500);
+                      }
+                    }}
+                    className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    COPY
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Rewards Preview */}
+          <div className="bg-white rounded-xl p-4 border-2 border-dashed border-brand-black/30">
+            <p className="text-xs font-bold text-brand-black uppercase tracking-wider mb-3 text-center">你將獲得</p>
+            <div className="space-y-2 text-sm text-brand-black">
+              <div className="flex items-center gap-2">
+                <span className="font-bold">月島小優惠</span>
+                <span className="text-xs text-gray-500">（限時折扣）</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">專屬角色手機桌布</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">來自月島的一封信</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced CTA Button */}
+          <a
+            href={LINKS.LINE_OA}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'result_landing_bonus_cta')}
+          >
+            <Button
+              fullWidth
+              variant="black"
+              size="lg"
+              className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px] transition-all duration-200"
+            >
+              <Stamp className="mr-2" size={20} />
+              前往 LINE@ 領取登島禮包
+            </Button>
+          </a>
+
+          <p className="text-[10px] text-center text-gray-500">
+            ⏰ 優惠限時提供，請盡快完成領取
+          </p>
+        </div>
+      </div>
+
+      {/* Secondary Actions Container */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
+        <p className="text-center text-sm text-gray-500 mb-1">
+          📖 集章、兌換獎勵請點右上角 <strong className="text-brand-black">護照</strong>
         </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <a
+            href={mbtiResultUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackOutboundNavigation(mbtiResultUrl, 'result_mbti')}
+          >
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <BrainCircuit size={18} className="mr-2" />
+              深度 MBTI
+            </Button>
+          </a>
+
+          <a
+            href={LINKS.GOOGLE_MAPS}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'result_maps')}
+          >
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <MapPin size={18} className="mr-2" />
+              前往店舖
+            </Button>
+          </a>
+
+          <a
+            href={LINKS.INSTAGRAM}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'result_ig')}
+          >
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <Instagram size={18} className="mr-2" />
+              追蹤 IG
+            </Button>
+          </a>
+
+          <button
+            onClick={() => {
+              trackButtonClick('retry_quiz', 'result_page');
+              onRetry();
+            }}
+          >
+            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
+              <RotateCcw size={18} className="mr-2" />
+              重測一次
+            </Button>
+          </button>
+        </div>
       </div>
-    </div>
-
-    {/* Secondary Actions Container */}
-    <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
-      <p className="text-center text-sm text-gray-500 mb-1">
-        📖 集章、兌換獎勵請點右上角 <strong className="text-brand-black">護照</strong>
-      </p>
-
-      <div className="grid grid-cols-2 gap-3">
-        <a
-          href={mbtiResultUrl}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => trackOutboundNavigation(mbtiResultUrl, 'result_mbti')}
-        >
-          <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-            <BrainCircuit size={18} className="mr-2" />
-            深度 MBTI
-          </Button>
-        </a>
-
-        <a
-          href={LINKS.GOOGLE_MAPS}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'result_maps')}
-        >
-          <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-            <MapPin size={18} className="mr-2" />
-            前往店舖
-          </Button>
-        </a>
-
-        <a
-          href={LINKS.INSTAGRAM}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'result_ig')}
-        >
-          <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-            <Instagram size={18} className="mr-2" />
-            追蹤 IG
-          </Button>
-        </a>
-
-        <button
-          onClick={() => {
-            trackButtonClick('retry_quiz', 'result_page');
-            onRetry();
-          }}
-        >
-          <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-            <RotateCcw size={18} className="mr-2" />
-            重測一次
-          </Button>
-        </button>
-      </div>
-    </div>
-  </div >
-);
+    </div >
+  );
 };
 
 // -- Main App --
@@ -1075,7 +1077,7 @@ function App() {
           unlockStamp('mbti_completed');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'mbti_claim' });
           trackEvent('stamp_claim', { status: 'success', source: 'mbti_claim' });
-        } else {
+        } else if ('reason' in result) {
           trackEvent('stamp_claim_failed', { reason: result.reason });
           trackEvent('stamp_claim', { status: 'failed', reason: result.reason });
         }
