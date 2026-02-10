@@ -24,3 +24,16 @@ body {
 .border-b-3 {
   border-bottom-width: 3px;
 }
+
+/* AI Semantic Layer - Visually Hidden */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
