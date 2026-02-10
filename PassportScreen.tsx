@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag } from 'lucide-react';
+import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag, Sparkles } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, LINKS } from './constants';
 import { Stamp } from './types';
 import {
@@ -23,7 +23,8 @@ const iconMap: Record<string, React.ElementType> = {
     Star,
     Share2,
     Mail,
-    ShoppingBag
+    ShoppingBag,
+    Sparkles
 };
 
 interface PassportScreenProps {
@@ -258,6 +259,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                     {STAMPS.map((stamp) => {
                         const unlocked = isStampUnlocked(stamp.id);
+
+                        if (stamp.isSecret && !unlocked) return null;
+
                         const Icon = iconMap[stamp.icon] || CheckCircle;
                         const isExternal = EXTERNAL_STAMPS.has(stamp.id);
                         const externalStatus = externalStampStatus[stamp.id];

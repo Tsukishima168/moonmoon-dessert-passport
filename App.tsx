@@ -6,6 +6,7 @@ import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import { unlockStamp, getUnlockedStampCount } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
+import { consumeRewardClaim } from './rewardClaim';
 import {
   trackEvent,
   trackDessertView,
@@ -991,9 +992,11 @@ function App() {
     const stampParam = params.get('stamp');
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
+    const rewardParam = params.get('reward');
+    const codeParam = params.get('code');
     const debugParam = params.get('debug');
 
-    if (!stampParam && !unlockParam && !claimParam && debugParam !== '1') {
+    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !codeParam) && debugParam !== '1') {
       return;
     }
 
@@ -1082,6 +1085,36 @@ function App() {
         } else if ('reason' in result) {
           trackEvent('stamp_claim_failed', { reason: result.reason });
           trackEvent('stamp_claim', { status: 'failed', reason: result.reason });
+        }
+      }
+
+
+
+      // Reward Claim handling (Easter Egg Master, etc.)
+      if (rewardParam && codeParam) {
+        const result = await consumeRewardClaim(codeParam, rewardParam);
+
+        if (!result.ok) {
+          console.error('Reward claim failed:', result.reason);
+          trackEvent('stamp_claim_failed', { reason: result.reason, reward_id: rewardParam });
+
+          if (result.reason === 'invalid_or_used') {
+            // Check if already unlocked locally
+            const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
+            if (currentState.unlockedStamps?.includes(rewardParam)) {
+              stampUnlocked = true; // Already have it, just open passport
+            } else {
+              alert('此兌換碼無效或已被使用。');
+            }
+          } else {
+            alert('兌換失敗，請稍後再試。');
+          }
+        } else {
+          // Success
+          unlockStamp(rewardParam);
+          trackEvent('stamp_auto_unlocked', { stamp_id: rewardParam, source: 'reward_claim' });
+          trackEvent('stamp_claim', { status: 'success', source: 'reward_claim', reward_id: rewardParam });
+          stampUnlocked = true;
         }
       }
 

@@ -54,6 +54,7 @@ export interface Stamp {
   icon: string; // lucide-react icon name
   unlockMethod: StampUnlockMethod;
   requiredParam?: string; // for QR codes
+  isSecret?: boolean; // Hidden until unlocked
 }
 
 export interface PassportState {

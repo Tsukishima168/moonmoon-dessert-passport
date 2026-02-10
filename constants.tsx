@@ -86,6 +86,14 @@ export const STAMPS: Stamp[] = [
     description: '分享測驗或推薦朋友',
     icon: 'Share2',
     unlockMethod: 'checkbox'
+  },
+  {
+    id: 'egg_master_2026_q1',
+    name: '彩蛋大師',
+    description: '找齊所有月島隱藏彩蛋',
+    icon: 'Sparkles',
+    unlockMethod: 'qr',
+    isSecret: true
   }
 ];
 
