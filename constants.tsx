@@ -125,14 +125,9 @@ export const REWARD_TIERS: RewardTier[] = [
 ];
 
 
-// Landing Page Illustrations Configuration
-export const LANDING_ILLUSTRATIONS = [
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744158/Enter-05_nrt403.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-01_ekvbfe.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-04_mfdlsz.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-03_juymmq.webp",
-  "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744157/Enter-02_t83hem.webp",
-];
+// Landing Page Illustration - Fixed single image for faster loading
+export const LANDING_ILLUSTRATION = "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744158/Enter-05_nrt403.webp";
+
 
 // --- STICKER REWARDS (Characters) ---
 // These correspond to the winning "Style"

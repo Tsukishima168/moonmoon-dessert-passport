@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
-import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATIONS, STICKERS } from './constants';
+import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATION, STICKERS } from './constants';
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import { unlockStamp, getUnlockedStampCount } from './passportUtils';
@@ -175,11 +175,9 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
     };
   }, []);
 
-  const illustration = useMemo(() => {
-    if (!LANDING_ILLUSTRATIONS || LANDING_ILLUSTRATIONS.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * LANDING_ILLUSTRATIONS.length);
-    return LANDING_ILLUSTRATIONS[randomIndex];
-  }, []);
+  // Use fixed illustration for faster loading
+  const illustration = LANDING_ILLUSTRATION;
+
 
   const mbtiLandingUrl = useMemo(
     () =>
@@ -565,37 +563,7 @@ const ResultScreen: React.FC<{
     []
   );
 
-  // Auto-unlock stamps based on URL params (for QR codes)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const unlockParam = params.get('unlock');
-
-    if (unlockParam) {
-      // Map URL params to stamp IDs
-      const unlockMap: Record<string, string> = {
-        'secret_spot': 'secret_qr_1',
-        'observer': 'secret_qr_2',
-        'dessert_connect': 'social_share',
-        'first_visit': 'order_with_staff'
-      };
-
-      const stampId = unlockMap[unlockParam];
-      if (stampId) {
-        unlockStamp(stampId);
-        trackEvent('stamp_unlocked', {
-          stamp_id: stampId,
-          method: 'qr_code',
-          unlock_param: unlockParam
-        });
-
-        // Clean URL after unlocking
-        window.history.replaceState({}, '', window.location.pathname);
-
-        // Show success message
-        alert('🎉 成功解鎖印章！請查看你的護照。');
-      }
-    }
-  }, []);
+  // QR code unlock moved to App component root level
 
   // Track time spent on result screen
   useEffect(() => {
@@ -1017,18 +985,22 @@ function App() {
     }
   }, []);
 
-  // Handle URL parameters for stamp unlocking
+  // Handle URL parameters for stamp unlocking (QR codes, MBTI claims, etc.)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const stampParam = params.get('stamp');
+    const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
     const debugParam = params.get('debug');
 
-    if (!stampParam && !claimParam && debugParam !== '1') {
+    if (!stampParam && !unlockParam && !claimParam && debugParam !== '1') {
       return;
     }
 
     void (async () => {
+      let stampUnlocked = false;
+
+      // Debug mode: unlock all stamps
       if (debugParam === '1') {
         try {
           localStorage.setItem('moonmoon_passport', JSON.stringify({
@@ -1049,43 +1021,79 @@ function App() {
             lastUpdatedAt: Date.now()
           }));
           trackEvent('debug_passport_unlocked', { mode: 'all_stamps' });
+          stampUnlocked = true;
         } catch (err) {
           console.warn('Failed to set debug passport state:', err);
         }
       }
 
+      // New QR code unlock system using `?unlock=` parameter
+      if (unlockParam) {
+        // Map URL params to stamp IDs
+        const unlockMap: Record<string, string> = {
+          'secret_spot': 'secret_qr_1',
+          'observer': 'secret_qr_2',
+          'dessert_connect': 'social_share',
+          'first_visit': 'order_with_staff'
+        };
+
+        const stampId = unlockMap[unlockParam];
+        if (stampId) {
+          unlockStamp(stampId);
+          trackEvent('stamp_unlocked', {
+            stamp_id: stampId,
+            method: 'qr_code',
+            unlock_param: unlockParam
+          });
+          stampUnlocked = true;
+        }
+      }
+
+      // Legacy stamp parameter support (for backward compatibility)
       if (stampParam) {
         // Auto-unlock stamp based on URL parameter
         if (stampParam === 'quiz') {
           unlockStamp('quiz_completed');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
+          stampUnlocked = true;
         } else if (stampParam === 'secret1') {
           unlockStamp('secret_qr_1');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_1', source: 'qr_scan' });
+          stampUnlocked = true;
         } else if (stampParam === 'secret2') {
           unlockStamp('secret_qr_2');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'secret_qr_2', source: 'qr_scan' });
+          stampUnlocked = true;
         } else if (stampParam === 'order') {
           unlockStamp('order_with_staff');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'order_with_staff', source: 'qr_scan' });
+          stampUnlocked = true;
         }
       }
 
+      // MBTI claim handling
       if (claimParam) {
         const result = await consumeMbtiClaim(claimParam);
         if (result.ok) {
           unlockStamp('mbti_completed');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'mbti_claim' });
           trackEvent('stamp_claim', { status: 'success', source: 'mbti_claim' });
+          stampUnlocked = true;
         } else if ('reason' in result) {
           trackEvent('stamp_claim_failed', { reason: result.reason });
           trackEvent('stamp_claim', { status: 'failed', reason: result.reason });
         }
       }
 
-      // Show passport after unlocking
-      prevScreenRef.current = screen;
-      setScreen('passport');
+      // Show passport and success message after unlocking
+      if (stampUnlocked) {
+        // Show success message
+        alert('🎉 成功解鎖印章！請查看你的護照。');
+
+        // Open passport to show the unlocked stamp
+        prevScreenRef.current = screen;
+        setScreen('passport');
+      }
 
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
