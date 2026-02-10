@@ -93,34 +93,54 @@ export const REWARD_TIERS: RewardTier[] = [
   {
     id: 'tier_3',
     requiredStamps: 3,
-    title: '飲品升級',
-    description: '免費升級飲品（+$30 等級）',
+    title: '限定角色貼紙',
+    description: 'Kiwimu 角色貼紙乙張，專屬收藏',
     canRepeat: true,
     redemptionMethod: 'show-screen'
   },
   {
     id: 'tier_5',
     requiredStamps: 5,
-    title: '手工餅乾',
-    description: '手工餅乾 1 片',
+    title: '飲品升級服務',
+    description: '免費升級至 +20 元飲品，享受更豐富口感',
     canRepeat: true,
     redemptionMethod: 'show-screen'
   },
   {
     id: 'tier_7',
     requiredStamps: 7,
-    title: '經典布丁',
-    description: '經典烤布丁 1 個',
+    title: '品牌保冷提袋',
+    description: '月島專屬環保提袋乙個，實用又環保',
     canRepeat: true,
     redemptionMethod: 'show-screen'
   },
   {
     id: 'tier_10',
     requiredStamps: 10,
-    title: '原味千層',
-    description: '原味千層蛋糕 1 片（價值 $180）',
+    title: '經典烤布丁',
+    description: '招牌經典烤布丁乙個，完美收官',
+    imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
     canRepeat: false,
-    redemptionMethod: 'line-redirect'
+    redemptionMethod: 'show-screen'
+  },
+  // Hidden rewards (locked, visible but not yet available)
+  {
+    id: 'tier_15',
+    requiredStamps: 15,
+    title: '經典提拉米酥',
+    description: '經典提拉米酥乙份，濃郁滑順',
+    canRepeat: false,
+    isLocked: true,
+    redemptionMethod: 'show-screen'
+  },
+  {
+    id: 'tier_20',
+    requiredStamps: 20,
+    title: '月島超級好朋友',
+    description: '十勝低糖千層蛋糕一片，專屬超級好朋友限定',
+    canRepeat: false,
+    isLocked: true,
+    redemptionMethod: 'show-screen'
   }
 ];
 

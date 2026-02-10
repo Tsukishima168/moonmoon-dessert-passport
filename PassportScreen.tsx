@@ -161,8 +161,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         setRedeemHoldingId(null);
     };
 
-    const availableRewards = REWARD_TIERS.filter(tier => unlockedCount >= tier.requiredStamps);
-    const nextReward = REWARD_TIERS.find(tier => unlockedCount < tier.requiredStamps);
+    // Show all rewards, including locked ones
+    const availableRewards = REWARD_TIERS.filter(tier =>
+        tier.isLocked || unlockedCount >= tier.requiredStamps
+    );
+    const nextReward = REWARD_TIERS.find(tier => !tier.isLocked && unlockedCount < tier.requiredStamps);
 
     return (
         <div className="min-h-screen bg-brand-bg pt-16 md:pt-20 px-4 md:px-6 pb-12 animate-fade-in">
@@ -221,7 +224,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 <details className="mt-4 group">
                     <summary className="cursor-pointer p-4 bg-white border-2 border-brand-black rounded-xl shadow-[2px_2px_0px_black] hover:shadow-[3px_3px_0px_black] transition-all list-none">
                         <div className="flex items-center justify-between">
-                            <p className="text-sm md:text-base font-bold text-brand-black">📖 如何集章</p>
+                            <p className="text-sm md:text-base font-bold text-brand-black">如何集章</p>
                             <span className="text-xs bg-brand-lime px-2 py-1 rounded-full font-bold group-open:rotate-180 transition-transform">▼</span>
                         </div>
                     </summary>
@@ -233,7 +236,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             <li><strong>密碼解鎖</strong> → 完成 MBTI／Google 評論後，點擊對應印章輸入通關碼</li>
                         </ol>
                         <div className="mt-3 pt-3 border-t border-gray-200">
-                            <p className="font-bold mb-1 text-xs md:text-sm">🏪 到店使用方式</p>
+                            <p className="font-bold mb-1 text-xs md:text-sm">到店使用方式</p>
                             <ul className="space-y-0.5 list-disc list-inside text-gray-700 text-xs">
                                 <li>到店可掃描店內 QR Code 收集更多印章</li>
                                 <li>兌換獎勵時出示「階段獎勵」區塊給店員即可</li>
@@ -244,7 +247,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                 {/* Warning - Compact */}
                 <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-2 md:p-3 text-xs text-yellow-800">
-                    ⚠️ <strong>溫馨提醒</strong>：請使用同一支手機收集印章
+                    <strong>溫馨提醒</strong>：請使用同一支手機收集印章
                 </div>
             </div>
 
@@ -342,30 +345,57 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                 {availableRewards.map((reward) => {
                     const isRedeemed = redeemedRewards.includes(reward.id);
+                    const isLocked = reward.isLocked || false;
+
                     return (
-                        <div key={reward.id} className="mb-4 bg-white border-2 border-brand-black rounded-xl p-5 shadow-[4px_4px_0px_black]">
+                        <div
+                            key={reward.id}
+                            className={`mb-4 bg-white border-2 rounded-xl p-5 shadow-[4px_4px_0px_black] ${isLocked ? 'border-gray-300 opacity-60' : 'border-brand-black'
+                                }`}
+                        >
                             <div className="flex items-start justify-between mb-3">
-                                <div>
-                                    <div className="inline-block bg-brand-lime px-2 py-0.5 rounded-full text-xs font-bold uppercase mb-2">
+                                <div className="flex-1">
+                                    <div className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold uppercase mb-2 ${isLocked ? 'bg-gray-200 text-gray-600' : 'bg-brand-lime text-brand-black'
+                                        }`}>
                                         {reward.requiredStamps} 章達成
                                     </div>
-                                    <h3 className="text-lg font-bold text-brand-black">{reward.title}</h3>
+                                    <h3 className={`text-lg font-bold ${isLocked ? 'text-gray-500' : 'text-brand-black'}`}>
+                                        {reward.title}
+                                    </h3>
                                     <p className="text-sm text-gray-600">{reward.description}</p>
                                 </div>
+                                {reward.imageUrl && (
+                                    <div className="ml-4 flex-shrink-0">
+                                        <img
+                                            src={reward.imageUrl}
+                                            alt={reward.title}
+                                            className={`w-20 h-20 object-cover rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_black] ${isLocked ? 'grayscale opacity-50' : ''
+                                                }`}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
-                            {reward.redemptionMethod === 'show-screen' ? (
+                            {isLocked ? (
+                                <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-4 text-center">
+                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                        <Lock size={16} className="text-gray-500" />
+                                        <p className="text-sm font-bold text-gray-600">目前未開放兌換</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500">敬請期待未來活動</p>
+                                </div>
+                            ) : reward.redemptionMethod === 'show-screen' ? (
                                 <div className="bg-brand-lime/20 border-2 border-brand-lime rounded-lg p-4 text-center">
-                                    <p className="text-sm font-bold text-brand-black">✅ 已達成！出示此頁面給店員即可兌換</p>
+                                    <p className="text-sm font-bold text-brand-black">已達成！出示此頁面給店員即可兌換</p>
                                 </div>
                             ) : (
                                 isRedeemed ? (
                                     <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-4 text-center">
-                                        <p className="text-sm font-bold text-gray-600">✅ 已兌換</p>
+                                        <p className="text-sm font-bold text-gray-600">已兌換</p>
                                     </div>
                                 ) : (
                                     <div className="bg-brand-black/5 border-2 border-brand-black rounded-lg p-4 text-center">
-                                        <p className="text-xs font-bold text-brand-black mb-2">⚠️ 請交由店員操作</p>
+                                        <p className="text-xs font-bold text-brand-black mb-2">請交由店員操作</p>
                                         <button
                                             onPointerDown={() => startRedeemHold(reward.id)}
                                             onPointerUp={cancelRedeemHold}

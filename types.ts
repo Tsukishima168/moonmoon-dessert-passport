@@ -68,6 +68,8 @@ export interface RewardTier {
   requiredStamps: number;
   title: string;
   description: string;
+  imageUrl?: string; // Optional product image
   canRepeat: boolean;
+  isLocked?: boolean; // If true, reward is visible but not yet available
   redemptionMethod: 'show-screen' | 'line-redirect';
 }
