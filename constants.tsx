@@ -71,7 +71,7 @@ export const STAMPS: Stamp[] = [
     name: 'MBTI 深度測驗',
     description: '完成 MBTI 人格測驗',
     icon: 'Brain',
-    unlockMethod: 'password'
+    unlockMethod: 'qr' // auto-unlocked via redirect
   },
   {
     id: 'google_review',

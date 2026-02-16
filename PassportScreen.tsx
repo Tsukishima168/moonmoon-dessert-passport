@@ -44,6 +44,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
     const [redeemHoldingId, setRedeemHoldingId] = useState<string | null>(null);
     const redeemHoldTimerRef = useRef<number | null>(null);
+    // New state for MBTI instruction modal
+    const [showMbtiInstructions, setShowMbtiInstructions] = useState(false);
 
     useEffect(() => {
         setUnlockedCount(getUnlockedStampCount());
@@ -60,6 +62,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             if (!externalStampStatus[stamp.id]) {
                 setExternalStampStatus(prev => ({ ...prev, [stamp.id]: 'ready' }));
             }
+            return;
+        }
+
+        // Special handling for MBTI stamp (now 'qr' method but needs instructions)
+        if (stamp.id === 'mbti_completed' && !isStampUnlocked(stamp.id)) {
+            setShowMbtiInstructions(true);
             return;
         }
 
@@ -101,24 +109,57 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         trackEvent('stamp_unlocked', { stamp_id: stampId, method: 'external_return' });
     };
 
+    // MBTI Validation Types
+    const VALID_MBTI_TYPES = [
+        'INTJ', 'INTP', 'ENTJ', 'ENTP',
+        'INFJ', 'INFP', 'ENFJ', 'ENFP',
+        'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+        'ISTP', 'ISFP', 'ESTP', 'ESFP'
+    ];
+
     const handlePasswordSubmit = () => {
         if (!selectedStampForPassword) return;
 
-        // Simple password validation (you can customize these)
-        let isValid = false;
+        // Custom Logic for MBTI Stamp
         if (selectedStampForPassword.id === 'mbti_completed') {
-            // MBTI test password (can be customized)
-            isValid = passwordInput.toUpperCase().startsWith('MBTI');
+            const inputUpper = passwordInput.trim().toUpperCase();
+            if (VALID_MBTI_TYPES.includes(inputUpper)) {
+                unlockStamp(selectedStampForPassword.id);
+                trackEvent('stamp_unlocked', {
+                    stamp_id: selectedStampForPassword.id,
+                    method: 'password',
+                    mbti_result: inputUpper
+                });
+
+                try {
+                    localStorage.setItem('user_mbti_result', inputUpper);
+                } catch (e) {
+                    console.error('Failed to save MBTI result', e);
+                }
+
+                alert(`解鎖成功！原來你是 ${inputUpper}！\n已為你紀錄 MBTI 結果。`);
+
+                setPasswordInput('');
+                setSelectedStampForPassword(null);
+                setUnlockedCount(getUnlockedStampCount());
+            } else {
+                alert('這似乎不是有效的 MBTI 類型喔！\n請輸入如 INFP, ENTJ 等 4 個英文字母。');
+                setPasswordInput('');
+            }
+            return;
         }
 
-        if (isValid) {
+        // Default Password Logic
+        if (passwordInput.toLowerCase() === 'moon' || passwordInput === '1234') {
             unlockStamp(selectedStampForPassword.id);
-            setUnlockedCount(getUnlockedStampCount());
-            setSelectedStampForPassword(null);
-            setPasswordInput('');
             trackEvent('stamp_unlocked', { stamp_id: selectedStampForPassword.id, method: 'password' });
+            alert('密碼正確！印章已解鎖');
+            setPasswordInput('');
+            setSelectedStampForPassword(null);
+            setUnlockedCount(getUnlockedStampCount());
         } else {
-            alert('密碼錯誤！請再試一次。');
+            alert('密碼錯誤，請再試一次');
+            setPasswordInput('');
         }
     };
 
@@ -508,17 +549,44 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             {/* Password Modal */}
             {selectedStampForPassword && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
-                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full relative">
+                        <button
+                            onClick={() => setSelectedStampForPassword(null)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                        >
+                            <X size={20} />
+                        </button>
+
                         <h3 className="text-xl font-bold text-brand-black mb-2">{selectedStampForPassword.name}</h3>
                         <p className="text-sm text-gray-600 mb-4">{selectedStampForPassword.description}</p>
+
+                        {/* Special UI for MBTI Stamp */}
+                        {selectedStampForPassword.id === 'mbti_completed' && (
+                            <div className="mb-6">
+                                <div className="bg-brand-lime/10 border border-brand-lime rounded-xl p-4 mb-4 text-center">
+                                    <p className="text-sm font-bold text-brand-black mb-2">尚未完成測驗？</p>
+                                    <a
+                                        href="https://kiwimu-mbti.vercel.app/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-block w-full py-2 bg-brand-lime text-brand-black rounded-lg font-bold border border-brand-black hover:bg-brand-lime/80 transition-colors"
+                                    >
+                                        前往測驗
+                                    </a>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-2">
+                                    測驗結束後，請輸入你的 <strong>MBTI 結果（如 INFP）</strong>作為解鎖密碼：
+                                </p>
+                            </div>
+                        )}
 
                         <input
                             type="text"
                             value={passwordInput}
                             onChange={(e) => setPasswordInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                            placeholder="輸入密碼或通關碼"
-                            className="w-full px-4 py-3 border-2 border-brand-black rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-brand-lime"
+                            placeholder={selectedStampForPassword.id === 'mbti_completed' ? "輸入 MBTI 結果 (例如: INFP)" : "輸入密碼或通關碼"}
+                            className="w-full px-4 py-3 border-2 border-brand-black rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-brand-lime uppercase"
                             autoFocus
                         />
 
@@ -534,6 +602,51 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 className="flex-1 py-3 bg-brand-black text-white rounded-xl font-bold hover:bg-brand-black/80 transition-colors"
                             >
                                 確認
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* MBTI Instruction Modal */}
+            {showMbtiInstructions && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full relative animate-fade-in-up">
+                        <button
+                            onClick={() => setShowMbtiInstructions(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-brand-lime/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Brain size={32} className="text-brand-black" />
+                            </div>
+                            <h3 className="text-xl font-bold text-brand-black mb-2">MBTI 深度測驗</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                完成測驗後，系統將自動為你解鎖此印章，並紀錄你的專屬人格類型。
+                            </p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <a
+                                href={LINKS.MBTI_TEST}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => {
+                                    trackEvent('stamp_external_started', { stamp_id: 'mbti_completed' });
+                                    trackOutboundNavigation(LINKS.MBTI_TEST, 'passport_mbti_modal');
+                                    setShowMbtiInstructions(false);
+                                }}
+                                className="block w-full py-3 bg-brand-lime text-brand-black rounded-xl font-bold text-center border-2 border-brand-black hover:bg-brand-lime/80 hover:shadow-[2px_2px_0px_black] transition-all"
+                            >
+                                前往測驗
+                            </a>
+                            <button
+                                onClick={() => setShowMbtiInstructions(false)}
+                                className="w-full py-3 border-2 border-brand-black rounded-xl font-bold hover:bg-brand-gray transition-colors"
+                            >
+                                稍後再測
                             </button>
                         </div>
                     </div>
