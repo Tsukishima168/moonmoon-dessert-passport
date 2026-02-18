@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag, Sparkles } from 'lucide-react';
+import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag, Sparkles, Navigation, Loader2 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, LINKS } from './constants';
 import { Stamp } from './types';
 import {
@@ -11,6 +11,8 @@ import {
 } from './passportUtils';
 import { Button } from './components/Button';
 import { trackEvent, trackOutboundNavigation } from './analytics';
+import { useLiff } from './contexts/LiffContext';
+import { getUserPoints } from './api/points';
 
 const iconMap: Record<string, React.ElementType> = {
     CheckCircle,
@@ -24,7 +26,9 @@ const iconMap: Record<string, React.ElementType> = {
     Share2,
     Mail,
     ShoppingBag,
-    Sparkles
+    Sparkles,
+    Navigation,
+    Loader2
 };
 
 interface PassportScreenProps {
@@ -47,6 +51,21 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     // New state for MBTI instruction modal
     const [showMbtiInstructions, setShowMbtiInstructions] = useState(false);
 
+    // GPS Check-in state
+    const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+    const [locationError, setLocationError] = useState<string | null>(null);
+    const [showCheckinWelcome, setShowCheckinWelcome] = useState(false);
+
+    // LIFF & Points
+    const { isLoggedIn, login, profile } = useLiff();
+    const [points, setPoints] = useState(0);
+
+    useEffect(() => {
+        if (isLoggedIn && profile?.userId) {
+            getUserPoints(profile.userId, true).then(p => setPoints(p));
+        }
+    }, [isLoggedIn, profile]);
+
     useEffect(() => {
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(getPassportState().redeemedRewards || []);
@@ -62,6 +81,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             if (!externalStampStatus[stamp.id]) {
                 setExternalStampStatus(prev => ({ ...prev, [stamp.id]: 'ready' }));
             }
+            return;
+        }
+
+        // GPS Check-in stamp
+        if (stamp.unlockMethod === 'gps' && stamp.location) {
+            handleGpsCheckin(stamp);
             return;
         }
 
@@ -85,6 +110,82 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             setSelectedStampForPassword(stamp);
             setPasswordInput('');
         }
+    };
+
+    // --- GPS Check-in Logic ---
+    const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+        const R = 6371e3; // Earth's radius in meters
+        const toRad = (deg: number) => (deg * Math.PI) / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    const handleGpsCheckin = (stamp: Stamp) => {
+        if (!stamp.location) return;
+        if (!navigator.geolocation) {
+            setLocationError('您的瀏覽器不支援定位功能');
+            return;
+        }
+
+        setIsCheckingLocation(true);
+        setLocationError(null);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                const distance = calculateDistance(
+                    latitude, longitude,
+                    stamp.location!.lat, stamp.location!.lng
+                );
+
+                if (distance <= stamp.location!.radius) {
+                    // Success! Show welcome modal
+                    setShowCheckinWelcome(true);
+                    trackEvent('gps_checkin_success', {
+                        stamp_id: stamp.id,
+                        distance: Math.round(distance)
+                    });
+                } else {
+                    setLocationError(`您目前距離月島還有約 ${Math.round(distance)} 公尺，請再靠近一點喔！`);
+                    trackEvent('gps_checkin_too_far', {
+                        stamp_id: stamp.id,
+                        distance: Math.round(distance)
+                    });
+                }
+                setIsCheckingLocation(false);
+            },
+            (error) => {
+                setIsCheckingLocation(false);
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        setLocationError('請允許位置存取權限，才能進行定位簽到喔！');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        setLocationError('無法取得您的位置，請確認 GPS 是否開啟。');
+                        break;
+                    case error.TIMEOUT:
+                        setLocationError('定位逾時，請再試一次。');
+                        break;
+                    default:
+                        setLocationError('定位時發生未知錯誤，請稍後再試。');
+                }
+                trackEvent('gps_checkin_error', { stamp_id: stamp.id, error_code: error.code });
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
+
+    const confirmCheckin = () => {
+        unlockStamp('shop_checkin');
+        setUnlockedCount(getUnlockedStampCount());
+        setShowCheckinWelcome(false);
+        trackEvent('stamp_unlocked', { stamp_id: 'shop_checkin', method: 'gps' });
     };
 
     const handleExternalGo = (stamp: Stamp) => {
@@ -224,7 +325,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 </div>
 
                 {/* Enhanced Progress Card */}
-                <div className="bg-gradient-to-br from-white to-brand-lime/10 rounded-2xl p-4 md:p-5 border-2 border-brand-black shadow-[4px_4px_0px_black]">
+                <div className="bg-gradient-to-br from-white to-brand-lime/10 rounded-2xl p-4 md:p-5 border-2 border-brand-black shadow-[4px_4px_0px_black] relative overflow-hidden">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-sm md:text-base font-bold text-gray-600">收集進度</span>
                         <div className="flex items-center gap-2">
@@ -259,6 +360,37 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 {milestone}
                             </span>
                         ))}
+                    </div>
+
+                    {/* Point System UI */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-brand-black text-brand-lime rounded-full">
+                                    <Sparkles size={16} />
+                                </div>
+                                <span className="text-sm font-bold text-brand-black">會員點數</span>
+                            </div>
+
+                            {isLoggedIn ? (
+                                <div className="flex items-baseline gap-1">
+                                    <span className="font-mono text-2xl font-bold text-brand-black">{points}</span>
+                                    <span className="text-xs font-bold text-gray-500">P</span>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => login()}
+                                    className="px-3 py-1.5 bg-brand-lime text-brand-black text-xs font-bold rounded-lg border border-brand-black shadow-[2px_2px_0px_black] active:translate-y-0.5 active:shadow-none transition-all"
+                                >
+                                    登入查看
+                                </button>
+                            )}
+                        </div>
+                        {isLoggedIn && (
+                            <p className="text-[10px] text-gray-500 mt-1 text-right">
+                                {profile?.displayName ? `Hi, ${profile.displayName}` : '已連結 LINE 帳號'}
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -378,10 +510,42 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                         <Lock size={20} className="text-gray-400" />
                                     </div>
                                 )}
+
+                                {/* GPS stamp: check-in button */}
+                                {stamp.unlockMethod === 'gps' && !unlocked && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleGpsCheckin(stamp);
+                                        }}
+                                        disabled={isCheckingLocation}
+                                        className="mt-2 w-full bg-gradient-to-r from-brand-lime to-brand-lime/80 text-brand-black text-xs py-2 rounded-lg font-bold border border-brand-black flex items-center justify-center gap-1.5 hover:shadow-[2px_2px_0px_black] transition-all disabled:opacity-50"
+                                    >
+                                        {isCheckingLocation ? (
+                                            <><Loader2 size={14} className="animate-spin" /> 定位中...</>
+                                        ) : (
+                                            <><Navigation size={14} /> 到店簽到</>
+                                        )}
+                                    </button>
+                                )}
                             </div>
                         );
                     })}
                 </div>
+
+                {/* GPS Location Error */}
+                {locationError && (
+                    <div className="mt-4 bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
+                        <MapPin size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <p className="text-sm text-red-700 font-bold mb-1">定位失敗</p>
+                            <p className="text-xs text-red-600">{locationError}</p>
+                        </div>
+                        <button onClick={() => setLocationError(null)} className="text-red-400 hover:text-red-600">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Rewards */}
@@ -648,6 +812,93 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             >
                                 稍後再測
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* GPS Check-in Welcome Modal */}
+            {showCheckinWelcome && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative shadow-2xl animate-fade-in-up">
+                        {/* Header with gradient */}
+                        <div className="bg-gradient-to-br from-brand-lime/30 via-brand-lime/10 to-white p-6 pb-4 rounded-t-2xl text-center relative">
+                            <button
+                                onClick={() => setShowCheckinWelcome(false)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={20} />
+                            </button>
+                            <div className="w-20 h-20 bg-brand-lime/30 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-brand-black shadow-[3px_3px_0px_black]">
+                                <Navigation size={36} className="text-brand-black" />
+                            </div>
+                            <h3 className="text-2xl font-serif font-bold text-brand-black mb-1">🎉 歡迎登陸月島！</h3>
+                            <p className="text-sm text-gray-600">你已成功抵達月島甜點店</p>
+                        </div>
+
+                        {/* Game Rules */}
+                        <div className="px-6 py-5">
+                            <div className="bg-brand-lime/10 border-2 border-brand-lime/50 rounded-xl p-4 mb-5">
+                                <h4 className="text-sm font-bold text-brand-black mb-3 flex items-center gap-2">
+                                    <Sparkles size={16} /> 冒險指南
+                                </h4>
+                                <ol className="text-xs text-gray-700 space-y-2 list-decimal list-inside leading-relaxed">
+                                    <li><strong>收集印章</strong> — 完成各種任務來收集印章，每枚印章都是獨特的體驗。</li>
+                                    <li><strong>掃描 QR Code</strong> — 店內藏有多個隱藏 QR Code，找到它們來解鎖秘密徽章。</li>
+                                    <li><strong>解鎖獎勵</strong> — 集滿指定印章數即可兌換限定獎品！</li>
+                                    <li><strong>探索彩蛋</strong> — 月島世界中隱藏著各種驚喜，等你來發現。</li>
+                                </ol>
+                            </div>
+
+                            {/* Passport Feature Highlights */}
+                            <h4 className="text-sm font-bold text-brand-black mb-3">護照裡有什麼好玩的？</h4>
+                            <div className="space-y-3 mb-5">
+                                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <div className="w-8 h-8 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <CheckCircle size={16} className="text-brand-black" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-brand-black">靈魂甜點測驗</p>
+                                        <p className="text-[10px] text-gray-500">找到專屬於你的命定甜點</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <div className="w-8 h-8 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <MapPin size={16} className="text-brand-black" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-brand-black">秘密角落探索</p>
+                                        <p className="text-[10px] text-gray-500">店內藏有神秘 QR Code，找到就能解鎖隱藏徽章</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <div className="w-8 h-8 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Brain size={16} className="text-brand-black" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-brand-black">MBTI 人格深度測驗</p>
+                                        <p className="text-[10px] text-gray-500">探索你的人格類型，獲得專屬角色</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <div className="w-8 h-8 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Star size={16} className="text-brand-black" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-brand-black">階段獎勵兌換</p>
+                                        <p className="text-[10px] text-gray-500">集滿 3 / 5 / 7 / 10 章可兌換貼紙、飲品升級、提袋等好禮</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CTA */}
+                            <button
+                                onClick={confirmCheckin}
+                                className="w-full py-3.5 bg-brand-black text-white rounded-xl font-bold text-base hover:bg-brand-black/80 transition-all shadow-[3px_3px_0px_rgba(212,255,0,0.8)] hover:shadow-[4px_4px_0px_rgba(212,255,0,1)] active:translate-y-0.5 active:shadow-none"
+                            >
+                                🏝️ 領取「月島登陸」徽章
+                            </button>
+                            <p className="text-center text-[10px] text-gray-400 mt-2">請使用同一支手機完成所有任務</p>
                         </div>
                     </div>
                 </div>

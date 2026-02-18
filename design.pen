@@ -1,0 +1,268 @@
+{
+  "children": [
+    {
+      "id": "screen1",
+      "type": "frame",
+      "name": "Passport Screen",
+      "width": 375,
+      "height": 812,
+      "fill": "#FDFDFD",
+      "children": [
+        {
+          "id": "header",
+          "type": "frame",
+          "name": "Header",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "padding": 20,
+          "gap": 10,
+          "alignment": "center",
+          "children": [
+            {
+              "id": "title",
+              "type": "text",
+              "content": "月島登島護照",
+              "fontSize": 24,
+              "fontWeight": "bold",
+              "width": "fill_container"
+            },
+            {
+              "id": "closeBtn",
+              "type": "ellipse",
+              "width": 40,
+              "height": 40,
+              "fill": "#FFFFFF",
+              "stroke": "#000000",
+              "strokeWidth": 2
+            }
+          ]
+        },
+        {
+          "id": "content",
+          "type": "frame",
+          "name": "Content",
+          "layout": "vertical",
+          "width": "fill_container",
+          "padding": 20,
+          "gap": 20,
+          "children": [
+            {
+              "id": "progressCard",
+              "type": "frame",
+              "name": "Progress Card",
+              "layout": "vertical",
+              "width": "fill_container",
+              "fill": "linear-gradient(135deg, #FFFFFF 0%, #E8F5E9 100%)",
+              "cornerRadius": 16,
+              "padding": 16,
+              "stroke": "#000000",
+              "strokeWidth": 2,
+              "gap": 12,
+              "children": [
+                {
+                  "id": "progressHeader",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "width": "fill_container",
+                  "alignment": "center",
+                  "children": [
+                    {
+                      "id": "progressLabel",
+                      "type": "text",
+                      "content": "收集進度",
+                      "fontSize": 14,
+                      "color": "#666666",
+                      "width": "fill_container"
+                    },
+                    {
+                      "id": "progressCount",
+                      "type": "text",
+                      "content": "0 / 10",
+                      "fontSize": 20,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                },
+                {
+                  "id": "progressBarBg",
+                  "type": "rectangle",
+                  "width": "fill_container",
+                  "height": 12,
+                  "fill": "#E5E5E5",
+                  "cornerRadius": 6,
+                  "stroke": "#000000",
+                  "strokeWidth": 1
+                }
+              ]
+            },
+            {
+              "id": "stampsSection",
+              "type": "frame",
+              "layout": "vertical",
+              "width": "fill_container",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "stampsTitle",
+                  "type": "text",
+                  "content": "收集 10 枚印章",
+                  "fontSize": 18,
+                  "fontWeight": "bold",
+                  "width": "fill_container"
+                },
+                {
+                  "id": "stampsRow",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "gap": 12,
+                  "width": "fill_container",
+                  "children": [
+                    {
+                      "id": "stamp1",
+                      "type": "frame",
+                      "layout": "vertical",
+                      "fill": "#F0F9EA",
+                      "stroke": "#A4D12D",
+                      "strokeWidth": 2,
+                      "cornerRadius": 12,
+                      "padding": 8,
+                      "gap": 4,
+                      "height": 100,
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "id": "s1_icon",
+                          "type": "text",
+                          "content": "✓",
+                          "fontSize": 24,
+                          "color": "#A4D12D",
+                          "alignment": "center"
+                        },
+                        {
+                          "id": "s1_text",
+                          "type": "text",
+                          "content": "甜點測驗",
+                          "fontSize": 12,
+                          "fontWeight": "bold",
+                          "alignment": "center"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "stamp2",
+                      "type": "frame",
+                      "layout": "vertical",
+                      "fill": "#FFFFFF",
+                      "stroke": "#E5E5E5",
+                      "strokeWidth": 1,
+                      "cornerRadius": 12,
+                      "padding": 8,
+                      "gap": 4,
+                      "height": 100,
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "id": "s2_icon",
+                          "type": "text",
+                          "content": "📍",
+                          "fontSize": 24,
+                          "alignment": "center"
+                        },
+                        {
+                          "id": "s2_text",
+                          "type": "text",
+                          "content": "秘密角落",
+                          "fontSize": 12,
+                          "fontWeight": "bold",
+                          "alignment": "center",
+                          "color": "#999999"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "stamp3",
+                      "type": "frame",
+                      "layout": "vertical",
+                      "fill": "#FFFFFF",
+                      "stroke": "#000000",
+                      "strokeWidth": 1,
+                      "cornerRadius": 12,
+                      "padding": 8,
+                      "gap": 4,
+                      "height": 100,
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "id": "s3_icon",
+                          "type": "text",
+                          "content": "📸",
+                          "fontSize": 24,
+                          "alignment": "center"
+                        },
+                        {
+                          "id": "s3_text",
+                          "type": "text",
+                          "content": "IG 追蹤",
+                          "fontSize": 12,
+                          "fontWeight": "bold",
+                          "alignment": "center"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "rewardsSection",
+              "type": "frame",
+              "layout": "vertical",
+              "width": "fill_container",
+              "gap": 12,
+              "marginTop": 20,
+              "children": [
+                {
+                  "id": "rewardsTitle",
+                  "type": "text",
+                  "content": "階段獎勵",
+                  "fontSize": 18,
+                  "fontWeight": "bold",
+                  "width": "fill_container"
+                },
+                {
+                  "id": "reward1",
+                  "type": "frame",
+                  "layout": "vertical",
+                  "fill": "#FFFFFF",
+                  "stroke": "#000000",
+                  "strokeWidth": 2,
+                  "cornerRadius": 12,
+                  "padding": 16,
+                  "gap": 8,
+                  "width": "fill_container",
+                  "children": [
+                    {
+                      "id": "r1_badge",
+                      "type": "text",
+                      "content": "3 章達成",
+                      "fontSize": 10,
+                      "fill": "#D4FF00",
+                      "padding": 4
+                    },
+                    {
+                      "id": "r1_title",
+                      "type": "text",
+                      "content": "神秘桌布",
+                      "fontSize": 16,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,19 @@ export const LINKS = {
 
 // Passport Stamp Collection System
 export const STAMPS: Stamp[] = [
+  // GPS Check-in stamp - first stamp, gateway to the passport experience
+  {
+    id: 'shop_checkin',
+    name: '月島登陸',
+    description: '抵達月島甜點店，開啟冒險旅程',
+    icon: 'MapPin',
+    unlockMethod: 'gps',
+    location: {
+      lat: 23.000000,  // TODO: 更新為實際店家座標
+      lng: 120.000000, // TODO: 更新為實際店家座標
+      radius: 100      // 偵測半徑（公尺）
+    }
+  },
   // Quick stamps (1-7) - completable in-store within 30 minutes
   {
     id: 'quiz_completed',

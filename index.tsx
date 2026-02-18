@@ -7,9 +7,13 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+import { LiffProvider } from './contexts/LiffContext';
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <LiffProvider>
+      <App />
+    </LiffProvider>
   </React.StrictMode>
 );

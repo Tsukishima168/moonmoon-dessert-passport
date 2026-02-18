@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+
+
 import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATION, STICKERS } from './constants';
@@ -995,8 +997,11 @@ function App() {
     const rewardParam = params.get('reward');
     const codeParam = params.get('code');
     const debugParam = params.get('debug');
+    const mbtiType = params.get('mbti_type');
+    const autoUnlock = params.get('auto_unlock');
+    const variant = params.get('variant');
 
-    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !codeParam) && debugParam !== '1') {
+    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !codeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
       return;
     }
 
@@ -1048,6 +1053,41 @@ function App() {
             method: 'qr_code',
             unlock_param: unlockParam
           });
+          stampUnlocked = true;
+        }
+      }
+
+
+
+      // MBTI Auto-Unlock (Direct Redirect)
+      if (autoUnlock === 'true' && mbtiType) {
+        const validTypes = [
+          'INTJ', 'INTP', 'ENTJ', 'ENTP',
+          'INFJ', 'INFP', 'ENFJ', 'ENFP',
+          'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+          'ISTP', 'ISFP', 'ESTP', 'ESFP'
+        ];
+        const upperType = mbtiType.toUpperCase();
+
+        if (validTypes.includes(upperType)) {
+          unlockStamp('mbti_completed');
+
+          // Save result
+          try {
+            localStorage.setItem('user_mbti_result', upperType);
+            if (variant) {
+              localStorage.setItem('user_mbti_variant', variant);
+            }
+          } catch (e) {
+            console.error('Failed to save MBTI result', e);
+          }
+
+          trackEvent('stamp_unlocked', {
+            stamp_id: 'mbti_completed',
+            method: 'auto_unlock_url',
+            mbti_result: upperType
+          });
+
           stampUnlocked = true;
         }
       }

@@ -45,7 +45,7 @@ export interface UserAnswers {
 }
 
 // Passport System Types
-export type StampUnlockMethod = 'qr' | 'password' | 'checkbox';
+export type StampUnlockMethod = 'qr' | 'password' | 'checkbox' | 'gps';
 
 export interface Stamp {
   id: string;
@@ -55,6 +55,11 @@ export interface Stamp {
   unlockMethod: StampUnlockMethod;
   requiredParam?: string; // for QR codes
   isSecret?: boolean; // Hidden until unlocked
+  location?: {
+    lat: number;
+    lng: number;
+    radius: number; // meters
+  };
 }
 
 export interface PassportState {
