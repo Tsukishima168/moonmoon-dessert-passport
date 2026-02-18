@@ -75,19 +75,22 @@ const Header = ({ onPassportClick, onARClick }: { onPassportClick: () => void; o
       </div>
 
       <div className="pointer-events-auto flex items-center gap-2">
-        <button
-          onClick={() => {
-            trackButtonClick('open_ar', 'header');
-            onARClick();
-          }}
-          className="relative"
-          aria-label="開啟 AR 探索"
-        >
-          <Button variant="outline" size="sm" className="bg-[#CDFF00] shadow-[2px_2px_0px_black] flex items-center justify-center gap-1.5 px-3 hover:bg-[#CDFF00]/80">
-            <ScanLine size={18} />
-            <span className="text-xs font-bold">AR</span>
-          </Button>
-        </button>
+        {/* AR 按鈕 — 設定 AR_ENABLED = true 開啟 */}
+        {false && (
+          <button
+            onClick={() => {
+              trackButtonClick('open_ar', 'header');
+              onARClick();
+            }}
+            className="relative"
+            aria-label="開啟 AR 探索"
+          >
+            <Button variant="outline" size="sm" className="bg-[#CDFF00] shadow-[2px_2px_0px_black] flex items-center justify-center gap-1.5 px-3 hover:bg-[#CDFF00]/80">
+              <ScanLine size={18} />
+              <span className="text-xs font-bold">AR</span>
+            </Button>
+          </button>
+        )}
         <button
           onClick={() => {
             trackButtonClick('open_passport', 'header');
