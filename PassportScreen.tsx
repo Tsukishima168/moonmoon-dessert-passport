@@ -1,18 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag, Sparkles, Navigation, Loader2 } from 'lucide-react';
-import { STAMPS, REWARD_TIERS, LINKS } from './constants';
+import { CheckCircle, Instagram, MessageCircle, MapPin, Eye, Users, Brain, Star, Share2, Lock, X, Mail, ShoppingBag, Sparkles, Navigation, Loader2, Footprints, Compass, Crown, Search, ScanFace } from 'lucide-react';
+import { STAMPS, REWARD_TIERS, LINKS, ACHIEVEMENTS } from './constants';
 import { Stamp } from './types';
 import {
     getPassportState,
     unlockStamp,
     isStampUnlocked,
     getUnlockedStampCount,
-    markRewardRedeemed
+    markRewardRedeemed,
+    getUnlockedAchievements
 } from './passportUtils';
 import { Button } from './components/Button';
 import { trackEvent, trackOutboundNavigation } from './analytics';
-import { useLiff } from './contexts/LiffContext';
-import { getUserPoints } from './api/points';
+import { useLiff } from './src/contexts/LiffContext';
+import { getUserPoints } from './src/api/points';
 
 const iconMap: Record<string, React.ElementType> = {
     CheckCircle,
@@ -28,7 +29,12 @@ const iconMap: Record<string, React.ElementType> = {
     ShoppingBag,
     Sparkles,
     Navigation,
-    Loader2
+    Loader2,
+    Footprints,
+    Compass,
+    Crown,
+    Search,
+    ScanFace
 };
 
 interface PassportScreenProps {
@@ -56,6 +62,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [locationError, setLocationError] = useState<string | null>(null);
     const [showCheckinWelcome, setShowCheckinWelcome] = useState(false);
 
+    // Achievements
+    const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
+    const [newAchievement, setNewAchievement] = useState<string | null>(null); // ID of the achievement to show modal for
+
     // LIFF & Points
     const { isLoggedIn, login, profile } = useLiff();
     const [points, setPoints] = useState(0);
@@ -68,8 +78,20 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
     useEffect(() => {
         setUnlockedCount(getUnlockedStampCount());
+        setUnlockedAchievements(getUnlockedAchievements());
         setRedeemedRewards(getPassportState().redeemedRewards || []);
     }, []);
+
+    const processUnlock = (newAchievementIds: string[]) => {
+        setUnlockedCount(getUnlockedStampCount());
+        setUnlockedAchievements(getUnlockedAchievements());
+
+        if (newAchievementIds.length > 0) {
+            // Show the first one (simple queue for MVP, ideally show all)
+            setNewAchievement(newAchievementIds[0]);
+            trackEvent('achievement_unlocked', { achievement_id: newAchievementIds[0] });
+        }
+    };
 
     const handleStampClick = (stamp: Stamp) => {
         if (isStampUnlocked(stamp.id)) {
@@ -182,8 +204,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     };
 
     const confirmCheckin = () => {
-        unlockStamp('shop_checkin');
-        setUnlockedCount(getUnlockedStampCount());
+        const newIds = unlockStamp('shop_checkin');
+        processUnlock(newIds);
         setShowCheckinWelcome(false);
         trackEvent('stamp_unlocked', { stamp_id: 'shop_checkin', method: 'gps' });
     };
@@ -200,8 +222,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     };
 
     const handleExternalComplete = (stampId: string) => {
-        unlockStamp(stampId);
-        setUnlockedCount(getUnlockedStampCount());
+        const newIds = unlockStamp(stampId);
+        processUnlock(newIds);
         setExternalStampStatus(prev => {
             const next = { ...prev };
             delete next[stampId];
@@ -225,7 +247,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         if (selectedStampForPassword.id === 'mbti_completed') {
             const inputUpper = passwordInput.trim().toUpperCase();
             if (VALID_MBTI_TYPES.includes(inputUpper)) {
-                unlockStamp(selectedStampForPassword.id);
+                const newIds = unlockStamp(selectedStampForPassword.id);
                 trackEvent('stamp_unlocked', {
                     stamp_id: selectedStampForPassword.id,
                     method: 'password',
@@ -242,7 +264,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                 setPasswordInput('');
                 setSelectedStampForPassword(null);
-                setUnlockedCount(getUnlockedStampCount());
+                processUnlock(newIds);
             } else {
                 alert('這似乎不是有效的 MBTI 類型喔！\n請輸入如 INFP, ENTJ 等 4 個英文字母。');
                 setPasswordInput('');
@@ -252,12 +274,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
         // Default Password Logic
         if (passwordInput.toLowerCase() === 'moon' || passwordInput === '1234') {
-            unlockStamp(selectedStampForPassword.id);
+            const newIds = unlockStamp(selectedStampForPassword.id);
             trackEvent('stamp_unlocked', { stamp_id: selectedStampForPassword.id, method: 'password' });
-            alert('密碼正確！印章已解鎖');
+            // alert('密碼正確！印章已解鎖'); // Remove alert if using notification
             setPasswordInput('');
             setSelectedStampForPassword(null);
-            setUnlockedCount(getUnlockedStampCount());
+            processUnlock(newIds);
         } else {
             alert('密碼錯誤，請再試一次');
             setPasswordInput('');
@@ -266,8 +288,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
     const handleCheckboxConfirm = (stampId: string) => {
         if (checkboxStamps[stampId]) {
-            unlockStamp(stampId);
-            setUnlockedCount(getUnlockedStampCount());
+            const newIds = unlockStamp(stampId);
+            processUnlock(newIds);
             setCheckboxStamps(prev => ({ ...prev, [stampId]: false }));
             trackEvent('stamp_unlocked', { stamp_id: stampId, method: 'checkbox' });
         }
@@ -422,6 +444,53 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 {/* Warning - Compact */}
                 <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-2 md:p-3 text-xs text-yellow-800">
                     <strong>溫馨提醒</strong>：請使用同一支手機收集印章
+                </div>
+            </div>
+
+            {/* Achievements Section */}
+            <div className="max-w-4xl mx-auto mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-black">探險成就</h2>
+                    <span className="text-xs bg-brand-black text-brand-lime px-2 py-1 rounded-full font-bold">
+                        {unlockedAchievements.length} / {ACHIEVEMENTS.length}
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 md:gap-4 bg-white/50 p-3 md:p-4 rounded-2xl border border-gray-200 overflow-x-auto">
+                    {ACHIEVEMENTS.map(achievement => {
+                        const isUnlocked = unlockedAchievements.includes(achievement.id);
+                        const Icon = iconMap[achievement.icon] || Star;
+
+                        // Hide hidden achievements if not unlocked
+                        if (achievement.isHidden && !isUnlocked) {
+                            return (
+                                <div key={achievement.id} className="flex flex-col items-center justify-center p-2 opacity-30 grayscale">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 rounded-full flex items-center justify-center mb-1">
+                                        <Lock size={16} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-500">???</span>
+                                </div>
+                            );
+                        }
+
+                        return (
+                            <div
+                                key={achievement.id}
+                                className={`flex flex-col items-center text-center p-2 rounded-xl transition-all ${isUnlocked
+                                    ? 'bg-white border-2 border-brand-lime shadow-[2px_2px_0px_#D4FF00] scale-105'
+                                    : 'opacity-40 grayscale blur-[0.5px]'
+                                    }`}
+                            >
+                                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-1.5 ${isUnlocked ? 'bg-brand-lime text-brand-black' : 'bg-gray-200 text-gray-500'
+                                    }`}>
+                                    <Icon size={isUnlocked ? 20 : 16} />
+                                </div>
+                                <span className={`text-[10px] md:text-xs font-bold leading-tight ${isUnlocked ? 'text-brand-black' : 'text-gray-500'}`}>
+                                    {achievement.name}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -771,6 +840,37 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     </div>
                 </div>
             )}
+            {/* Achievement Notification Modal */}
+            {newAchievement && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] px-4 animate-fade-in">
+                    <div className="bg-brand-black text-brand-lime rounded-2xl p-6 max-w-sm w-full relative text-center border-4 border-brand-lime shadow-[0_0_20px_rgba(212,255,0,0.5)] animate-bounce-in">
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                            <div className="w-20 h-20 bg-brand-lime rounded-full border-4 border-brand-black flex items-center justify-center shadow-[4px_4px_0px_black]">
+                                <Crown size={40} className="text-brand-black animate-spin-slow" />
+                            </div>
+                        </div>
+
+                        <div className="mt-8">
+                            <h3 className="text-xl font-bold text-white mb-1 uppercase tracking-wider">Achievement Unlocked!</h3>
+                            <h2 className="text-2xl font-bold text-brand-lime mb-2">
+                                {ACHIEVEMENTS.find(a => a.id === newAchievement)?.name}
+                            </h2>
+                            <p className="text-sm text-gray-300 mb-6 font-sans">
+                                {ACHIEVEMENTS.find(a => a.id === newAchievement)?.description}
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => setNewAchievement(null)}
+                            className="w-full py-3 bg-brand-lime text-brand-black rounded-xl font-bold hover:bg-brand-lime/80 transition-all shadow-[2px_2px_0px_white] active:translate-y-0.5 active:shadow-none"
+                        >
+                            太棒了！
+                        </button>
+                    </div>
+                    {/* Confetti effect could go here */}
+                </div>
+            )}
+
             {/* MBTI Instruction Modal */}
             {showMbtiInstructions && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">

@@ -64,9 +64,22 @@ export interface Stamp {
 
 export interface PassportState {
   unlockedStamps: string[]; // array of stamp IDs
+  unlockedAchievements: string[]; // array of achievement IDs
   redeemedRewards: string[]; // array of reward tier IDs
   createdAt: number;
   lastUpdatedAt: number;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // lucide-react icon name
+  condition: {
+    type: 'stamp_count' | 'specific_stamp' | 'secret_count';
+    target: number | string; // count or stampId
+  };
+  isHidden?: boolean; // If true, shows as "???" until unlocked
 }
 
 export interface RewardTier {

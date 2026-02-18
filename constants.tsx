@@ -1,4 +1,4 @@
-import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier } from './types';
+import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement } from './types';
 
 // Configuration URLs
 export const LINKS = {
@@ -465,4 +465,56 @@ export const QUESTION_SETS: Question[][] = [
       ],
     },
   ],
+];
+
+// --- ACHIEVEMENTS SYSTEM ---
+export const ACHIEVEMENTS: Achievement[] = [
+  // Level 1: Novice
+  {
+    id: 'novice_explorer',
+    name: '月島見習生',
+    description: '獲得第 1 個印章，踏出冒險的第一步。',
+    icon: 'Footprints',
+    condition: { type: 'stamp_count', target: 1 }
+  },
+  // Level 2: Intermediate
+  {
+    id: 'seasoned_traveler',
+    name: '熟練旅人',
+    description: '獲得 5 個印章，已經熟悉了月島的空氣。',
+    icon: 'Compass',
+    condition: { type: 'stamp_count', target: 5 }
+  },
+  // Level 3: Expert
+  {
+    id: 'island_guardian',
+    name: '月島守護者',
+    description: '獲得 10 個印章，成為傳說中的島民。',
+    icon: 'Crown',
+    condition: { type: 'stamp_count', target: 10 }
+  },
+  // Specific Actions
+  {
+    id: 'social_butterfly',
+    name: '社交花蝴蝶',
+    description: '完成所有社群相關任務（IG/Line/分享）。',
+    icon: 'Users',
+    condition: { type: 'specific_stamp', target: 'social_share' } // Simplified for MVP, ideally should check multiple
+  },
+  {
+    id: 'secret_hunter',
+    name: '秘密獵人',
+    description: '發現任一個隱藏的秘密角落。',
+    icon: 'Search',
+    condition: { type: 'secret_count', target: 1 }
+  },
+  // Hidden / Coming Soon
+  {
+    id: 'ar_pioneer',
+    name: '???',
+    description: '即將開放：使用 AR 鏡頭發現隱藏的精靈',
+    icon: 'ScanFace',
+    condition: { type: 'specific_stamp', target: 'ar_scan_1' },
+    isHidden: true
+  }
 ];

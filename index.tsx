@@ -7,7 +7,7 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-import { LiffProvider } from './contexts/LiffContext';
+import { LiffProvider } from './src/contexts/LiffContext';
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
