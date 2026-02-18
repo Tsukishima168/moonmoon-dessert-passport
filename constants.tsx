@@ -19,8 +19,8 @@ export const STAMPS: Stamp[] = [
     icon: 'MapPin',
     unlockMethod: 'gps',
     location: {
-      lat: 23.000000,  // TODO: 更新為實際店家座標
-      lng: 120.000000, // TODO: 更新為實際店家座標
+      lat: 23.0463,   // 月島甜點店實際座標
+      lng: 120.2113,   // 台南市安南區本原街一段97巷168號
       radius: 100      // 偵測半徑（公尺）
     }
   },

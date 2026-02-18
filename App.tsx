@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, Lock, CheckCircle } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATION, STICKERS } from './constants';
 import { Button } from './components/Button';
@@ -116,6 +116,55 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
     </header>
   );
 };
+
+// -- Fortune Slip (心情展籤) System --
+const FORTUNES = [
+  { level: '大吉', text: '新的一年，願你的煩惱像我的工作一樣少。' },
+  { level: '中吉', text: '變胖沒關係，那是你對甜點尊重的重量。' },
+  { level: '小吉', text: '把錢變成喜歡的形狀，例如千層蛋糕。' },
+  { level: '吉', text: '今天的運氣，適合再來一顆布丁。' },
+  { level: '大吉', text: '願你的財運，像台南的糖度一樣高。' },
+  { level: '中吉', text: '工作可以低糖，但生活要全糖。' },
+  { level: '吉', text: '老闆說，轉到這張的人，今年會變漂亮。' },
+  { level: '小吉', text: '休息是為了走更長的路，吃甜點是為了不想走路。' },
+  { level: '大吉', text: '恭喜，你今年的桃花運會跟鮮奶油一樣順滑。' },
+  { level: '隱藏版', text: 'Kiwimu 覺得你今天長得很好看。' },
+];
+
+const STORE_GPS = { lat: 23.0463, lng: 120.2113, radius: 100 };
+const FORTUNE_DATE_KEY = 'moonmoon_fortune_date';
+const FORTUNE_RESULT_KEY = 'moonmoon_fortune_result';
+
+function getTodayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getTodayFortune(): { level: string; text: string } | null {
+  try {
+    if (localStorage.getItem(FORTUNE_DATE_KEY) === getTodayKey()) {
+      const s = localStorage.getItem(FORTUNE_RESULT_KEY);
+      if (s) return JSON.parse(s);
+    }
+  } catch { /* */ }
+  return null;
+}
+
+function saveTodayFortune(f: { level: string; text: string }) {
+  localStorage.setItem(FORTUNE_DATE_KEY, getTodayKey());
+  localStorage.setItem(FORTUNE_RESULT_KEY, JSON.stringify(f));
+}
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+type GpsStatus = 'idle' | 'checking' | 'in_store' | 'out_of_range' | 'denied';
 
 // -- Screens --
 
@@ -566,6 +615,41 @@ const ResultScreen: React.FC<{
     []
   );
 
+  // --- Fortune Slip State ---
+  const [fortune, setFortune] = useState<{ level: string; text: string } | null>(null);
+  const [isRepeatFortune, setIsRepeatFortune] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>('idle');
+
+  // Draw fortune on mount (daily limit)
+  useEffect(() => {
+    const existing = getTodayFortune();
+    if (existing) {
+      setFortune(existing);
+      setIsRepeatFortune(true);
+    } else {
+      const drawn = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
+      saveTodayFortune(drawn);
+      setFortune(drawn);
+      setIsRepeatFortune(false);
+      trackEvent('fortune_drawn', { level: drawn.level });
+    }
+  }, []);
+
+  // GPS check function
+  const requestGps = useCallback(() => {
+    if (!navigator.geolocation) { setGpsStatus('denied'); return; }
+    setGpsStatus('checking');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const dist = haversineDistance(pos.coords.latitude, pos.coords.longitude, STORE_GPS.lat, STORE_GPS.lng);
+        setGpsStatus(dist <= STORE_GPS.radius ? 'in_store' : 'out_of_range');
+        trackEvent('fortune_gps', { status: dist <= STORE_GPS.radius ? 'in_store' : 'out_of_range', distance: Math.round(dist) });
+      },
+      () => { setGpsStatus('denied'); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, []);
+
   // QR code unlock moved to App component root level
 
   // Track time spent on result screen
@@ -712,6 +796,110 @@ const ResultScreen: React.FC<{
           </div>
         </div>
       </div>
+
+      {/* --- 心情展籤 + 第二杯半價 GPS 優惠 --- */}
+      {fortune && (
+        <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 bg-white border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
+          {/* Fortune Header */}
+          <div className="bg-brand-black px-5 py-3 flex items-center justify-between">
+            <p className="text-sm font-bold text-white tracking-wider flex items-center gap-2">
+              🎴 心情展籤
+            </p>
+            {isRepeatFortune && (
+              <span className="text-[10px] bg-white/20 text-white/80 px-2 py-0.5 rounded-full">
+                今日已獲得祝福
+              </span>
+            )}
+          </div>
+
+          <div className="p-5 space-y-4">
+            {/* Fortune Level Badge */}
+            <div className="text-center">
+              <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.15em] border-2 ${fortune.level === '隱藏版' ? 'bg-brand-lime text-brand-black border-brand-black' :
+                  fortune.level === '大吉' ? 'bg-red-50 text-red-800 border-red-300' :
+                    fortune.level === '中吉' ? 'bg-orange-50 text-orange-700 border-orange-300' :
+                      'bg-gray-50 text-gray-600 border-gray-300'
+                }`}>
+                {fortune.level}
+              </span>
+            </div>
+
+            {/* Fortune Text */}
+            <p className="text-center text-lg font-bold text-brand-black leading-relaxed px-2 font-serif" style={{ fontFamily: 'Noto Serif TC, serif' }}>
+              「{fortune.text}」
+            </p>
+
+            <p className="text-center text-[10px] text-gray-400 tracking-wider">✨ 來自 Kiwimu 的祝福 ✨</p>
+
+            {/* Divider */}
+            <div className="border-t-2 border-dashed border-gray-200" />
+
+            {/* 第二杯半價 GPS-locked Coupon */}
+            <div className={`rounded-xl p-4 border-2 transition-all ${gpsStatus === 'in_store'
+                ? 'bg-brand-lime/20 border-brand-black shadow-[2px_2px_0px_black]'
+                : 'bg-gray-50 border-gray-200'
+              }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">🎫</span>
+                  <span className={`text-xs font-bold tracking-wide ${gpsStatus === 'in_store' ? 'text-brand-black' : 'text-gray-400'
+                    }`}>
+                    展覽限定優惠
+                  </span>
+                </div>
+                {gpsStatus === 'in_store' ? (
+                  <span className="text-[10px] bg-brand-lime text-brand-black border border-brand-black px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <MapPin className="w-2.5 h-2.5" /> 店內可用
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> 限店內
+                  </span>
+                )}
+              </div>
+
+              <p className={`font-bold text-xl mb-1 ${gpsStatus === 'in_store' ? 'text-brand-black' : 'text-gray-300'
+                }`}>
+                ☕ 第二杯半價
+              </p>
+              <p className={`text-[11px] ${gpsStatus === 'in_store' ? 'text-brand-black/70' : 'text-gray-400'
+                }`}>
+                飲品任選 · 當日限定 · 出示此畫面即可
+              </p>
+
+              {gpsStatus === 'in_store' ? (
+                <div className="mt-3 pt-3 border-t border-brand-black/10">
+                  <p className="text-[11px] text-brand-black font-bold text-center flex items-center justify-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    已驗證 · 出示此畫面給店員即可使用
+                  </p>
+                </div>
+              ) : gpsStatus === 'checking' ? (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-center">
+                  <p className="text-xs text-gray-400 animate-pulse">📍 定位中...</p>
+                </div>
+              ) : gpsStatus === 'out_of_range' || gpsStatus === 'denied' ? (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-center">
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    📍 {gpsStatus === 'denied' ? '無法取得位置' : '你目前不在店內'}<br />
+                    請到<span className="font-bold text-brand-black"> 月島甜點店 </span>才能使用當日優惠哦！
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <button
+                    onClick={requestGps}
+                    className="w-full text-xs text-gray-500 hover:text-brand-black py-1.5 flex items-center justify-center gap-1 transition-colors border border-gray-200 rounded-lg hover:border-brand-black hover:bg-brand-lime/10"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    點擊驗證是否在店內
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 集章：解鎖第一枚 + 打開護照 CTA */}
       {onOpenPassport && (
