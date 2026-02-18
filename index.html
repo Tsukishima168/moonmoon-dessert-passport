@@ -190,6 +190,17 @@
       </style>
     </div>
   </div>
+  <!-- MindAR.js for AR Image Tracking (lazy loaded) -->
+  <script>
+    // Lazy load MindAR when user clicks AR button
+    window.loadMindAR = function () {
+      if (document.querySelector('script[data-mindar]')) return;
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js';
+      s.setAttribute('data-mindar', 'true');
+      document.head.appendChild(s);
+    };
+  </script>
   <script type="module" src="/index.tsx"></script>
 
   <!-- ===== Moon Moon AI Semantic Layer ===== -->

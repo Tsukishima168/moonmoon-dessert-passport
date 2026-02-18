@@ -1,4 +1,4 @@
-export type Screen = 'landing' | 'quiz' | 'result' | 'passport';
+export type Screen = 'landing' | 'quiz' | 'result' | 'passport' | 'ar';
 
 export interface Option {
   id: string;
@@ -45,7 +45,7 @@ export interface UserAnswers {
 }
 
 // Passport System Types
-export type StampUnlockMethod = 'qr' | 'password' | 'checkbox' | 'gps';
+export type StampUnlockMethod = 'qr' | 'password' | 'checkbox' | 'gps' | 'ar';
 
 export interface Stamp {
   id: string;
@@ -55,6 +55,7 @@ export interface Stamp {
   unlockMethod: StampUnlockMethod;
   requiredParam?: string; // for QR codes
   isSecret?: boolean; // Hidden until unlocked
+  arTargetIndex?: number; // MindAR target index for AR stamps
   location?: {
     lat: number;
     lng: number;

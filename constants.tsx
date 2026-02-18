@@ -100,6 +100,32 @@ export const STAMPS: Stamp[] = [
     icon: 'Share2',
     unlockMethod: 'checkbox'
   },
+  // AR Scan stamps - unlockable via MindAR image tracking
+  {
+    id: 'ar_scan_1',
+    name: 'AR 探索 #1',
+    description: '用 AR 相機掃描菜單封面，發現隱藏驚喜',
+    icon: 'ScanLine',
+    unlockMethod: 'ar',
+    arTargetIndex: 0
+  },
+  {
+    id: 'ar_scan_2',
+    name: 'AR 探索 #2',
+    description: '用 AR 相機掃描店內特定物件',
+    icon: 'ScanLine',
+    unlockMethod: 'ar',
+    arTargetIndex: 1
+  },
+  {
+    id: 'ar_scan_3',
+    name: 'AR 探索 #3',
+    description: '用 AR 相機掃描隱藏的 Kiwimu',
+    icon: 'ScanLine',
+    unlockMethod: 'ar',
+    arTargetIndex: 2,
+    isSecret: true
+  },
   {
     id: 'egg_master_2026_q1',
     name: '彩蛋大師',

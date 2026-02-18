@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, Lock, CheckCircle } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, Lock, CheckCircle, ScanLine } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATION, STICKERS } from './constants';
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
+import ARScanner from './components/ARScanner';
 import { unlockStamp, getUnlockedStampCount } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim } from './rewardClaim';
@@ -50,7 +51,7 @@ const StickerBadge = ({
 };
 
 // -- Header --
-const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
+const Header = ({ onPassportClick, onARClick }: { onPassportClick: () => void; onARClick: () => void }) => {
   const [stampCount, setStampCount] = useState(0);
 
   useEffect(() => {
@@ -74,6 +75,19 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
       </div>
 
       <div className="pointer-events-auto flex items-center gap-2">
+        <button
+          onClick={() => {
+            trackButtonClick('open_ar', 'header');
+            onARClick();
+          }}
+          className="relative"
+          aria-label="開啟 AR 探索"
+        >
+          <Button variant="outline" size="sm" className="bg-[#CDFF00] shadow-[2px_2px_0px_black] flex items-center justify-center gap-1.5 px-3 hover:bg-[#CDFF00]/80">
+            <ScanLine size={18} />
+            <span className="text-xs font-bold">AR</span>
+          </Button>
+        </button>
         <button
           onClick={() => {
             trackButtonClick('open_passport', 'header');
@@ -816,9 +830,9 @@ const ResultScreen: React.FC<{
             {/* Fortune Level Badge */}
             <div className="text-center">
               <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.15em] border-2 ${fortune.level === '隱藏版' ? 'bg-brand-lime text-brand-black border-brand-black' :
-                  fortune.level === '大吉' ? 'bg-red-50 text-red-800 border-red-300' :
-                    fortune.level === '中吉' ? 'bg-orange-50 text-orange-700 border-orange-300' :
-                      'bg-gray-50 text-gray-600 border-gray-300'
+                fortune.level === '大吉' ? 'bg-red-50 text-red-800 border-red-300' :
+                  fortune.level === '中吉' ? 'bg-orange-50 text-orange-700 border-orange-300' :
+                    'bg-gray-50 text-gray-600 border-gray-300'
                 }`}>
                 {fortune.level}
               </span>
@@ -836,8 +850,8 @@ const ResultScreen: React.FC<{
 
             {/* 第二杯半價 GPS-locked Coupon */}
             <div className={`rounded-xl p-4 border-2 transition-all ${gpsStatus === 'in_store'
-                ? 'bg-brand-lime/20 border-brand-black shadow-[2px_2px_0px_black]'
-                : 'bg-gray-50 border-gray-200'
+              ? 'bg-brand-lime/20 border-brand-black shadow-[2px_2px_0px_black]'
+              : 'bg-gray-50 border-gray-200'
               }`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
@@ -1374,9 +1388,27 @@ function App() {
     trackEvent('passport_closed');
   };
 
+  const openAR = () => {
+    prevScreenRef.current = screen;
+    setScreen('ar');
+    trackEvent('ar_scanner_opened', { from_screen: screen });
+  };
+
+  const closeAR = () => {
+    setScreen(prevScreenRef.current || 'landing');
+    trackEvent('ar_scanner_closed');
+  };
+
+  const handleARStampUnlocked = (stampId: string, newAchievements: string[]) => {
+    trackEvent('ar_stamp_unlocked', { stamp_id: stampId, achievements: newAchievements.length });
+    if (newAchievements.length > 0) {
+      trackEvent('achievements_unlocked', { ids: newAchievements.join(',') });
+    }
+  };
+
   return (
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
-      <Header onPassportClick={openPassport} />
+      <Header onPassportClick={openPassport} onARClick={openAR} />
 
       <main>
         {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}
@@ -1396,6 +1428,21 @@ function App() {
         )}
         {screen === 'passport' && <PassportScreen onClose={closePassport} />}
       </main>
+
+      {/* AR Scanner - rendered as overlay on top of current screen */}
+      {screen === 'ar' && (
+        <ARScanner
+          onClose={() => {
+            closeAR();
+            // Open passport after closing AR to show new stamps
+            setTimeout(() => {
+              prevScreenRef.current = screen;
+              setScreen('passport');
+            }, 100);
+          }}
+          onStampUnlocked={handleARStampUnlocked}
+        />
+      )}
     </div>
   );
 }
