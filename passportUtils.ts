@@ -89,6 +89,9 @@ export function unlockStamp(stampId: string): string[] {
         newAchievements = checkAchievements(state);
 
         safeSetItem(STORAGE_KEY, JSON.stringify(state));
+        
+        // ⭐ P0 優化：發出事件通知 UI 更新
+        emitStampUnlockedEvent(stampId);
     } else {
         // Even if stamp exists, check achievements (case of migration or manual updates)
         // But usually achievements unlock ON the event.
@@ -125,4 +128,14 @@ export function getUnlockedAchievements(): string[] {
 
 export function resetPassport(): void {
     safeRemoveItem(STORAGE_KEY);
+}
+/**
+ * ⭐ P0 優化：事件驅動 - 當印章解鎖時發出自訂事件
+ * 用於通知 Header 更新 stampCount，而非每秒輪詢
+ */
+export function emitStampUnlockedEvent(stampId: string) {
+    const event = new CustomEvent('stamp-unlocked', { 
+        detail: { stampId, timestamp: Date.now() }
+    });
+    document.dispatchEvent(event);
 }

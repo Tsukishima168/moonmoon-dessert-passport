@@ -21,7 +21,7 @@ export const STAMPS: Stamp[] = [
     location: {
       lat: 23.0463,   // 月島甜點店實際座標
       lng: 120.2113,   // 台南市安南區本原街一段97巷168號
-      radius: 100      // 偵測半徑（公尺）
+      radius: 300      // 偵測半徑（公尺）
     }
   },
   // Quick stamps (1-7) - completable in-store within 30 minutes

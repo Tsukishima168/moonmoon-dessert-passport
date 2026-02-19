@@ -54,20 +54,38 @@ const StickerBadge = ({
 const Header = ({ onPassportClick, onARClick }: { onPassportClick: () => void; onARClick: () => void }) => {
   const [stampCount, setStampCount] = useState(0);
 
+  // ⭐ P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
   useEffect(() => {
+    // 初始化 stamp count
     setStampCount(getUnlockedStampCount());
-    // Update stamp count when localStorage changes
-    const interval = setInterval(() => {
+
+    // 監聽自訂事件：當印章解鎖時更新
+    const handleStampUnlocked = () => {
       setStampCount(getUnlockedStampCount());
-    }, 1000);
-    return () => clearInterval(interval);
+    };
+
+    // 也監聽 localStorage 變化（跨窗口同步）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('stamp') || e.key?.includes('passport')) {
+        setStampCount(getUnlockedStampCount());
+      }
+    };
+
+    document.addEventListener('stamp-unlocked', handleStampUnlocked);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      document.removeEventListener('stamp-unlocked', handleStampUnlocked);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="flex items-center gap-2 pointer-events-auto">
+        {/* ⭐ P0 優化：改用 SVG Logo (0ms) 代替 Cloudinary CDN (200ms) */}
         <img
-          src="https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_300/v1768743629/Dessert-Chinese_u8uoxt.png"
+          src="/logo.svg"
           alt="月島甜點店"
           className="h-5 md:h-6 w-auto object-contain brightness-0"
           loading="eager"
