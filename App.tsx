@@ -96,6 +96,7 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
           alt="Kiwimu"
           className="h-8 md:h-9 w-auto object-contain"
           loading="eager"
+          style={{ filter: 'brightness(0)' }}
         />
       </div>
 
@@ -293,7 +294,7 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
           </div>
         </div>
 
-        <div className={`absolute bottom - 0 md: -bottom - 10 lg: -bottom - 20 left - 1 / 2 - translate - x - 1 / 2 w - full max - w - [500px] md: max - w - [700px] lg: max - w - [900px] flex justify - center z - 0 animate - fade -in pointer - events - none transition - all duration - 700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'} `}>
+        <div className={`absolute bottom-0 md:-bottom-10 lg:-bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] lg:max-w-[900px] flex justify-center z-0 animate-fade-in pointer-events-none transition-all duration-700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'}`}>
           {illustration ? (
             <img
               src={illustration}
@@ -310,13 +311,13 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
         </div>
 
         <div
-          className={`fixed inset - 0 z - 20 bg - brand - black / 20 backdrop - blur - [1px] transition - opacity duration - 500 ${showMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} `}
+          className={`fixed inset-0 z-20 bg-brand-black/20 backdrop-blur-[1px] transition-opacity duration-500 ${showMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
           onClick={() => setShowMenu(false)}
         />
 
         <div className="flex-1 w-full relative flex items-end justify-center pb-8 md:pb-12 pointer-events-none z-30">
           <div
-            className={`absolute bottom - 8 left - 0 right - 0 flex flex - col items - center justify - center transition - all duration - 500 cursor - pointer pointer - events - auto ${showMenu ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'} `}
+            className={`absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center transition-all duration-500 cursor-pointer pointer-events-auto ${showMenu ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'}`}
             onClick={handleArrowClick}
           >
             <div className="flex flex-col items-center animate-bounce">
@@ -330,7 +331,7 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
           </div>
 
           <div
-            className={`relative w - full max - w - [340px] px - 4 transition - all duration - 500 cubic - bezier(0.16, 1, 0.3, 1) pointer - events - auto ${showMenu ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0'} `}
+            className={`relative w-full max-w-[340px] px-4 transition-all duration-500 cubic-bezier(0.16,1,0.3,1) pointer-events-auto ${showMenu ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0'}`}
           >
             <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-5 md:p-6 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.15)] text-center ring-1 ring-black/5">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 opacity-60" />
@@ -500,7 +501,7 @@ const QuizScreen: React.FC<{
   };
 
   return (
-    <div className={`min - h - screen bg - brand - bg flex flex - col pt - 16 md: pt - 24 px - 6 pb - 10 transition - all duration - 500 ${isExiting ? 'opacity-0 translate-y-4' : 'opacity-100'} `}>
+    <div className={`min-h-screen bg-brand-bg flex flex-col pt-16 md:pt-24 px-6 pb-10 transition-all duration-500 ${isExiting ? 'opacity-0 translate-y-4' : 'opacity-100'}`}>
 
       {/* Exhibition Header / Zone Indicator */}
       <div className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto mb-8 md:mb-12">
