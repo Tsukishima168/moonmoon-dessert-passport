@@ -8,12 +8,15 @@ if (!rootElement) {
 }
 
 import { LiffProvider } from './src/contexts/LiffContext';
+import { SupabaseAuthProvider } from './src/contexts/SupabaseAuthContext';
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <LiffProvider>
-      <App />
-    </LiffProvider>
+    <SupabaseAuthProvider>
+      <LiffProvider>
+        <App />
+      </LiffProvider>
+    </SupabaseAuthProvider>
   </React.StrictMode>
 );

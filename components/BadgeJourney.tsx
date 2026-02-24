@@ -87,8 +87,17 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
 
         try {
             const points = performDailyCheckin();
-            if (points > 0 && profile?.userId) {
-                await addPoints(profile.userId, points, '每日簽到獎勵');
+            if (points > 0) {
+                // Always save points locally
+                const localPoints = parseInt(localStorage.getItem('moonmoon_local_points') || '0', 10);
+                localStorage.setItem('moonmoon_local_points', String(localPoints + points));
+
+                // Try to sync to Supabase if logged in
+                if (profile?.userId) {
+                    await addPoints(profile.userId, points, '每日簽到獎勵').catch(err => {
+                        console.warn('Supabase point sync failed, saved locally:', err);
+                    });
+                }
             }
             setJustCheckedIn(true);
             trackEvent('daily_checkin_success', { points });
@@ -136,7 +145,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
                     ) : (
                         <div className="flex items-center gap-1.5 text-brand-lime-dark font-bold text-xs">
                             <CheckCircle size={14} />
-                            <span>今日已完成</span>
+                            <span>{justCheckedIn ? '+10P！' : '今日已完成'}</span>
                         </div>
                     )}
                 </div>

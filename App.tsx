@@ -59,7 +59,7 @@ const StickerBadge = ({
 };
 
 // -- Header --
-const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
+const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void; onHomeClick: () => void }) => {
   const [stampCount, setStampCount] = useState(0);
 
   // ⭐ P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
@@ -91,13 +91,15 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="flex items-center gap-2 pointer-events-auto">
-        <img
-          src={BRANDING.KIWIMU_LOGO}
-          alt="Kiwimu"
-          className="h-8 md:h-9 w-auto object-contain"
-          loading="eager"
-          style={{ filter: 'brightness(0)' }}
-        />
+        <button onClick={onHomeClick} className="cursor-pointer" aria-label="回首頁">
+          <img
+            src={BRANDING.KIWIMU_LOGO}
+            alt="Kiwimu"
+            className="h-8 md:h-9 w-auto object-contain"
+            loading="eager"
+            style={{ filter: 'brightness(0)' }}
+          />
+        </button>
       </div>
 
       <div className="pointer-events-auto flex items-center gap-2">
@@ -714,8 +716,8 @@ const ResultScreen: React.FC<{
         {/* Sticker Image Area */}
         <div className="aspect-square rounded-[1.5rem] overflow-hidden border border-brand-black mb-4 relative bg-gray-50 group flex items-center justify-center p-6">
           <img
-            src={BRANDING.LANDING_ILLUSTRATION}
-            alt="MoonMoon Island Character"
+            src={stickerResult.imageUrl}
+            alt={stickerResult.name}
             className="w-full h-auto drop-shadow-2xl"
             loading="lazy"
             onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
@@ -1226,7 +1228,7 @@ function App() {
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
       {loading && <LoadingScreen />}
 
-      <Header onPassportClick={openPassport} />
+      <Header onPassportClick={openPassport} onHomeClick={restart} />
 
       <main>
         {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}
