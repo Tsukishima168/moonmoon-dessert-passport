@@ -72,3 +72,60 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
         return [];
     }
 }
+
+export async function addPoints(userId: string, amount: number, reason: string, isLineId: boolean = true): Promise<{ ok: boolean, error?: string }> {
+    try {
+        // 1. Get current profile to find UUID and current points
+        let query = `line_user_id=eq.${userId}`;
+        if (!isLineId) query = `id=eq.${userId}`;
+
+        const resProfile = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${query}&select=id,points`, {
+            headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            }
+        });
+
+        const profiles = await resProfile.json();
+        if (!profiles || profiles.length === 0) return { ok: false, error: 'User not found' };
+
+        const { id, points } = profiles[0];
+        const newPoints = (points || 0) + amount;
+
+        // 2. Update profiles table
+        const resUpdate = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                Prefer: 'return=minimal'
+            },
+            body: JSON.stringify({ points: newPoints })
+        });
+
+        if (!resUpdate.ok) throw new Error('Failed to update points');
+
+        // 3. Create point log entry
+        await fetch(`${SUPABASE_URL}/rest/v1/point_logs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                Prefer: 'return=minimal'
+            },
+            body: JSON.stringify({
+                user_id: id,
+                amount: amount,
+                reason: reason
+            })
+        });
+
+        return { ok: true };
+    } catch (error) {
+        console.error('Error adding points:', error);
+        return { ok: false, error: String(error) };
+    }
+}
+

@@ -1,115 +1,175 @@
-import React, { useEffect, useState } from 'react';
-import { ExternalLink, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+    ArrowRight,
+    Map,
+    BrainCircuit,
+    CakeSlice,
+    Dices,
+    ExternalLink,
+    CheckCircle2,
+    Circle,
+    Trophy
+} from 'lucide-react';
 import { MOONMOON_SITES } from '../constants';
+import { useLiff } from '../src/contexts/LiffContext';
 import { getVisitedSites, markSiteVisited } from '../passportUtils';
 import { trackEvent, trackOutboundNavigation } from '../analytics';
+import { Stamp } from '../types';
+
+const IconMap: Record<string, any> = {
+    BrainCircuit,
+    Map,
+    CakeSlice,
+    Dices
+};
 
 const MemberHub: React.FC = () => {
     const [visitedSites, setVisitedSites] = useState<string[]>([]);
+    const { profile } = useLiff();
 
     useEffect(() => {
-        setVisitedSites(getVisitedSites());
+        // 1. Get visited sites from localStorage
+        const saved = getVisitedSites();
+        setVisitedSites(saved);
 
-        // Check if current page was referred from a moon site
-        try {
-            const referrer = document.referrer;
-            const urlParams = new URLSearchParams(window.location.search);
-            const fromSite = urlParams.get('from');
+        // 2. Multi-channel detection for site visits
+        const currentUrl = window.location.href;
+        const urlParams = new URLSearchParams(window.location.search);
+        const referrer = document.referrer;
+        const fromParam = urlParams.get('from');
 
-            if (fromSite) {
-                const site = MOONMOON_SITES.find(s => s.id === fromSite);
-                if (site) {
+        // Logic: Identify which Moon site the user is coming from
+        MOONMOON_SITES.forEach(site => {
+            if (
+                (fromParam === site.id) ||
+                (referrer && site.url && referrer.includes(new URL(site.url).hostname))
+            ) {
+                if (!saved.includes(site.id)) {
                     markSiteVisited(site.id);
-                    setVisitedSites(getVisitedSites());
+                    setVisitedSites(prev => [...prev, site.id]);
+                    trackEvent('moon_site_visit_detected', { site_id: site.id, source: fromParam ? 'url_param' : 'referrer' });
                 }
             }
-
-            // Check referrer URL against known sites
-            if (referrer) {
-                MOONMOON_SITES.forEach(site => {
-                    if (referrer.includes(new URL(site.url).hostname)) {
-                        markSiteVisited(site.id);
-                    }
-                });
-                setVisitedSites(getVisitedSites());
-            }
-        } catch (e) {
-            // URL parsing might fail, safe to ignore
-        }
+        });
     }, []);
 
-    const visitedCount = visitedSites.length;
-    const totalSites = MOONMOON_SITES.length;
-
     const handleSiteClick = (siteId: string, url: string) => {
-        markSiteVisited(siteId);
-        setVisitedSites(getVisitedSites());
-        trackEvent('moon_site_visited', { site_id: siteId });
-        trackOutboundNavigation(url, 'member_hub');
-        window.open(url, '_blank');
+        // If user clicks a site from the passport, we track and potentially mark
+        // Although visit is usually confirmed when they come BACK from that site
+        trackOutboundNavigation(url, `member_hub_${siteId}`);
+        trackEvent('moon_site_click', { site_id: siteId });
+
+        if (profile?.userId) {
+            // Activity tracking removed
+        }
+
+        // Add ?from=passport to ensure the other site can detect it if needed
+        const outboundUrl = new URL(url);
+        outboundUrl.searchParams.set('from', 'passport');
+        window.open(outboundUrl.toString(), '_blank');
     };
+
+    const completionRate = (visitedSites.length / MOONMOON_SITES.length) * 100;
 
     return (
         <div className="bg-white rounded-2xl border-2 border-brand-black shadow-[4px_4px_0px_black] overflow-hidden">
-            {/* Header */}
-            <div className="px-4 py-3 bg-gradient-to-r from-brand-black to-gray-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">🌙</span>
-                    <h3 className="text-base font-bold text-white">我的月島足跡</h3>
+            {/* Header Bar */}
+            <div className="bg-brand-black px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                    <Trophy size={16} className="text-brand-lime" />
+                    <h2 className="text-sm font-bold tracking-tight uppercase">月島足跡探險</h2>
                 </div>
-                <span className="text-xs bg-brand-lime text-brand-black px-2 py-0.5 rounded-full font-bold">
-                    {visitedCount}/{totalSites}
-                </span>
+                <div className="bg-brand-lime px-2 py-0.5 rounded-full border border-brand-black">
+                    <span className="text-[10px] font-black text-brand-black uppercase">
+                        {visitedSites.length === MOONMOON_SITES.length ? 'Mastered' : `${visitedSites.length}/${MOONMOON_SITES.length}`}
+                    </span>
+                </div>
+            </div>
+
+            {/* Progress Bar (Subtle) */}
+            <div className="h-1 w-full bg-gray-100">
+                <div
+                    className="h-full bg-brand-lime transition-all duration-1000"
+                    style={{ width: `${completionRate}%` }}
+                />
             </div>
 
             {/* Sites List */}
-            <div className="p-3 space-y-2">
-                {MOONMOON_SITES.map(site => {
-                    const isVisited = visitedSites.includes(site.id);
+            <div className="p-3 bg-gray-50/50">
+                <div className="grid grid-cols-1 gap-2.5">
+                    {MOONMOON_SITES.map((site) => {
+                        const isVisited = visitedSites.includes(site.id);
+                        const IconComponent = IconMap[site.iconType] || BrainCircuit;
 
-                    return (
-                        <button
-                            key={site.id}
-                            onClick={() => handleSiteClick(site.id, site.url)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-[0.98] text-left ${isVisited
-                                    ? 'bg-brand-lime/10 border-brand-lime/30 shadow-[2px_2px_0px_rgba(212,255,0,0.3)]'
-                                    : 'bg-gray-50 border-gray-200 hover:border-gray-400'
-                                }`}
-                        >
-                            <span className="text-xl flex-shrink-0">{site.emoji}</span>
-                            <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-bold ${isVisited ? 'text-brand-black' : 'text-gray-600'}`}>
-                                    {site.name}
-                                </p>
-                                <p className="text-[10px] text-gray-500 truncate">{site.description}</p>
-                            </div>
-                            {isVisited ? (
-                                <CheckCircle size={18} className="text-brand-lime-dark flex-shrink-0" />
-                            ) : (
-                                <ExternalLink size={14} className="text-gray-400 flex-shrink-0" />
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
+                        return (
+                            <button
+                                key={site.id}
+                                onClick={() => handleSiteClick(site.id, site.url)}
+                                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-[0.98] ${isVisited
+                                    ? 'bg-white border-brand-black/10'
+                                    : 'bg-white border-brand-black shadow-[2px_2px_0px_black] hover:bg-brand-gray/5'
+                                    }`}
+                            >
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${isVisited
+                                    ? 'bg-brand-lime/10 border-brand-lime/20 text-brand-black/40'
+                                    : 'bg-brand-lime border-brand-black text-brand-black'
+                                    }`}>
+                                    <IconComponent size={20} />
+                                </div>
 
-            {/* Completion Message */}
-            {visitedCount >= totalSites && (
-                <div className="px-4 pb-3">
-                    <div className="bg-brand-lime/20 rounded-lg p-3 text-center">
-                        <p className="text-sm font-bold text-brand-black">🏆 你已探索所有月島世界！</p>
+                                <div className="flex-1 text-left">
+                                    <h3 className={`text-xs font-bold ${isVisited ? 'text-brand-black/40' : 'text-brand-black'}`}>
+                                        {site.name}
+                                    </h3>
+                                    <p className="text-[10px] text-gray-400 font-medium">{site.description}</p>
+                                </div>
+
+                                <div className="flex items-center justify-center">
+                                    {isVisited ? (
+                                        <CheckCircle2 size={18} className="text-brand-lime-dark" />
+                                    ) : (
+                                        <ArrowRight size={16} className="text-brand-black" />
+                                    )}
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Completion Message */}
+                {visitedSites.length === MOONMOON_SITES.length && (
+                    <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
+                        <Sparkles size={16} className="text-brand-lime-dark" />
+                        <p className="text-[10px] font-bold text-brand-lime-dark uppercase">
+                            You've explored the entire Moon ecosystem!
+                        </p>
                     </div>
-                </div>
-            )}
-            {visitedCount > 0 && visitedCount < totalSites && (
-                <div className="px-4 pb-3">
-                    <p className="text-[10px] text-gray-400 text-center">
-                        點擊前往各站探索，回來後自動記錄足跡
-                    </p>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };
+
+// Help helper
+const Sparkles = ({ size, className }: { size: number, className: string }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+    >
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4" />
+        <path d="M19 17v4" />
+        <path d="M3 5h4" />
+        <path d="M17 19h4" />
+    </svg>
+);
 
 export default MemberHub;

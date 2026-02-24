@@ -1,12 +1,21 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
-import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
-import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATION, STICKERS } from './constants';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
+import { Screen, UserAnswers, Option, DessertRecommendation, Stamp } from './types';
+import { QUESTION_SETS, DESSERTS, LINKS, STICKERS, STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING } from './constants';
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
-import { unlockStamp, getUnlockedStampCount } from './passportUtils';
+import LoadingScreen from './components/LoadingScreen';
+import {
+  getPassportState,
+  unlockStamp,
+  markRewardRedeemed,
+  getUnlockedStampCount,
+  calculateUserLevel,
+  isStampUnlocked,
+  getUnlockedAchievements
+} from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim } from './rewardClaim';
 import {
@@ -82,11 +91,10 @@ const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="flex items-center gap-2 pointer-events-auto">
-        {/* ⭐ P0 優化：改用 SVG Logo (0ms) 代替 Cloudinary CDN (200ms) */}
         <img
-          src="/logo.svg"
-          alt="月島甜點店"
-          className="h-5 md:h-6 w-auto object-contain brightness-0"
+          src={BRANDING.KIWIMU_LOGO}
+          alt="Kiwimu"
+          className="h-8 md:h-9 w-auto object-contain"
           loading="eager"
         />
       </div>
@@ -197,7 +205,7 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
   }, []);
 
   // Use fixed illustration for faster loading
-  const illustration = LANDING_ILLUSTRATION;
+  const illustration = BRANDING.LANDING_ILLUSTRATION;
 
 
   const mbtiLandingUrl = useMemo(
@@ -285,7 +293,7 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
           </div>
         </div>
 
-        <div className={`absolute bottom-0 md:-bottom-10 lg:-bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] lg:max-w-[900px] flex justify-center z-0 animate-fade-in pointer-events-none transition-all duration-700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'}`}>
+        <div className={`absolute bottom - 0 md: -bottom - 10 lg: -bottom - 20 left - 1 / 2 - translate - x - 1 / 2 w - full max - w - [500px] md: max - w - [700px] lg: max - w - [900px] flex justify - center z - 0 animate - fade -in pointer - events - none transition - all duration - 700 ${showMenu ? 'scale-95 opacity-80 blur-[2px]' : 'scale-100 opacity-100 blur-0'} `}>
           {illustration ? (
             <img
               src={illustration}
@@ -302,27 +310,27 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
         </div>
 
         <div
-          className={`fixed inset-0 z-20 bg-brand-black/20 backdrop-blur-[1px] transition-opacity duration-500 ${showMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          className={`fixed inset - 0 z - 20 bg - brand - black / 20 backdrop - blur - [1px] transition - opacity duration - 500 ${showMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} `}
           onClick={() => setShowMenu(false)}
         />
 
         <div className="flex-1 w-full relative flex items-end justify-center pb-8 md:pb-12 pointer-events-none z-30">
           <div
-            className={`absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center transition-all duration-500 cursor-pointer pointer-events-auto ${showMenu ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'}`}
+            className={`absolute bottom - 8 left - 0 right - 0 flex flex - col items - center justify - center transition - all duration - 500 cursor - pointer pointer - events - auto ${showMenu ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'} `}
             onClick={handleArrowClick}
           >
             <div className="flex flex-col items-center animate-bounce">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-brand-black mb-2 bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/50">
                 Begin Journey
               </span>
-              <div className="w-12 h-12 rounded-full bg-brand-lime border border-brand-black flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                <ChevronUp className="text-brand-black w-6 h-6" strokeWidth={3} />
+              <div className="w-12 h-12 rounded-xl bg-brand-lime flex items-center justify-center border-2 border-brand-black shadow-[4px_4px_0px_black]">
+                <StampIcon size={24} className="text-brand-black" />
               </div>
             </div>
           </div>
 
           <div
-            className={`relative w-full max-w-[340px] px-4 transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) pointer-events-auto ${showMenu ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0'}`}
+            className={`relative w - full max - w - [340px] px - 4 transition - all duration - 500 cubic - bezier(0.16, 1, 0.3, 1) pointer - events - auto ${showMenu ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0'} `}
           >
             <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-5 md:p-6 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.15)] text-center ring-1 ring-black/5">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 opacity-60" />
@@ -492,7 +500,7 @@ const QuizScreen: React.FC<{
   };
 
   return (
-    <div className={`min-h-screen bg-brand-bg flex flex-col pt-16 md:pt-24 px-6 pb-10 transition-all duration-500 ${isExiting ? 'opacity-0 translate-y-4' : 'opacity-100'}`}>
+    <div className={`min - h - screen bg - brand - bg flex flex - col pt - 16 md: pt - 24 px - 6 pb - 10 transition - all duration - 500 ${isExiting ? 'opacity-0 translate-y-4' : 'opacity-100'} `}>
 
       {/* Exhibition Header / Zone Indicator */}
       <div className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto mb-8 md:mb-12">
@@ -516,7 +524,7 @@ const QuizScreen: React.FC<{
         <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-brand-black transition-all duration-500 ease-out"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${progress}% ` }}
           />
         </div>
       </div>
@@ -705,9 +713,9 @@ const ResultScreen: React.FC<{
         {/* Sticker Image Area */}
         <div className="aspect-square rounded-[1.5rem] overflow-hidden border border-brand-black mb-4 relative bg-gray-50 group flex items-center justify-center p-6">
           <img
-            src={stickerResult.imageUrl}
-            alt={stickerResult.name}
-            className="w-full h-full object-contain drop-shadow-xl"
+            src={BRANDING.LANDING_ILLUSTRATION}
+            alt="MoonMoon Island Character"
+            className="w-full h-auto drop-shadow-2xl"
             loading="lazy"
             onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
           />
@@ -731,7 +739,7 @@ const ResultScreen: React.FC<{
       {/* 集章：解鎖第一枚 + 打開護照 CTA */}
       {onOpenPassport && (
         <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-4 bg-brand-lime/25 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
-          <p className="text-sm font-bold text-brand-black mb-2">✅ 你已解鎖第一枚印章 · 甜點測驗</p>
+          <p className="text-sm font-bold text-brand-black mb-2"> 你已解鎖第一枚印章 · 甜點測驗</p>
           <p className="text-xs text-brand-black/80 mb-4">到店繼續集章、集滿可兌換飲品升級、手工餅乾與千層蛋糕。</p>
           <Button
             fullWidth
@@ -784,7 +792,7 @@ const ResultScreen: React.FC<{
       </div>
 
 
-      {/* 🌟 Enhanced LINE@ Landing Bonus - Screenshot to Rewards Flow */}
+      {/*  Enhanced LINE@ Landing Bonus - Screenshot to Rewards Flow */}
       <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 bg-white border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
         {/* Header Banner */}
         <div className="bg-brand-lime border-b-2 border-brand-black px-5 py-3 text-center">
@@ -870,13 +878,13 @@ const ResultScreen: React.FC<{
               size="lg"
               className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px] transition-all duration-200"
             >
-              <Stamp className="mr-2" size={20} />
+              <StampIcon className="mr-2" size={20} />
               前往 LINE@ 領取登島禮包
             </Button>
           </a>
 
           <p className="text-[10px] text-center text-gray-500">
-            ⏰ 優惠限時提供，請盡快完成領取
+            優惠限時提供，請盡快完成領取
           </p>
         </div>
       </div>
@@ -884,7 +892,7 @@ const ResultScreen: React.FC<{
       {/* Secondary Actions Container */}
       <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
         <p className="text-center text-sm text-gray-500 mb-1">
-          📖 集章、兌換獎勵請點右上角 <strong className="text-brand-black">護照</strong>
+          集章、兌換獎勵請點右上角 <strong className="text-brand-black">護照</strong>
         </p>
 
         <div className="grid grid-cols-2 gap-3">
@@ -945,9 +953,18 @@ const ResultScreen: React.FC<{
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing');
+  const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<UserAnswers>({});
   const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
-  const prevScreenRef = useRef<Screen>('landing');
+  const prevScreenRef = useRef<Screen | null>(null);
+
+  // Initial Loading Simulation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500); // 1.5s for brand impact
+    return () => clearTimeout(timer);
+  }, []);
 
   // Randomly select one question set on load
   const [activeQuestionSet, setActiveQuestionSet] = useState(QUESTION_SETS[0]);
@@ -1050,7 +1067,7 @@ function App() {
         }
       }
 
-      // New QR code unlock system using `?unlock=` parameter
+      // New QR code unlock system using `? unlock = ` parameter
       if (unlockParam) {
         // Map URL params to stamp IDs
         const unlockMap: Record<string, string> = {
@@ -1150,10 +1167,11 @@ function App() {
         const result = await consumeRewardClaim(codeParam, rewardParam);
 
         if (!result.ok) {
-          console.error('Reward claim failed:', result.reason);
-          trackEvent('stamp_claim_failed', { reason: result.reason, reward_id: rewardParam });
+          const errorReason = (result as any).reason;
+          console.error('Reward claim failed:', errorReason);
+          trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam });
 
-          if (result.reason === 'invalid_or_used') {
+          if (errorReason === 'invalid_or_used') {
             // Check if already unlocked locally
             const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
             if (currentState.unlockedStamps?.includes(rewardParam)) {
@@ -1205,6 +1223,8 @@ function App() {
 
   return (
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
+      {loading && <LoadingScreen />}
+
       <Header onPassportClick={openPassport} />
 
       <main>

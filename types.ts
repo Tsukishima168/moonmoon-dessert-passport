@@ -3,7 +3,6 @@ export type Screen = 'landing' | 'quiz' | 'result' | 'passport';
 export interface Option {
   id: string;
   label: string;
-  // Scores for the 4 quadrants: [Classic, Deep, Bright, Fruity]
   scores: {
     classic: number;
     deep: number;
@@ -22,26 +21,26 @@ export interface Question {
 export interface StickerReward {
   id: string;
   style: '經典' | '深色' | '亮色' | '果香';
-  name: string; // Character Name
-  description: string; // Character Description
-  imageUrl: string; // Character Image
+  name: string;
+  description: string;
+  imageUrl: string;
 }
 
 export interface DessertRecommendation {
-  id: string; // mbti code
+  id: string;
   mbti: string;
-  name: string; // Dessert Name
+  name: string;
   series: string;
   style: '經典' | '深色' | '亮色' | '果香';
-  hook: string; // The poetic copy
-  drink_stable: string; // Type A drink
-  drink_sensitive: string; // Type T drink
+  hook: string;
+  drink_stable: string;
+  drink_sensitive: string;
   replacement: string;
   imageUrl: string;
 }
 
 export interface UserAnswers {
-  [key: number]: string; // questionId: optionId
+  [questionId: number]: string; // optionId
 }
 
 // Passport System Types
@@ -52,7 +51,7 @@ export interface Stamp {
   name: string;
   description: string;
   icon: string; // lucide-react icon name
-  emoji: string; // visual emoji for guided journey
+  animationType?: 'pulse' | 'bounce' | 'spin' | 'float'; // visual dynamism
   unlockMethod: StampUnlockMethod;
   requiredParam?: string; // for QR codes
   isSecret?: boolean; // Hidden until unlocked
@@ -71,6 +70,7 @@ export interface PassportState {
   unlockedAchievements: string[]; // array of achievement IDs
   redeemedRewards: string[]; // array of reward tier IDs
   visitedSites: string[]; // array of moon site IDs
+  lastCheckinAt?: number; // timestamp of last daily check-in
   createdAt: number;
   lastUpdatedAt: number;
 }
@@ -100,7 +100,7 @@ export interface RewardTier {
 export interface MoonSite {
   id: string;
   name: string;
-  emoji: string;
   url: string;
   description: string;
+  iconType: string; // Dynamic icon reference
 }
