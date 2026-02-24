@@ -21,7 +21,7 @@
 1. 下載並安裝 [GitHub Desktop](https://desktop.github.com/)
 2. 開啟 GitHub Desktop
 3. 選擇 File → Add Local Repository
-4. 選擇專案資料夾：`/Users/penstudio/Desktop/moonmoon-dessert-passport`
+4. 選擇專案資料夾：`moonmoon-dessert-passport`
 5. 點擊 "Publish repository"
 6. 設定 repository 名稱（建議：`moonmoon-dessert-passport`）
 7. 取消勾選 "Keep this code private"（或保持私有）

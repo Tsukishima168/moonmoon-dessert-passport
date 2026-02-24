@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, ScanLine } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, LANDING_ILLUSTRATION, STICKERS } from './constants';
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
-import ARScanner from './components/ARScanner';
 import { unlockStamp, getUnlockedStampCount } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim } from './rewardClaim';
@@ -51,7 +50,7 @@ const StickerBadge = ({
 };
 
 // -- Header --
-const Header = ({ onPassportClick, onARClick }: { onPassportClick: () => void; onARClick: () => void }) => {
+const Header = ({ onPassportClick }: { onPassportClick: () => void }) => {
   const [stampCount, setStampCount] = useState(0);
 
   // ⭐ P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
@@ -93,22 +92,6 @@ const Header = ({ onPassportClick, onARClick }: { onPassportClick: () => void; o
       </div>
 
       <div className="pointer-events-auto flex items-center gap-2">
-        {/* AR 按鈕 — 設定 AR_ENABLED = true 開啟 */}
-        {false && (
-          <button
-            onClick={() => {
-              trackButtonClick('open_ar', 'header');
-              onARClick();
-            }}
-            className="relative"
-            aria-label="開啟 AR 探索"
-          >
-            <Button variant="outline" size="sm" className="bg-[#CDFF00] shadow-[2px_2px_0px_black] flex items-center justify-center gap-1.5 px-3 hover:bg-[#CDFF00]/80">
-              <ScanLine size={18} />
-              <span className="text-xs font-bold">AR</span>
-            </Button>
-          </button>
-        )}
         <button
           onClick={() => {
             trackButtonClick('open_passport', 'header');
@@ -1218,27 +1201,11 @@ function App() {
     trackEvent('passport_closed');
   };
 
-  const openAR = () => {
-    prevScreenRef.current = screen;
-    setScreen('ar');
-    trackEvent('ar_scanner_opened', { from_screen: screen });
-  };
 
-  const closeAR = () => {
-    setScreen(prevScreenRef.current || 'landing');
-    trackEvent('ar_scanner_closed');
-  };
-
-  const handleARStampUnlocked = (stampId: string, newAchievements: string[]) => {
-    trackEvent('ar_stamp_unlocked', { stamp_id: stampId, achievements: newAchievements.length });
-    if (newAchievements.length > 0) {
-      trackEvent('achievements_unlocked', { ids: newAchievements.join(',') });
-    }
-  };
 
   return (
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
-      <Header onPassportClick={openPassport} onARClick={openAR} />
+      <Header onPassportClick={openPassport} />
 
       <main>
         {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}
@@ -1259,20 +1226,7 @@ function App() {
         {screen === 'passport' && <PassportScreen onClose={closePassport} />}
       </main>
 
-      {/* AR Scanner - rendered as overlay on top of current screen */}
-      {screen === 'ar' && (
-        <ARScanner
-          onClose={() => {
-            closeAR();
-            // Open passport after closing AR to show new stamps
-            setTimeout(() => {
-              prevScreenRef.current = screen;
-              setScreen('passport');
-            }, 100);
-          }}
-          onStampUnlocked={handleARStampUnlocked}
-        />
-      )}
+
     </div>
   );
 }

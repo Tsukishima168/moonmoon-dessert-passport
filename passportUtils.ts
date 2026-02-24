@@ -2,6 +2,7 @@ import { PassportState, Achievement } from './types';
 import { ACHIEVEMENTS, STAMPS } from './constants';
 
 const STORAGE_KEY = 'moonmoon_passport';
+const SITES_KEY = 'moonmoon_visited_sites';
 
 function safeSetItem(key: string, value: string) {
     try {
@@ -26,6 +27,7 @@ export function getPassportState(): PassportState {
             const parsed = JSON.parse(stored);
             // Migration: Ensure new fields exist
             if (!parsed.unlockedAchievements) parsed.unlockedAchievements = [];
+            if (!parsed.visitedSites) parsed.visitedSites = [];
             return parsed;
         }
     } catch (error) {
@@ -36,37 +38,21 @@ export function getPassportState(): PassportState {
         unlockedStamps: [],
         unlockedAchievements: [],
         redeemedRewards: [],
+        visitedSites: [],
         createdAt: Date.now(),
         lastUpdatedAt: Date.now()
     };
 }
 
-// Logic to check if any new achievements are unlocked specific to the current state
+// Simplified achievement check: only stamp_count type
 function checkAchievements(state: PassportState): string[] {
     const newUnlockedIds: string[] = [];
     const currentStampCount = state.unlockedStamps.length;
 
-    // Helper to count secret stamps
-    const secretStampCount = state.unlockedStamps.filter(id => {
-        const stamp = STAMPS.find(s => s.id === id);
-        return stamp?.isSecret; // Only count if stamp definition has isSecret=true
-    }).length;
-
     ACHIEVEMENTS.forEach(achievement => {
         if (state.unlockedAchievements.includes(achievement.id)) return;
 
-        let unlocked = false;
-        const { type, target } = achievement.condition;
-
-        if (type === 'stamp_count') {
-            if (currentStampCount >= (target as number)) unlocked = true;
-        } else if (type === 'specific_stamp') {
-            if (state.unlockedStamps.includes(target as string)) unlocked = true;
-        } else if (type === 'secret_count') {
-            if (secretStampCount >= (target as number)) unlocked = true;
-        }
-
-        if (unlocked) {
+        if (currentStampCount >= achievement.condition.target) {
             state.unlockedAchievements.push(achievement.id);
             newUnlockedIds.push(achievement.id);
         }
@@ -80,23 +66,12 @@ export function unlockStamp(stampId: string): string[] {
     const state = getPassportState();
     let newAchievements: string[] = [];
 
-    // 1. Add stamp if not exists
     if (!state.unlockedStamps.includes(stampId)) {
         state.unlockedStamps.push(stampId);
         state.lastUpdatedAt = Date.now();
-
-        // 2. Check for achievements whenever a stamp is added
         newAchievements = checkAchievements(state);
-
         safeSetItem(STORAGE_KEY, JSON.stringify(state));
-        
-        // ⭐ P0 優化：發出事件通知 UI 更新
         emitStampUnlockedEvent(stampId);
-    } else {
-        // Even if stamp exists, check achievements (case of migration or manual updates)
-        // But usually achievements unlock ON the event.
-        // Let's safe-guard: if we somehow missed an achievement, should we unlock it now?
-        // For now, only unlock on state change to avoid spamming.
     }
 
     return newAchievements;
@@ -126,16 +101,39 @@ export function getUnlockedAchievements(): string[] {
     return state.unlockedAchievements || [];
 }
 
+// ─── Moon Site Tracking ───
+export function markSiteVisited(siteId: string): void {
+    const state = getPassportState();
+    if (!state.visitedSites.includes(siteId)) {
+        state.visitedSites.push(siteId);
+        state.lastUpdatedAt = Date.now();
+        safeSetItem(STORAGE_KEY, JSON.stringify(state));
+    }
+}
+
+export function getVisitedSites(): string[] {
+    const state = getPassportState();
+    return state.visitedSites || [];
+}
+
 export function resetPassport(): void {
     safeRemoveItem(STORAGE_KEY);
 }
+
 /**
- * ⭐ P0 優化：事件驅動 - 當印章解鎖時發出自訂事件
- * 用於通知 Header 更新 stampCount，而非每秒輪詢
+ * ⭐ 事件驅動 - 當印章解鎖時發出自訂事件
  */
 export function emitStampUnlockedEvent(stampId: string) {
-    const event = new CustomEvent('stamp-unlocked', { 
+    const event = new CustomEvent('stamp-unlocked', {
         detail: { stampId, timestamp: Date.now() }
     });
     document.dispatchEvent(event);
+}
+
+/**
+ * Get the next uncollected stamp in the journey sequence
+ */
+export function getNextStampInJourney(): typeof STAMPS[number] | null {
+    const state = getPassportState();
+    return STAMPS.find(stamp => !state.unlockedStamps.includes(stamp.id)) || null;
 }

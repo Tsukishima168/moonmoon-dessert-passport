@@ -1,4 +1,4 @@
-export type Screen = 'landing' | 'quiz' | 'result' | 'passport' | 'ar';
+export type Screen = 'landing' | 'quiz' | 'result' | 'passport';
 
 export interface Option {
   id: string;
@@ -45,28 +45,32 @@ export interface UserAnswers {
 }
 
 // Passport System Types
-export type StampUnlockMethod = 'qr' | 'password' | 'checkbox' | 'gps' | 'ar';
+export type StampUnlockMethod = 'qr' | 'gps' | 'external';
 
 export interface Stamp {
   id: string;
   name: string;
   description: string;
   icon: string; // lucide-react icon name
+  emoji: string; // visual emoji for guided journey
   unlockMethod: StampUnlockMethod;
   requiredParam?: string; // for QR codes
   isSecret?: boolean; // Hidden until unlocked
-  arTargetIndex?: number; // MindAR target index for AR stamps
+  externalLink?: string; // URL for external stamps
   location?: {
     lat: number;
     lng: number;
     radius: number; // meters
   };
+  guideCta: string; // action text for the journey guide (e.g. "定位簽到")
+  guideHint: string; // short hint for what to do (e.g. "按一下就完成！")
 }
 
 export interface PassportState {
   unlockedStamps: string[]; // array of stamp IDs
   unlockedAchievements: string[]; // array of achievement IDs
   redeemedRewards: string[]; // array of reward tier IDs
+  visitedSites: string[]; // array of moon site IDs
   createdAt: number;
   lastUpdatedAt: number;
 }
@@ -77,10 +81,9 @@ export interface Achievement {
   description: string;
   icon: string; // lucide-react icon name
   condition: {
-    type: 'stamp_count' | 'specific_stamp' | 'secret_count';
-    target: number | string; // count or stampId
+    type: 'stamp_count';
+    target: number;
   };
-  isHidden?: boolean; // If true, shows as "???" until unlocked
 }
 
 export interface RewardTier {
@@ -90,6 +93,14 @@ export interface RewardTier {
   description: string;
   imageUrl?: string; // Optional product image
   canRepeat: boolean;
-  isLocked?: boolean; // If true, reward is visible but not yet available
   redemptionMethod: 'show-screen' | 'line-redirect';
+}
+
+// Moon Ecosystem Site Tracking
+export interface MoonSite {
+  id: string;
+  name: string;
+  emoji: string;
+  url: string;
+  description: string;
 }

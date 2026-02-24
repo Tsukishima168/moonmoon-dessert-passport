@@ -1,4 +1,4 @@
-import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement } from './types';
+import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement, MoonSite } from './types';
 
 // Configuration URLs
 export const LINKS = {
@@ -9,133 +9,103 @@ export const LINKS = {
   NAVIGATION: "https://moon-map-original.vercel.app",
 };
 
-// Passport Stamp Collection System
+// ─── Simplified Passport Stamp System (8 stamps) ───
+// Ordered as the recommended journey sequence
 export const STAMPS: Stamp[] = [
-  // GPS Check-in stamp - first stamp, gateway to the passport experience
   {
     id: 'shop_checkin',
     name: '月島登陸',
-    description: '抵達月島甜點店，開啟冒險旅程',
+    description: '抵達月島甜點店',
+    emoji: '📍',
     icon: 'MapPin',
     unlockMethod: 'gps',
+    guideCta: '📍 定位簽到',
+    guideHint: '到店後按一下，GPS 自動偵測！',
     location: {
-      lat: 23.0463,   // 月島甜點店實際座標
-      lng: 120.2113,   // 台南市安南區本原街一段97巷168號
-      radius: 300      // 偵測半徑（公尺）
+      lat: 23.0463,
+      lng: 120.2113,
+      radius: 300
     }
   },
-  // Quick stamps (1-7) - completable in-store within 30 minutes
   {
     id: 'quiz_completed',
     name: '靈魂甜點',
-    description: '找到你的靈魂甜點',
+    description: '完成甜點測驗',
+    emoji: '🎯',
     icon: 'CheckCircle',
-    unlockMethod: 'qr' // auto-unlocked on result page
+    unlockMethod: 'qr',
+    guideCta: '🎯 做測驗',
+    guideHint: '回答 3 題，找到你的命定甜點！'
   },
   {
     id: 'ig_followed',
     name: 'IG 追蹤',
     description: '追蹤 @moon_moon_dessert',
+    emoji: '📸',
     icon: 'Instagram',
-    unlockMethod: 'checkbox'
+    unlockMethod: 'external',
+    externalLink: LINKS.INSTAGRAM,
+    guideCta: '📸 追蹤 IG',
+    guideHint: '按下前往，追蹤後回來點完成！'
   },
   {
     id: 'line_joined',
-    name: 'LINE@ 好友',
+    name: 'LINE 好友',
     description: '加入月島官方帳號',
+    emoji: '💬',
     icon: 'MessageCircle',
-    unlockMethod: 'checkbox'
+    unlockMethod: 'external',
+    externalLink: LINKS.LINE_OA,
+    guideCta: '💬 加 LINE',
+    guideHint: '加好友就能收到新品通知！'
+  },
+  {
+    id: 'order_with_staff',
+    name: '點餐成功',
+    description: '向店員點餐並掃 QR',
+    emoji: '🛍️',
+    icon: 'ShoppingBag',
+    unlockMethod: 'qr',
+    requiredParam: 'order',
+    guideCta: '🛍️ 掃描點餐 QR',
+    guideHint: '點餐後請店員出示 QR Code！'
   },
   {
     id: 'secret_qr_1',
     name: '秘密角落 #1',
     description: '找到店內隱藏 QR Code',
+    emoji: '🔍',
     icon: 'MapPin',
     unlockMethod: 'qr',
-    requiredParam: 'secret1'
+    requiredParam: 'secret1',
+    guideCta: '🔍 找 QR Code',
+    guideHint: '店內藏有隱藏 QR Code，找找看！'
   },
   {
     id: 'secret_qr_2',
     name: '秘密角落 #2',
     description: '找到另一個隱藏 QR Code',
+    emoji: '🔎',
     icon: 'MapPin',
     unlockMethod: 'qr',
-    requiredParam: 'secret2'
-  },
-  {
-    id: 'social_share',
-    name: '甜點連線',
-    description: 'IG 限動分享並標註 @moon_moon_dessert',
-    icon: 'Share2',
-    unlockMethod: 'checkbox'
-  },
-  {
-    id: 'order_with_staff',
-    name: '跟店員點餐',
-    description: '向店員點餐並掃描 QR Code',
-    icon: 'ShoppingBag',
-    unlockMethod: 'qr',
-    requiredParam: 'order'
-  },
-
-  // Advanced stamps (8-10) - completable at home
-  {
-    id: 'mbti_completed',
-    name: 'MBTI 深度測驗',
-    description: '完成 MBTI 人格測驗',
-    icon: 'Brain',
-    unlockMethod: 'qr' // auto-unlocked via redirect
+    requiredParam: 'secret2',
+    guideCta: '🔎 繼續找',
+    guideHint: '還有一個哦，仔細看看四周！'
   },
   {
     id: 'google_review',
     name: 'Google 評論',
-    description: '留下 5 星評論',
+    description: '留下你的真心評價',
+    emoji: '⭐',
     icon: 'Star',
-    unlockMethod: 'checkbox'
+    unlockMethod: 'external',
+    externalLink: LINKS.GOOGLE_MAPS,
+    guideCta: '⭐ 寫評論',
+    guideHint: '幫月島留下評論，讓更多人認識我們！'
   },
-  {
-    id: 'referral_share',
-    name: '推薦好友',
-    description: '分享測驗或推薦朋友',
-    icon: 'Share2',
-    unlockMethod: 'checkbox'
-  },
-  // AR Scan stamps - unlockable via MindAR image tracking
-  {
-    id: 'ar_scan_1',
-    name: 'AR 探索 #1',
-    description: '用 AR 相機掃描菜單封面，發現隱藏驚喜',
-    icon: 'ScanLine',
-    unlockMethod: 'ar',
-    arTargetIndex: 0
-  },
-  {
-    id: 'ar_scan_2',
-    name: 'AR 探索 #2',
-    description: '用 AR 相機掃描店內特定物件',
-    icon: 'ScanLine',
-    unlockMethod: 'ar',
-    arTargetIndex: 1
-  },
-  {
-    id: 'ar_scan_3',
-    name: 'AR 探索 #3',
-    description: '用 AR 相機掃描隱藏的 Kiwimu',
-    icon: 'ScanLine',
-    unlockMethod: 'ar',
-    arTargetIndex: 2,
-    isSecret: true
-  },
-  {
-    id: 'egg_master_2026_q1',
-    name: '彩蛋大師',
-    description: '找齊所有月島隱藏彩蛋',
-    icon: 'Sparkles',
-    unlockMethod: 'qr',
-    isSecret: true
-  }
 ];
 
+// ─── Reward Tiers (4 tiers, no locked) ───
 export const REWARD_TIERS: RewardTier[] = [
   {
     id: 'tier_3',
@@ -149,7 +119,7 @@ export const REWARD_TIERS: RewardTier[] = [
     id: 'tier_5',
     requiredStamps: 5,
     title: '飲品升級服務',
-    description: '免費升級至 +20 元飲品，享受更豐富口感',
+    description: '免費升級至 +20 元飲品',
     canRepeat: true,
     redemptionMethod: 'show-screen'
   },
@@ -157,38 +127,76 @@ export const REWARD_TIERS: RewardTier[] = [
     id: 'tier_7',
     requiredStamps: 7,
     title: '品牌保冷提袋',
-    description: '月島專屬環保提袋乙個，實用又環保',
+    description: '月島專屬環保提袋乙個',
     canRepeat: true,
     redemptionMethod: 'show-screen'
   },
   {
-    id: 'tier_10',
-    requiredStamps: 10,
+    id: 'tier_8',
+    requiredStamps: 8,
     title: '經典烤布丁',
-    description: '招牌經典烤布丁乙個，完美收官',
+    description: '招牌經典烤布丁乙個 🎉 全收集獎勵！',
     imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
     canRepeat: false,
     redemptionMethod: 'show-screen'
   },
-  // Hidden rewards (locked, visible but not yet available)
+];
+
+// ─── Achievements (3 milestones) ───
+export const ACHIEVEMENTS: Achievement[] = [
   {
-    id: 'tier_15',
-    requiredStamps: 15,
-    title: '經典提拉米酥',
-    description: '經典提拉米酥乙份，濃郁滑順',
-    canRepeat: false,
-    isLocked: true,
-    redemptionMethod: 'show-screen'
+    id: 'novice_explorer',
+    name: '月島見習生',
+    description: '獲得第 1 個印章',
+    icon: 'Footprints',
+    condition: { type: 'stamp_count', target: 1 }
   },
   {
-    id: 'tier_20',
-    requiredStamps: 20,
-    title: '月島超級好朋友',
-    description: '十勝低糖千層蛋糕一片，專屬超級好朋友限定',
-    canRepeat: false,
-    isLocked: true,
-    redemptionMethod: 'show-screen'
-  }
+    id: 'seasoned_traveler',
+    name: '熟練旅人',
+    description: '獲得 5 個印章',
+    icon: 'Compass',
+    condition: { type: 'stamp_count', target: 5 }
+  },
+  {
+    id: 'island_guardian',
+    name: '月島守護者',
+    description: '全 8 章收集完成',
+    icon: 'Crown',
+    condition: { type: 'stamp_count', target: 8 }
+  },
+];
+
+// ─── Moon Ecosystem Sites ───
+export const MOONMOON_SITES: MoonSite[] = [
+  {
+    id: 'kiwimu_mbti',
+    name: 'Kiwimu 心理測驗',
+    emoji: '🧠',
+    url: 'https://kiwimu-mbti.vercel.app',
+    description: '找到你的靈魂甜點'
+  },
+  {
+    id: 'moon_map',
+    name: '月島地圖',
+    emoji: '🗺️',
+    url: 'https://moon-map-original.vercel.app',
+    description: '品牌導覽與簽到'
+  },
+  {
+    id: 'dessert_booking',
+    name: '甜點預訂',
+    emoji: '🍰',
+    url: 'https://dessert-booking.vercel.app',
+    description: '線上預訂甜點'
+  },
+  {
+    id: 'gacha',
+    name: '月島扭蛋',
+    emoji: '🎰',
+    url: 'https://moonmoon-gacha.vercel.app',
+    description: '抽運籤拿獎勵'
+  },
 ];
 
 
@@ -211,21 +219,21 @@ export const STICKERS: StickerReward[] = [
     style: '深色',
     name: '深夜詩人',
     description: '喜歡獨處思考，擁有看透本質的深邃靈魂。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227679/blue-kiwimu_uey4fq.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227679/blue-kiwimu_uey4fq.png',
   },
   {
     id: 'explorer',
     style: '亮色',
     name: '閃光探險家',
     description: '充滿好奇心，總是能在平凡中發現閃亮亮的新奇事物。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227677/green-kiwiwmu_xsuu4k.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227677/green-kiwiwmu_xsuu4k.png',
   },
   {
     id: 'healer',
     style: '果香',
     name: '甜美治癒師',
     description: '自帶療癒氣場，所到之處都會開出快樂的小花。',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227677/pink-kiwimu_rhluj0.png', // Replace with specific character image
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_360/v1769227677/pink-kiwimu_rhluj0.png',
   },
 ];
 
@@ -428,7 +436,7 @@ export const QUESTION_SETS: Question[][] = [
     },
   ],
 
-  // SET 4: 溫度與季節 (Temperature & Season) - NEW
+  // SET 4: 溫度與季節 (Temperature & Season)
   [
     {
       id: 1,
@@ -460,7 +468,7 @@ export const QUESTION_SETS: Question[][] = [
     },
   ],
 
-  // SET 5: 想像與維度 (Imagination & Dimension) - NEW
+  // SET 5: 想像與維度 (Imagination & Dimension)
   [
     {
       id: 1,
@@ -491,56 +499,4 @@ export const QUESTION_SETS: Question[][] = [
       ],
     },
   ],
-];
-
-// --- ACHIEVEMENTS SYSTEM ---
-export const ACHIEVEMENTS: Achievement[] = [
-  // Level 1: Novice
-  {
-    id: 'novice_explorer',
-    name: '月島見習生',
-    description: '獲得第 1 個印章，踏出冒險的第一步。',
-    icon: 'Footprints',
-    condition: { type: 'stamp_count', target: 1 }
-  },
-  // Level 2: Intermediate
-  {
-    id: 'seasoned_traveler',
-    name: '熟練旅人',
-    description: '獲得 5 個印章，已經熟悉了月島的空氣。',
-    icon: 'Compass',
-    condition: { type: 'stamp_count', target: 5 }
-  },
-  // Level 3: Expert
-  {
-    id: 'island_guardian',
-    name: '月島守護者',
-    description: '獲得 10 個印章，成為傳說中的島民。',
-    icon: 'Crown',
-    condition: { type: 'stamp_count', target: 10 }
-  },
-  // Specific Actions
-  {
-    id: 'social_butterfly',
-    name: '社交花蝴蝶',
-    description: '完成所有社群相關任務（IG/Line/分享）。',
-    icon: 'Users',
-    condition: { type: 'specific_stamp', target: 'social_share' } // Simplified for MVP, ideally should check multiple
-  },
-  {
-    id: 'secret_hunter',
-    name: '秘密獵人',
-    description: '發現任一個隱藏的秘密角落。',
-    icon: 'Search',
-    condition: { type: 'secret_count', target: 1 }
-  },
-  // Hidden / Coming Soon
-  {
-    id: 'ar_pioneer',
-    name: '???',
-    description: '即將開放：使用 AR 鏡頭發現隱藏的精靈',
-    icon: 'ScanFace',
-    condition: { type: 'specific_stamp', target: 'ar_scan_1' },
-    isHidden: true
-  }
 ];
