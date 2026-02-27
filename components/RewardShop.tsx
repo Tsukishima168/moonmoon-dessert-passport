@@ -12,7 +12,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { getPassportPointsBalance, redeemItem } from '../passportUtils';
-import { DEFAULT_REWARDS } from '../../_共享_資料/gamification-types';
+import { DEFAULT_REWARDS } from '../types/gamification-types';
 
 // ─── 型別 ──────────────────────────────────────────────────
 
