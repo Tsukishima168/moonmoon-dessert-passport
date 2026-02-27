@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { PassportState } from '../types';
+import { PassportState } from '../../types';
 
 // Initialize Supabase client
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -78,23 +78,10 @@ export interface PassportProgress {
   rewards: string[];
 }
 
-export async function getPassportProgress(lineUserId: string): Promise<PassportProgress> {
+export async function getPassportProgress(userId: string): Promise<PassportProgress> {
   const client = getSupabaseClient();
 
   try {
-    // Get user first
-    const { data: userData, error: userError } = await client
-      .from('passport_users')
-      .select('id')
-      .eq('line_user_id', lineUserId)
-      .single();
-
-    if (userError || !userData) {
-      throw new Error('User not found');
-    }
-
-    const userId = userData.id;
-
     // Get stamps, achievements, rewards in parallel
     const [stampsRes, achievementsRes, rewardsRes] = await Promise.all([
       client
@@ -133,7 +120,7 @@ export async function getPassportProgress(lineUserId: string): Promise<PassportP
 // 3. Unlock Stamp
 // ============================================
 export async function unlockStamp(
-  lineUserId: string,
+  userId: string,
   stampId: string,
   sourceProject: string,
   claimData?: Record<string, any>
@@ -141,19 +128,6 @@ export async function unlockStamp(
   const client = getSupabaseClient();
 
   try {
-    // Get user
-    const { data: userData, error: userError } = await client
-      .from('passport_users')
-      .select('id')
-      .eq('line_user_id', lineUserId)
-      .single();
-
-    if (userError || !userData) {
-      throw new Error('User not found');
-    }
-
-    const userId = userData.id;
-
     // Insert stamp (will be rejected by DB if duplicate)
     const { data: stampData, error: stampError } = await client
       .from('passport_stamps')
@@ -190,7 +164,9 @@ export async function unlockStamp(
       user_id: userId,
       action: 'stamp_claimed',
       details: { stamp_id: stampId, source_project: sourceProject }
-    }).catch(err => console.warn('Failed to log:', err));
+    }).then(({ error }) => {
+      if (error) console.warn('Failed to log:', error);
+    });
 
     return { stamp, newAchievements };
   } catch (error) {
@@ -217,7 +193,7 @@ async function checkAchievementsForUser(client: SupabaseClient, userId: string):
     // This is simplified - in production, import ACHIEVEMENTS from constants
     // and check conditions
     // For now, return empty list - will be enhanced
-    
+
     return [];
   } catch (error) {
     console.error('Failed to check achievements:', error);
@@ -228,24 +204,14 @@ async function checkAchievementsForUser(client: SupabaseClient, userId: string):
 // ============================================
 // 5. Redeem Reward
 // ============================================
-export async function redeemReward(lineUserId: string, rewardId: string): Promise<boolean> {
+export async function redeemReward(userId: string, rewardId: string): Promise<boolean> {
   const client = getSupabaseClient();
 
   try {
-    const { data: userData, error: userError } = await client
-      .from('passport_users')
-      .select('id')
-      .eq('line_user_id', lineUserId)
-      .single();
-
-    if (userError || !userData) {
-      throw new Error('User not found');
-    }
-
     const { error: redeemError } = await client
       .from('passport_rewards')
       .insert({
-        user_id: userData.id,
+        user_id: userId,
         reward_id: rewardId,
         redeemed_at: new Date().toISOString()
       });
@@ -265,15 +231,12 @@ export async function redeemReward(lineUserId: string, rewardId: string): Promis
 // 6. Migrate from LocalStorage
 // ============================================
 export async function migrateFromLocalStorage(
-  lineUserId: string,
+  userId: string,
   localState: PassportState
 ): Promise<boolean> {
   const client = getSupabaseClient();
 
   try {
-    // Get or create user
-    const user = await initPassportUser(lineUserId, '', undefined);
-    const userId = user.id;
 
     // Migrate stamps
     const stampPromises = localState.unlockedStamps.map(stampId =>
@@ -283,8 +246,8 @@ export async function migrateFromLocalStorage(
         source_project: 'passport', // Local stamps are from passport
         unlocked_at: new Date().toISOString(),
         claim_data: { migrated: true }
-      }).catch(err => {
-        if (err.code !== '23505') throw err;
+      }).then(({ error }) => {
+        if (error && error.code !== '23505') throw error;
       })
     );
 
@@ -295,8 +258,8 @@ export async function migrateFromLocalStorage(
       client.from('passport_achievements').insert({
         user_id: userId,
         achievement_id: achievementId
-      }).catch(err => {
-        if (err.code !== '23505') throw err;
+      }).then(({ error }) => {
+        if (error && error.code !== '23505') throw error;
       })
     );
 
@@ -307,8 +270,8 @@ export async function migrateFromLocalStorage(
       client.from('passport_rewards').insert({
         user_id: userId,
         reward_id: rewardId
-      }).catch(err => {
-        if (err.code !== '23505') throw err;
+      }).then(({ error }) => {
+        if (error && error.code !== '23505') throw error;
       })
     );
 
@@ -321,9 +284,26 @@ export async function migrateFromLocalStorage(
       details: {
         stamps_count: localState.unlockedStamps.length,
         achievements_count: localState.unlockedAchievements.length,
-        rewards_count: localState.redeemedRewards.length
+        rewards_count: localState.redeemedRewards.length,
+        points: localState.points,
       }
-    }).catch(err => console.warn('Failed to log:', err));
+    }).then(({ error }) => {
+      if (error) console.warn('Failed to log:', error);
+    });
+
+    // ─── 合併 Points (遷移) ───
+    if (localState.points && localState.points > 0) {
+      // 寫入一筆 point_transaction 作為遺產轉移
+      await client.from('point_transactions').insert({
+        device_id: userId, // 綁定後，userId 兼作 device_id 紀錄
+        points: localState.points,
+        action: 'migration_merge',
+        description: '從本地裝置轉移未同步之積分',
+        source: 'passport'
+      }).then(({ error }) => {
+        if (error) console.warn('Failed to migrate points:', error);
+      });
+    }
 
     return true;
   } catch (error) {
@@ -338,7 +318,7 @@ export async function migrateFromLocalStorage(
 export type EventType = 'mbti_completed' | 'gacha_unlocked' | 'mission_complete' | 'order_success';
 
 export async function claimStampFromEvent(
-  lineUserId: string,
+  userId: string,
   eventType: EventType,
   eventData: Record<string, any>
 ): Promise<{ stampId: string; newAchievements: string[] }> {
@@ -356,7 +336,7 @@ export async function claimStampFromEvent(
   }
 
   const result = await unlockStamp(
-    lineUserId,
+    userId,
     mapping.stampId,
     mapping.source,
     eventData

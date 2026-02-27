@@ -1,12 +1,12 @@
-import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement, MoonSite } from './types';
+import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement, MoonSite, RedeemableItem } from './types';
 
 // Configuration URLs
 export const LINKS = {
-  MBTI_TEST: "https://kiwimu-mbti.vercel.app",
+  MBTI_TEST: "https://kiwimu.com",
   LINE_OA: "https://lin.ee/vpkYztb",
   INSTAGRAM: "https://www.instagram.com/moon_moon_dessert/",
   GOOGLE_MAPS: "https://g.page/r/CdR9ng9TTJF3EBM/review",
-  NAVIGATION: "https://moon-map-original.vercel.app",
+  NAVIGATION: "https://map.kiwimu.com",
 };
 
 // Branding Assets
@@ -179,30 +179,78 @@ export const MOONMOON_SITES: MoonSite[] = [
   {
     id: 'kiwimu_mbti',
     name: 'Kiwimu 心理測驗',
-    url: 'https://kiwimu-mbti.vercel.app',
+    url: 'https://kiwimu.com',
     description: '找到你的靈魂甜點',
     iconType: 'BrainCircuit'
   },
   {
     id: 'moon_map',
     name: '月島地圖',
-    url: 'https://moon-map-original.vercel.app',
+    url: 'https://map.kiwimu.com',
     description: '品牌導覽與簽到',
     iconType: 'Map'
   },
   {
     id: 'dessert_booking',
     name: '甜點預訂',
-    url: 'https://dessert-booking.vercel.app',
+    url: 'https://shop.kiwimu.com',
     description: '線上預訂甜點',
     iconType: 'CakeSlice'
   },
   {
     id: 'gacha',
     name: '月島扭蛋',
-    url: 'https://moonmoon-gacha.vercel.app',
+    url: 'https://gacha.kiwimu.com',
     description: '抽運籤拿獎勵',
     iconType: 'Dices'
+  },
+];
+
+// ─── Points Redemption Store ───
+export const REDEEMABLE_ITEMS: RedeemableItem[] = [
+  // 飲品 (低門檻)
+  {
+    id: 'tea_buckwheat', name: '蕎麥茶', description: '清爽回甘的日式蕎麥茶',
+    pointsCost: 50, category: 'drink', available: true, redemptionMethod: 'show-screen',
+  },
+  {
+    id: 'coffee_iced', name: '冰美式咖啡', description: '經典冰美式，黑咖啡的純粹力量',
+    pointsCost: 80, category: 'drink', available: true, redemptionMethod: 'show-screen',
+  },
+  {
+    id: 'coffee_sicily', name: '西西里咖啡', description: '檸檬與咖啡的完美碰撞',
+    pointsCost: 100, category: 'drink', available: true, redemptionMethod: 'show-screen',
+  },
+  {
+    id: 'latte_matcha', name: '抹茶拿鐵', description: '小山園抹茶 × 北海道鮮奶',
+    pointsCost: 120, category: 'drink', available: true, redemptionMethod: 'show-screen',
+  },
+  // 甜點 (中門檻)
+  {
+    id: 'second_half', name: '第二杯半價券', description: '任一飲品第二杯享半價',
+    pointsCost: 150, category: 'dessert', available: true, redemptionMethod: 'show-screen',
+  },
+  {
+    id: 'pudding_classic', name: '經典烤布丁', description: '招牌十勝鮮奶烤布丁',
+    pointsCost: 200, category: 'dessert', available: true, redemptionMethod: 'show-screen',
+    imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
+  },
+  {
+    id: 'chiffon_slice', name: '戚風蛋糕切片', description: '當日限定口味戚風蛋糕一片',
+    pointsCost: 300, category: 'dessert', available: true, redemptionMethod: 'show-screen',
+  },
+  {
+    id: 'seasonal_fruit', name: '季節鮮果甜點', description: '季節限定鮮果甜點一份',
+    pointsCost: 350, category: 'dessert', available: true, redemptionMethod: 'show-screen',
+  },
+  // 周邊 (高門檻)
+  {
+    id: 'sticker_set', name: 'Kiwimu 限量貼紙組', description: '四款 Kiwimu 角色貼紙',
+    pointsCost: 100, category: 'merch', available: true, redemptionMethod: 'show-screen',
+  },
+  {
+    id: 'cooler_bag', name: '品牌保冷提袋', description: '月島專屬環保保冷提袋',
+    pointsCost: 500, category: 'merch', available: true, redemptionMethod: 'show-screen',
   },
 ];
 

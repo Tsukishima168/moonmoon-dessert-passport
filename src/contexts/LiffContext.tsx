@@ -55,7 +55,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // 2. ⭐ 超時控制：5 秒後自動 fallback
             const liffInit = Promise.race([
                 liff.init({ liffId: id }),
-                new Promise((_, reject) => 
+                new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('LIFF initialization timeout')), 5000)
                 )
             ]);
@@ -68,7 +68,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (liff.isLoggedIn()) {
                 const profilePromise = Promise.race([
                     liff.getProfile(),
-                    new Promise((_, reject) => 
+                    new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('getProfile timeout')), 3000)
                     )
                 ]) as Promise<any>;
@@ -86,6 +86,20 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setProfile(profileObj);
                 setIsLoggedIn(true);
                 console.log('✅ LIFF profile 更新成功');
+
+            } else {
+                // 如果是在一般瀏覽器開發測試 (帶有 mock 參數)
+                const urlParams = new URLSearchParams(window.location.search);
+                const mockLiffId = urlParams.get('mock_liff_id');
+                if (mockLiffId) {
+                    console.log('🛠️ 偵測到 mock_liff_id，模擬 LIFF 登入狀態');
+                    const mockProfile = {
+                        userId: mockLiffId,
+                        displayName: 'Mock User',
+                    };
+                    setProfile(mockProfile);
+                    setIsLoggedIn(true);
+                }
             }
         } catch (err) {
             console.warn('⚠️ LIFF 後台初始化失敗，使用 fallback 或離線模式:', err);

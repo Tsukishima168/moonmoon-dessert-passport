@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
-
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, LogIn, LogOut } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation, Stamp } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, STICKERS, STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING } from './constants';
 import { Button } from './components/Button';
@@ -955,6 +955,7 @@ const ResultScreen: React.FC<{
 // -- Main App --
 
 function App() {
+  const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
   const [screen, setScreen] = useState<Screen>('landing');
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<UserAnswers>({});
@@ -1227,6 +1228,24 @@ function App() {
   return (
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
       {loading && <LoadingScreen />}
+
+      {/* Auth 狀態列（非 LINE 環境顯示 Google 登入） */}
+      {!/Line\//i.test(navigator.userAgent) && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex justify-end px-4 py-2 bg-brand-black/90 backdrop-blur-sm">
+          {supabaseUser ? (
+            <div className="flex items-center gap-2 text-xs text-brand-lime">
+              <span className="truncate max-w-[120px]">{supabaseUser.email?.split('@')[0]}</span>
+              <button onClick={supabaseSignOut} className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
+                <LogOut size={12} /> 登出
+              </button>
+            </div>
+          ) : (
+            <button onClick={signInWithGoogle} className="flex items-center gap-1.5 text-xs bg-brand-lime text-brand-black px-3 py-1.5 rounded-full font-medium hover:bg-white transition-colors">
+              <LogIn size={12} /> Google 登入
+            </button>
+          )}
+        </div>
+      )}
 
       <Header onPassportClick={openPassport} onHomeClick={restart} />
 

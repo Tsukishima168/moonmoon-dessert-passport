@@ -8,8 +8,11 @@ const SITE_ID = 'passport';
 const DEFAULT_UTM_SOURCE = 'passport';
 
 const TARGET_SITE_BY_HOST: Record<string, string> = {
+  'kiwimu.com': 'mbti_lab',
   'kiwimu-mbti.vercel.app': 'mbti_lab',
+  'map.kiwimu.com': 'moon_map',
   'moon-map-original.vercel.app': 'moon_map',
+  'shop.kiwimu.com': 'dessert_booking',
   'dessert-booking.vercel.app': 'dessert_booking',
 };
 

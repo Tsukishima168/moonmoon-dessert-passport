@@ -71,8 +71,29 @@ export interface PassportState {
   redeemedRewards: string[]; // array of reward tier IDs
   visitedSites: string[]; // array of moon site IDs
   lastCheckinAt?: number; // timestamp of last daily check-in
+  points: number; // total points balance
+  pointsHistory: PointTransaction[]; // points transaction history
   createdAt: number;
   lastUpdatedAt: number;
+}
+
+export interface PointTransaction {
+  id: string;
+  type: 'gacha_earn' | 'checkin_earn' | 'daily_checkin' | 'redeem_spend' | 'bonus' | 'share_earn' | 'mbti_earn' | 'offline_earn';
+  amount: number; // positive = earn, negative = spend
+  description: string;
+  timestamp: number;
+}
+
+export interface RedeemableItem {
+  id: string;
+  name: string;
+  description: string;
+  pointsCost: number;
+  category: 'dessert' | 'drink' | 'merch';
+  imageUrl?: string;
+  available: boolean;
+  redemptionMethod: 'show-screen';
 }
 
 export interface Achievement {
