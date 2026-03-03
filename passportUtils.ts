@@ -166,6 +166,15 @@ export function performDailyCheckin(): number {
     });
     safeSetItem(STORAGE_KEY, JSON.stringify(state));
 
+    // GA4 passport_checkin event（即時，不依賴 Supabase）
+    if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'passport_checkin', {
+            site_id: 'passport',
+            checkin_type: 'daily',
+            device_id: getDeviceId(),
+        });
+    }
+
     // 派送即時 UI 事件（讓 React 元件立刻更新顯示）
     document.dispatchEvent(new CustomEvent('daily-checkin', {
         detail: { timestamp: state.lastCheckinAt, points: 1, streakCount: 1, isBonusDay: false }

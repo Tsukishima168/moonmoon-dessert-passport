@@ -24,6 +24,7 @@ const withSiteId = (params?: Record<string, any>) => ({
 // Extend the Window interface to include gtag
 declare global {
   interface Window {
+    __GA4_ID__?: string;
     gtag?: (
       command: 'config' | 'event' | 'set',
       targetId: string,
@@ -32,6 +33,11 @@ declare global {
     dataLayer?: any[];
   }
 }
+
+const getGa4Id = (): string => {
+  if (typeof window === 'undefined') return 'G-ZF71VP9Z8Y';
+  return window.__GA4_ID__ || 'G-ZF71VP9Z8Y';
+};
 
 /**
  * Send a custom event to Google Analytics
@@ -252,9 +258,7 @@ export const trackTimeSpent = (screenName: string, seconds: number) => {
  */
 export const trackPageView = (pagePath: string, pageTitle: string) => {
   if (typeof window !== 'undefined' && window.gtag) {
-    // Should match the ID in index.html, or just use plain 'config' if the ID is already set globally? 
-    // Usually subsequent config calls update the state. Using the specific ID is safer.
-    window.gtag('config', 'G-ZF71VP9Z8Y', {
+    window.gtag('config', getGa4Id(), {
       page_path: pagePath,
       page_title: pageTitle,
     });

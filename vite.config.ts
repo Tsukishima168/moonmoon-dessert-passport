@@ -6,6 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const geminiKey = env.GEMINI_API_KEY ?? process.env.GEMINI_API_KEY ?? '';
+  const disablePwa = (env.VITE_DISABLE_PWA ?? '').toLowerCase() === '1' ||
+    (env.VITE_DISABLE_PWA ?? '').toLowerCase() === 'true';
   return {
     server: {
       port: 3000,
@@ -13,7 +15,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      VitePWA({
+      ...(!disablePwa ? [VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['icons/*.png', 'icons/*.svg'],
         manifest: {
@@ -29,20 +31,9 @@ export default defineConfig(({ mode }) => {
           lang: 'zh-TW',
           icons: [
             {
-              src: '/icons/pwa-192x192.png',
+              src: '/icons/pwa-192x192.svg',
               sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: '/icons/pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-            {
-              src: '/icons/pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable',
+              type: 'image/svg+xml',
             },
           ],
         },
@@ -73,7 +64,7 @@ export default defineConfig(({ mode }) => {
         devOptions: {
           enabled: false, // 開發模式關閉，避免 HMR 衝突
         },
-      }),
+      })] : []),
     ],
     define: {
       'process.env.API_KEY': JSON.stringify(geminiKey),

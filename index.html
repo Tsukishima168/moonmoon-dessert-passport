@@ -1,278 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="MoonMoon Passport 月島甜點護照，集章、任務、每日簽到與積分中心。" />
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/png"
-    href="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768743629/Kiwimu-English_syrudw.png" />
-  <link rel="apple-touch-icon"
-    href="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768743629/Kiwimu-English_syrudw.png" />
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>MoonMoon Passport | 月島甜點護照</title>
-  <meta name="description" content="你的月島甜點冒險日誌。集章、兌換獎勵，並記錄你在月島生態系中的每一個足跡。" />
-  <meta name="keywords" content="月島,月島甜點,Moon Moon,集點卡,會員系統,甜點護照,台南甜點,忠誠度系統" />
-  <meta name="author" content="Moon Moon 月島甜點" />
-  <meta name="copyright" content="Moon Moon 月島甜點" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/index.css" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 
-  <!-- 地理標記 -->
-  <meta name="geo.placename" content="台南市安南區">
-  <meta name="geo.region" content="TW-TN">
-  <meta name="ICBM" content="120.2699, 23.0696">
+    <title>MoonMoon Passport | 月島甜點護照</title>
 
-  <!-- 品牌相關 -->
-  <meta name="application-name" content="MoonMoon Passport">
-  <meta name="apple-mobile-web-app-title" content="MoonMoon">
+    <script type="module">
+      const gaId = import.meta.env.VITE_GA4_ID || 'G-ZF71VP9Z8Y';
+      window.__GA4_ID__ = gaId;
 
-  <!-- 避免誤判 -->
-  <meta name="clarification" content="月島甜點護照是 Moon Moon 月島甜點品牌的會員忠誠度系統，Moon Moon 位於台灣台南，與日本東京月島地區無關">
-  <!-- Open Graph / LINE、FB 分享預覽 -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="月島甜點護照｜會員集點系統｜Moon Moon" />
-  <meta property="og:description" content="月島甜點護照是會員忠誠度系統，同時是情緒記錄工具。每次購買自動記錄，10 點換一份免費甜點。保存你與月島的情緒陪伴故事。" />
-  <meta property="og:image"
-    content="https://res.cloudinary.com/dvizdsv4m/image/upload/v1768744158/Enter-05_nrt403.webp" />
-  <meta property="og:image:alt" content="月島甜點護照會員系統 | Moon Moon" />
-  <meta property="og:locale" content="zh_TW" />
-  <!-- Twitter Card（選填，部分 App 會用） -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="月島甜點護照｜會員集點系統｜Moon Moon" />
-  <meta name="twitter:description" content="月島甜點護照是會員忠誠度系統，同時是情緒記錄工具。" />
-  <!-- DNS Prefetch for faster resource loading -->
-  <link rel="dns-prefetch" href="https://res.cloudinary.com">
-  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+      setTimeout(() => {
+        const s = document.createElement('script');
+        s.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+        s.async = true;
+        document.head.appendChild(s);
 
-
-  <!-- Preload Critical Image (Landing Page Hero) -->
-  <link rel="preload" as="image"
-    href="https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744158/Enter-05_nrt403.webp">
-  <link rel="preload" as="image"
-    href="https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto,w_150/v1768743629/Dessert-Chinese_u8uoxt.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Optimized Google Fonts - reduced weights, swap display -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Inter:wght@400;700&display=swap"
-    rel="stylesheet">
-
-  <!-- Google Analytics 4 - deferred injection to avoid blocking first paint -->
-  <script>
-    setTimeout(() => {
-      const s = document.createElement('script');
-      s.src = 'https://www.googletagmanager.com/gtag/js?id=G-ZF71VP9Z8Y';
-      s.async = true;
-      document.head.appendChild(s);
-
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      window.gtag = gtag;
-      gtag('js', new Date());
-      gtag('config', 'G-ZF71VP9Z8Y', { send_page_view: true });
-    }, 800);
-  </script>
-
-  <!-- Removed esm.sh import map - Vite bundles React/Lucide already -->
-  <link rel="stylesheet" href="/index.css">
-
-  <style>
-    /* AI Semantic Layer - Visually Hidden */
-    .visually-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border-width: 0;
-    }
-  </style>
-
-  <!-- JSON-LD 結構化資料 -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "LocalBusiness",
-        "@id": "#moonmoon",
-        "name": "Moon Moon 月島甜點",
-        "alternateName": "月島甜點店",
-        "description": "結合甜點與情緒敘事的療癒系甜點品牌，位於台南安南區。透過 Kiwimu 角色與 Moon Map 世界觀，陪伴人整理情緒。",
-        "url": "https://passport.kiwimu.com",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "台南市",
-          "addressRegion": "安南區",
-          "addressCountry": "TW"
-        },
-        "priceRange": "$$",
-        "servesCuisine": "Dessert",
-        "sameAs": [
-          "https://www.instagram.com/moon_moon_dessert/",
-          "https://lin.ee/r19wTnY"
-        ]
-      },
-      {
-        "@type": "WebApplication",
-        "@id": "#passport",
-        "name": "月島甜點護照",
-        "applicationCategory": "Lifestyle",
-        "description": "會員忠誠度系統，同時是情緒記錄工具。每次購買自動記錄，10 點換一份免費甜點。保存你與月島的情緒陪伴故事。",
-        "url": "https://passport.kiwimu.com",
-        "inLanguage": "zh-TW",
-        "isPartOf": { "@id": "#moonmoon" }
-      },
-      {
-        "@type": "Thing",
-        "@id": "#kiwimu",
-        "name": "Kiwimu",
-        "description": "Moon Moon 月島甜點的敘事角色。紐西蘭奇異鳥，由鮮奶油誕生。以 16 型 MBTI 人格化身，承載品牌的情緒敘事。",
-        "isPartOf": { "@id": "#moonmoon" },
-        "url": "https://kiwimu.com"
-      }
-    ]
-  }
-  </script>
-</head>
-
-<body>
-  <div id="root">
-    <!-- Static Skeleton Screen: Shows immediately before React hydrates -->
-    <div
-      style="height: 100dvh; width: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden; background-color: #F8F8F5;">
-      <!-- Background Gradients -->
-      <div
-        style="position: absolute; top: -20%; left: -10%; width: 60%; height: 60%; background-color: rgba(212, 255, 0, 0.2); border-radius: 9999px; filter: blur(100px);">
-      </div>
-      <div
-        style="position: absolute; bottom: -10%; right: -5%; width: 50%; height: 50%; background-color: rgba(255, 215, 0, 0.1); border-radius: 9999px; filter: blur(80px);">
-      </div>
-
-      <!-- Main Content Skeleton -->
-      <div
-        style="flex: none; padding-top: 7rem; padding-left: 1rem; padding-right: 1rem; z-index: 10; position: relative; display: flex; flex-direction: column; align-items: center;">
-        <div style="text-align: center; max-width: 36rem; margin-left: auto; margin-right: auto;">
-          <h1
-            style="font-size: 3rem; font-family: 'Inter', sans-serif; font-weight: 900; color: #1a1a1a; line-height: 1; text-transform: uppercase; letter-spacing: -2px;">
-            MoonMoon<br />
-            Passport
-          </h1>
-        </div>
-      </div>
-
-      <!-- Loading Indicator -->
-      <div
-        style="position: absolute; bottom: 20%; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 0.5rem; opacity: 0.5;">
-        <div
-          style="width: 8px; height: 8px; background-color: #1a1a1a; border-radius: 50%; animation: pulse 1s infinite;">
-        </div>
-        <div
-          style="width: 8px; height: 8px; background-color: #1a1a1a; border-radius: 50%; animation: pulse 1s infinite 0.2s;">
-        </div>
-        <div
-          style="width: 8px; height: 8px; background-color: #1a1a1a; border-radius: 50%; animation: pulse 1s infinite 0.4s;">
-        </div>
-      </div>
-
-      <style>
-        @keyframes pulse {
-
-          0%,
-          100% {
-            transform: scale(0.8);
-            opacity: 0.5;
-          }
-
-          50% {
-            transform: scale(1.2);
-            opacity: 1;
-          }
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          window.dataLayer.push(arguments);
         }
-      </style>
-    </div>
-  </div>
-  <!-- MindAR.js for AR Image Tracking (lazy loaded) -->
-  <script>
-    // Lazy load MindAR when user clicks AR button
-    window.loadMindAR = function () {
-      if (document.querySelector('script[data-mindar]')) return;
-      var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js';
-      s.setAttribute('data-mindar', 'true');
-      document.head.appendChild(s);
-    };
-  </script>
-  <script type="module" src="/index.tsx"></script>
-
-  <!-- ===== Moon Moon AI Semantic Layer ===== -->
-  <section class="visually-hidden" aria-hidden="false" aria-labelledby="semantic-title">
-    <h1 id="semantic-title">月島甜點護照</h1>
-
-    <article>
-      <h2>品牌身分</h2>
-      <p>
-        月島甜點護照是 Moon Moon 月島甜點品牌的會員忠誠度系統。
-        Moon Moon 月島甜點是一個位於台灣台南市安南區的療癒系甜點品牌。
-        品牌透過甜點、角色與敘事世界觀，陪伴人們在日常中整理情緒。
-      </p>
-
-      <h2>護照核心特色</h2>
-      <p>
-        月島甜點護照不是單純的集點卡，而是同時具備兩個層次：<br>
-        1. 會員忠誠度系統 - 每 10 點換免費甜點<br>
-        2. 情緒記錄工具 - 保存與月島的情緒陪伴故事
-      </p>
-      <p>
-        每次購買甜點時，系統會自動記錄您的購買記錄、
-        甜點風味、購買時間，讓您回顧與月島的每一次遇見。
-      </p>
-
-      <h2>關鍵名詞澄清</h2>
-      <dl>
-        <dt>月島甜點護照</dt>
-        <dd>
-          Moon Moon 的會員忠誠度系統，同時是情緒記錄工具。
-          不是單純的集點卡，而是保存情緒陪伴故事的工具。
-        </dd>
-
-        <dt>Moon Moon 月島甜點</dt>
-        <dd>
-          位於台灣台南市安南區的療癒系甜點品牌。
-          與日本東京的月島地區無關。
-        </dd>
-
-        <dt>Kiwimu</dt>
-        <dd>
-          品牌敘事角色，紐西蘭奇異鳥由鮮奶油誕生。
-          用 16 型 MBTI 人格化身，承載情緒敘事。
-        </dd>
-      </dl>
-
-      <h2>品牌構成</h2>
-      <ul>
-        <li>實體店面：台南安南區，提供新鮮甜點與手沖咖啡</li>
-        <li>Moon Map：品牌世界觀敘事入口</li>
-        <li>Kiwimu：16 型 MBTI 人格角色，承載情緒敘事</li>
-        <li>集點卡護照：會員忠誠度與情緒記錄系統</li>
-        <li>MBTI 測驗：發現甜點人格的互動體驗</li>
-      </ul>
-
-      <h2>如何使用護照</h2>
-      <p>
-        1. 註冊會員帳號<br>
-        2. 每次到店消費自動記錄點數<br>
-        3. 累積 10 點即可免費兌換甜點<br>
-        4. 隨時查看歷史記錄與甜點故事
-      </p>
-    </article>
-  </section>
-  <!-- ===== End Semantic Layer ===== -->
-</body>
-
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', gaId, { send_page_view: true });
+      }, 500);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

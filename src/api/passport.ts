@@ -235,73 +235,89 @@ export async function migrateFromLocalStorage(
   localState: PassportState
 ): Promise<boolean> {
   const client = getSupabaseClient();
+  const deviceId = userId; // 使用 userId 兼作 deviceId，確保不同裝置登入後綁定同一人
 
   try {
+    // 1. Migrate Stamps -> quest_completions (quest_type: seasonal)
+    if (localState.unlockedStamps?.length > 0) {
+      const stampPromises = localState.unlockedStamps.map(stampId =>
+        client.from('quest_completions').insert({
+          device_id: deviceId,
+          user_id: userId,
+          quest_id: stampId,
+          quest_type: 'seasonal',
+          quest_name: `Stamp: ${stampId}`,
+          completed_at: new Date().toISOString()
+        }).then(({ error }) => {
+          if (error && error.code !== '23505') throw error; // ignore unique constraint
+        })
+      );
+      await Promise.all(stampPromises);
+    }
 
-    // Migrate stamps
-    const stampPromises = localState.unlockedStamps.map(stampId =>
-      client.from('passport_stamps').insert({
-        user_id: userId,
-        stamp_id: stampId,
-        source_project: 'passport', // Local stamps are from passport
-        unlocked_at: new Date().toISOString(),
-        claim_data: { migrated: true }
-      }).then(({ error }) => {
-        if (error && error.code !== '23505') throw error;
-      })
-    );
+    // 2. Migrate Achievements -> quest_completions (quest_type: seasonal)
+    if (localState.unlockedAchievements?.length > 0) {
+      const achievementPromises = localState.unlockedAchievements.map(achievementId =>
+        client.from('quest_completions').insert({
+          device_id: deviceId,
+          user_id: userId,
+          quest_id: achievementId,
+          quest_type: 'seasonal',
+          quest_name: `Achievement: ${achievementId}`,
+          completed_at: new Date().toISOString()
+        }).then(({ error }) => {
+          if (error && error.code !== '23505') throw error;
+        })
+      );
+      await Promise.all(achievementPromises);
+    }
 
-    await Promise.all(stampPromises);
+    // 3. Migrate Points History -> point_transactions
+    if (localState.pointsHistory?.length > 0) {
+      const pointsPromises = localState.pointsHistory.map(history => {
+        // Map history type to point_transactions action enum
+        let action = 'daily_checkin';
+        if (history.type.includes('gacha')) action = 'gacha_earn';
+        if (history.type.includes('mbti')) action = 'mbti';
+        if (history.type.includes('share')) action = 'share';
+        if (history.type.includes('redeem')) action = 'redeem';
 
-    // Migrate achievements
-    const achievementPromises = localState.unlockedAchievements.map(achievementId =>
-      client.from('passport_achievements').insert({
-        user_id: userId,
-        achievement_id: achievementId
-      }).then(({ error }) => {
-        if (error && error.code !== '23505') throw error;
-      })
-    );
-
-    await Promise.all(achievementPromises);
-
-    // Migrate rewards
-    const rewardPromises = localState.redeemedRewards.map(rewardId =>
-      client.from('passport_rewards').insert({
-        user_id: userId,
-        reward_id: rewardId
-      }).then(({ error }) => {
-        if (error && error.code !== '23505') throw error;
-      })
-    );
-
-    await Promise.all(rewardPromises);
-
-    // Log migration
-    await client.from('passport_migration_log').insert({
-      user_id: userId,
-      action: 'migration_from_localstorage',
-      details: {
-        stamps_count: localState.unlockedStamps.length,
-        achievements_count: localState.unlockedAchievements.length,
-        rewards_count: localState.redeemedRewards.length,
-        points: localState.points,
-      }
-    }).then(({ error }) => {
-      if (error) console.warn('Failed to log:', error);
-    });
-
-    // ─── 合併 Points (遷移) ───
-    if (localState.points && localState.points > 0) {
-      // 寫入一筆 point_transaction 作為遺產轉移
+        return client.from('point_transactions').insert({
+          device_id: deviceId,
+          user_id: userId,
+          points: history.amount,
+          action: action,
+          description: history.description || 'LocalStorage 遷移點數',
+          source: 'passport',
+          created_at: new Date(history.timestamp || Date.now()).toISOString()
+        });
+      });
+      await Promise.all(pointsPromises);
+    } else if (localState.points && localState.points > 0) {
+      // Fallback如果沒有 history 但有點數餘額
       await client.from('point_transactions').insert({
-        device_id: userId, // 綁定後，userId 兼作 device_id 紀錄
+        device_id: deviceId,
+        user_id: userId,
         points: localState.points,
-        action: 'migration_merge',
-        description: '從本地裝置轉移未同步之積分',
+        action: 'daily_checkin',
+        description: '從本地裝置轉移未同步之總點數',
         source: 'passport'
+      });
+    }
+
+    // 4. Migrate lastCheckinAt -> daily_checkins
+    if (localState.lastCheckinAt) {
+      // Create a daily checkin for the specific date
+      const checkinDate = new Date(localState.lastCheckinAt).toISOString().split('T')[0];
+      await client.from('daily_checkins').insert({
+        device_id: deviceId,
+        user_id: userId,
+        checked_in_at: checkinDate,
+        streak_count: 1,
+        points_earned: 1,
+        created_at: new Date(localState.lastCheckinAt).toISOString()
       }).then(({ error }) => {
-        if (error) console.warn('Failed to migrate points:', error);
+        if (error && error.code !== '23505') throw error;
       });
     }
 

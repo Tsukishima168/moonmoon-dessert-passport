@@ -32,11 +32,14 @@ import {
 import BadgeJourney from './components/BadgeJourney';
 import MemberHub from './components/MemberHub';
 import RewardShop from './components/RewardShop';
+import CheckinCard from './components/CheckinCard';
+import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
 import { useLiff } from './src/contexts/LiffContext';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 import { trackEvent, trackButtonClick, trackOutboundNavigation } from './analytics';
 import { getUserPoints } from './src/api/points';
+
 
 interface PassportScreenProps {
     onClose: () => void;
@@ -45,10 +48,12 @@ interface PassportScreenProps {
 const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('journey');
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
+    const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
     const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+
 
     const { isLoggedIn, profile } = useLiff();
     const { user, signInWithGoogle } = useSupabaseAuth();
@@ -238,12 +243,24 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     )}
 
                     {activeTab === 'journey' && (
-                        <BadgeJourney
-                            onStampUnlocked={handleStampUnlocked}
-                            onGpsCheckin={handleGpsCheckin}
-                            isCheckingLocation={isCheckingLocation}
-                        />
+                        <div className="space-y-4">
+                            {/* ─── Daily Check-in (prominent placement) ─── */}
+                            <CheckinCard
+                                onOpen={() => {
+                                    setShowCheckinModal(true);
+                                    trackEvent('checkin_card_tapped', {});
+                                }}
+                            />
+
+                            {/* ─── Stamp Journey ─── */}
+                            <BadgeJourney
+                                onStampUnlocked={handleStampUnlocked}
+                                onGpsCheckin={handleGpsCheckin}
+                                isCheckingLocation={isCheckingLocation}
+                            />
+                        </div>
                     )}
+
 
                     {activeTab === 'rewards' && (
                         <div className="space-y-4">
@@ -289,6 +306,17 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'shop' && <RewardShop />}
                 </div>
+
+                {/* ─── Checkin Modal ─── */}
+                {showCheckinModal && (
+                    <CheckinModal
+                        onClose={() => setShowCheckinModal(false)}
+                        onCheckinComplete={(pts) => {
+                            // Refresh points in header
+                            setPoints(prev => prev + pts);
+                        }}
+                    />
+                )}
 
                 {/* ─── Achievement Modal ─── */}
                 {showAchievementModal && (
