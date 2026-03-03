@@ -14,7 +14,8 @@ import {
   getUnlockedStampCount,
   calculateUserLevel,
   isStampUnlocked,
-  getUnlockedAchievements
+  getUnlockedAchievements,
+  handleIncomingPointsSync
 } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim } from './rewardClaim';
@@ -972,6 +973,28 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle cross-site points sync from Gacha redirect URL
+  useEffect(() => {
+    const result = handleIncomingPointsSync();
+    if (!result?.credited) return;
+
+    trackEvent('points_sync_received', {
+      source: 'gacha',
+      points: result.credited,
+    });
+
+    document.dispatchEvent(new CustomEvent('kiwimu:points_earned', {
+      detail: {
+        points: result.credited,
+        action: 'gacha_earn',
+        description: `扭蛋同步 +${result.credited} 積分`,
+      },
+    }));
+
+    // Open passport directly so users can immediately see updated points
+    setScreen('passport');
+  }, []);
+
   // Randomly select one question set on load
   const [activeQuestionSet, setActiveQuestionSet] = useState(QUESTION_SETS[0]);
 
@@ -1136,6 +1159,10 @@ function App() {
         if (stampParam === 'quiz') {
           unlockStamp('quiz_completed');
           trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
+          stampUnlocked = true;
+        } else if (stampParam === 'mbti_complete' || stampParam === 'mbti') {
+          unlockStamp('mbti_completed');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'url' });
           stampUnlocked = true;
         } else if (stampParam === 'secret1') {
           unlockStamp('secret_qr_1');
