@@ -33,8 +33,8 @@ declare global {
 }
 
 const getGa4Id = (): string => {
-  if (typeof window === 'undefined') return 'G-ZF71VP9Z8Y';
-  return window.__GA4_ID__ || 'G-ZF71VP9Z8Y';
+  if (typeof window === 'undefined') return 'G-DM6F27KL8B';
+  return window.__GA4_ID__ || 'G-DM6F27KL8B';
 };
 
 /**
