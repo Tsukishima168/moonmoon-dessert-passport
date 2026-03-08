@@ -8,7 +8,7 @@
 ## 📦 **已開發/可使用的項目 (5個)**
 
 ### **1️⃣ moonmoon-dessert-passport** ✅ 🎯 (當前)
-- **路徑**: `/Users/pensoair/Desktop/moonmoon-dessert-passport`
+- **路徑**: `/Users/penstudio/Desktop/moonmoon-dessert-passport`
 - **大小**: 25M
 - **技術棧**: React 19 + TypeScript + Vite + Tailwind + LIFF
 - **功能**:
@@ -30,7 +30,7 @@
 ---
 
 ### **2️⃣ moonmoon-gacha** ✅ 
-- **路徑**: `/Users/pensoair/Desktop/moonmoon-gacha`
+- **路徑**: `/Users/penstudio/Desktop/moonmoon-gacha`
 - **大小**: 130M
 - **技術棧**: React 19 + TypeScript + Vite + Framer Motion
 - **功能**:
@@ -45,7 +45,7 @@
 ---
 
 ### **3️⃣ color-of-kiwimu-mbti-lab-v5** ✅ 
-- **路徑**: `/Users/pensoair/Desktop/color-of-kiwimu-mbti-lab-v5`
+- **路徑**: `/Users/penstudio/Desktop/color-of-kiwimu-mbti-lab-v5`
 - **大小**: 55M
 - **技術棧**: React + TypeScript + Vite + Supabase + Discord.js + Firebase
 - **功能**:
@@ -65,7 +65,7 @@
 ---
 
 ### **4️⃣ moon_map_original** ✅ 
-- **路徑**: `/Users/pensoair/Desktop/moon_map_original`
+- **路徑**: `/Users/penstudio/Desktop/moon_map_original`
 - **大小**: 63M
 - **技術棧**: Vite + Sanity CMS + Supabase + GA4
 - **功能**:
@@ -85,7 +85,7 @@
 ---
 
 ### **5️⃣ penso-good-blog** ✅ 
-- **路徑**: `/Users/pensoair/Desktop/penso-good-blog`
+- **路徑**: `/Users/penstudio/Desktop/penso-good-blog`
 - **大小**: 1.5M
 - **功能**:
   - 📝 部落格/文檔管理
@@ -100,7 +100,7 @@
 ## 🔧 **未開發/規劃中 (1個)**
 
 ### **PsycheWorld-Integration-Hub** 🚧
-- **路徑**: `/Users/pensoair/Desktop/PsycheWorld-Integration-Hub`
+- **路徑**: `/Users/penstudio/Desktop/PsycheWorld-Integration-Hub`
 - **大小**: 92K (輕量級協調倉庫)
 - **目的**:
   - 🎯 統一的整合控制平面
@@ -129,7 +129,7 @@
 ## 📡 **工具/通知系統 (1個)**
 
 ### **telegram-notify** 🤖
-- **路徑**: `/Users/pensoair/Desktop/telegram-notify`
+- **路徑**: `/Users/penstudio/Desktop/telegram-notify`
 - **大小**: 12K
 - **技術**: Python + Telegram Bot API
 - **功能**:

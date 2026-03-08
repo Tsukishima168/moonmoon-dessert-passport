@@ -114,7 +114,7 @@
    - 點擊 "Visit" 查看您的網站！
 
 6. **記下您的網址**
-   - 預設網址格式：`https://moonmoon-dessert-passport.vercel.app`
+   - 預設網址格式：`https://passport.kiwimu.com`
    - 或是 `https://moonmoon-dessert-passport-xxxxx.vercel.app`
 
 ---

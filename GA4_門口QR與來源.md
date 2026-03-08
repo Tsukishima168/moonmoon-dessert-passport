@@ -11,7 +11,7 @@
 請將**門口（大門）**的 QR Code 連結設為：
 
 ```
-https://moonmoon-dessert-passport.vercel.app/?utm_source=door&utm_medium=qr
+https://passport.kiwimu.com/?utm_source=door&utm_medium=qr
 ```
 
 （已填入正式網址，可直接使用。）

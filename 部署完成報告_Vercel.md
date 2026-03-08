@@ -52,7 +52,7 @@ To https://github.com/Tsukishima168/moonmoon-dessert-passport.git
 → 查看提交旁邊的小勾勾/叉叉
 
 方法 3：檢查部署 URL
-→ 通常為：https://moonmoon-dessert-passport.vercel.app
+→ 通常為：https://passport.kiwimu.com
 ```
 
 ### Vercel 配置
@@ -78,7 +78,7 @@ To https://github.com/Tsukishima168/moonmoon-dessert-passport.git
   → 檢查 Status: Ready ✅
 
 ❑ 訪問部署 URL
-  → https://moonmoon-dessert-passport.vercel.app
+  → https://passport.kiwimu.com
   → 驗證頁面可訪問
 
 ❑ 檢查 Logo
@@ -130,7 +130,7 @@ To https://github.com/Tsukishima168/moonmoon-dessert-passport.git
 
 ### 部署 URL
 ```
-生產：https://moonmoon-dessert-passport.vercel.app
+生產：https://passport.kiwimu.com
 預覽：(自動生成，查看 Vercel Dashboard)
 GitHub：https://github.com/Tsukishima168/moonmoon-dessert-passport
 ```

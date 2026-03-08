@@ -73,7 +73,7 @@ VITE_LIFF_ID=your_existing_liff_id
 ### **Step 5: 安裝依賴**
 
 ```bash
-cd /Users/pensoair/Desktop/moonmoon-dessert-passport
+cd /Users/penstudio/Desktop/moonmoon-dessert-passport
 npm install @supabase/supabase-js
 ```
 

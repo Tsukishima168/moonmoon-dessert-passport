@@ -119,7 +119,7 @@ SEO 得分        +15-20   (Google Core Web Vitals 改善)
 
 ### 你的 Obsidian Vault 位置
 ```
-/Users/pensoair/Library/Mobile Documents/iCloud~md~obsidian/Documents/Penso-OS/
+/Users/penstudio/Library/Mobile Documents/iCloud~md~obsidian/Documents/Penso-OS/
 ```
 
 ### 相關文檔已讀取

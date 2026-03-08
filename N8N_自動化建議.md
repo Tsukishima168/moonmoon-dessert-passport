@@ -41,7 +41,7 @@
 
 **做法**：
 - LINE Webhook 收到 **follow** 事件 → n8n 用 LINE 節點發送歡迎文 + 測驗連結：  
-  `https://moonmoon-dessert-passport.vercel.app/?utm_source=line&utm_medium=oa`
+  `https://passport.kiwimu.com/?utm_source=line&utm_medium=oa`
 
 **你需要**：同上，LINE Messaging API + n8n Webhook。
 

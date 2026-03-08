@@ -104,7 +104,7 @@ VITE_LIFF_ID=your_existing_liff_id
 
 #### 步驟:
 ```bash
-cd /Users/pensoair/Desktop/moonmoon-dessert-passport
+cd /Users/penstudio/Desktop/moonmoon-dessert-passport
 npm install @supabase/supabase-js
 ```
 
@@ -158,7 +158,7 @@ console.log('SUPABASE_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0
    無錯誤信息: ✅
 
 ✅ Step 4: .env.local 已建立?
-   路徑: /Users/pensoair/Desktop/moonmoon-dessert-passport/.env.local
+   路徑: /Users/penstudio/Desktop/moonmoon-dessert-passport/.env.local
    已添加 3 個變量: ✅
 
 ✅ Step 5: @supabase/supabase-js 已安裝?
