@@ -31,14 +31,17 @@ export async function initLiffAndAuth() {
                         }
                     });
 
-                    // Also upsert into passport_users if needed
-                    await supabase.from('passport_users').upsert({
-                        id: session.user.id,
-                        line_user_id: profile.userId,
-                        display_name: profile.displayName,
-                        profile_picture_url: profile.pictureUrl,
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'id' });
+                    // Also upsert into passport_users via API (no direct DB access from frontend)
+                    await fetch('/api/save-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: session.user.id,
+                            lineUserId: profile.userId,
+                            displayName: profile.displayName,
+                            profilePictureUrl: profile.pictureUrl,
+                        }),
+                    });
 
                     console.log('[LIFF] Successfully bound LINE profile to Supabase user.');
                 } else {
