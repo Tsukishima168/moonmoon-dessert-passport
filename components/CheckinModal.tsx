@@ -157,6 +157,11 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
             setShowConfetti(true);
             onCheckinComplete?.(points || 10);
 
+            // GA4: passport_checkin 每日線上簽到
+            if (typeof window !== 'undefined' && window.gtag) {
+                window.gtag('event', 'passport_checkin', { location: 'daily_online' });
+            }
+
             // Hide confetti after animation
             setTimeout(() => setShowConfetti(false), 2500);
         } catch (err) {

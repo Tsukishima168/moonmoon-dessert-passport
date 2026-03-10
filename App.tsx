@@ -63,6 +63,7 @@ const StickerBadge = ({
 // -- Header --
 const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void; onHomeClick: () => void }) => {
   const [stampCount, setStampCount] = useState(0);
+  const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
 
   // ⭐ P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
   useEffect(() => {
@@ -143,6 +144,26 @@ const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void;
             Pass
           </Button>
         </a>
+
+        {/* Auth 狀態列 */}
+        {!/Line\//i.test(navigator.userAgent) && (
+          <>
+            {supabaseUser ? (
+              <div className="flex items-center bg-white border border-brand-black rounded-full px-2 py-1 shadow-[2px_2px_0px_black] ml-1 gap-2">
+                <button onClick={supabaseSignOut} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-brand-black transition-colors">
+                  <LogOut size={12} /> <span className="hidden sm:inline">登出</span>
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={signInWithGoogle} 
+                className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-[1px] hover:shadow-[1px_1px_0px_black] transition-all"
+              >
+                <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
+              </button>
+            )}
+          </>
+        )}
       </div>
     </header>
   );
@@ -1258,23 +1279,7 @@ function App() {
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
       {loading && <LoadingScreen />}
 
-      {/* Auth 狀態列（非 LINE 環境顯示 Google 登入） */}
-      {!/Line\//i.test(navigator.userAgent) && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex justify-end px-4 py-2 bg-brand-black/90 backdrop-blur-sm">
-          {supabaseUser ? (
-            <div className="flex items-center gap-2 text-xs text-brand-lime">
-              <span className="truncate max-w-[120px]">{supabaseUser.email?.split('@')[0]}</span>
-              <button onClick={supabaseSignOut} className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
-                <LogOut size={12} /> 登出
-              </button>
-            </div>
-          ) : (
-            <button onClick={signInWithGoogle} className="flex items-center gap-1.5 text-xs bg-brand-lime text-brand-black px-3 py-1.5 rounded-full font-medium hover:bg-white transition-colors">
-              <LogIn size={12} /> Google 登入
-            </button>
-          )}
-        </div>
-      )}
+      {/* Google Login is now inside <Header /> */}
 
       <Header onPassportClick={openPassport} onHomeClick={restart} />
 

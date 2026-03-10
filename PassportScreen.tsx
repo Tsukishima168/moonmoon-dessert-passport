@@ -127,6 +127,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     const newIds = unlockStamp(stamp.id);
                     handleStampUnlocked(newIds);
                     trackEvent('stamp_unlocked', { stamp_id: stamp.id, method: 'gps', distance: dist });
+
+                    // GA4: passport_checkin 實體門市打卡
+                    if (typeof window !== 'undefined' && window.gtag) {
+                        window.gtag('event', 'passport_checkin', { location: stamp.name });
+                    }
                 } else {
                     setLocationError(`你距離月島還有約 ${Math.round(dist)} 公尺，再靠近一點吧！`);
                     trackEvent('stamp_unlock_failed_distance', { stamp_id: stamp.id, distance: dist });
