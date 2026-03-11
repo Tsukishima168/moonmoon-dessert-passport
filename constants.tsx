@@ -193,7 +193,7 @@ export const MOONMOON_SITES: MoonSite[] = [
   {
     id: 'dessert_booking',
     name: '甜點預訂',
-    url: 'https://shop.kiwimu.com',
+    url: 'https://map.kiwimu.com/menu',
     description: '線上預訂甜點',
     iconType: 'CakeSlice'
   },
