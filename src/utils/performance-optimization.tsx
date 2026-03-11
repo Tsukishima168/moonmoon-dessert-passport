@@ -23,10 +23,10 @@ export async function initLiffWithTimeout(liffId: string, timeoutMs: number = 50
     ]);
 
     await liffInit;
-    console.log('✅ LIFF 初始化成功');
+    console.log('[LIFF] 初始化成功');
     return true;
   } catch (err) {
-    console.warn('⚠️ LIFF 初始化失敗，使用 fallback:', err);
+    console.warn('[LIFF] 初始化失敗，使用 fallback:', err);
     return false;
   }
 }
@@ -329,10 +329,10 @@ export const createAnalyticsWorker = () => {
 // ================================================================
 
 export const OPTIMIZED_CLOUDINARY_URLS = {
-  // ❌ 舊做法
+  // 舊做法
   LOGO_OLD: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_300/v1768743629/Dessert-Chinese_u8uoxt.png',
 
-  // ✅ 新做法：最佳化參數
+  // 新做法：最佳化參數
   LOGO_NEW: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto:best,w_200,dpr_2/Dessert-Chinese.png',
   // 參數說明：
   // f_auto - 自動選擇格式（WebP > AVIF > PNG）

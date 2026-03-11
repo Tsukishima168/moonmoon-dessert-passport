@@ -49,7 +49,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const cached = JSON.parse(cachedProfile);
                 setProfile(cached);
                 setIsLoggedIn(true);
-                console.log('✅ LIFF: 使用快取 profile');
+                console.log('[LIFF] 使用快取 profile');
             }
 
             // 2. ⭐ 超時控制：5 秒後自動 fallback
@@ -62,7 +62,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             await liffInit;
             setLiffObject(liff);
-            console.log('✅ LIFF 初始化成功');
+            console.log('[LIFF] 初始化成功');
 
             // 3. 並行獲取最新 profile
             if (liff.isLoggedIn()) {
@@ -85,14 +85,14 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 localStorage.setItem('liff_profile_cache', JSON.stringify(profileObj));
                 setProfile(profileObj);
                 setIsLoggedIn(true);
-                console.log('✅ LIFF profile 更新成功');
+                console.log('[LIFF] profile 更新成功');
 
             } else {
                 // 如果是在一般瀏覽器開發測試 (帶有 mock 參數)
                 const urlParams = new URLSearchParams(window.location.search);
                 const mockLiffId = urlParams.get('mock_liff_id');
                 if (mockLiffId) {
-                    console.log('🛠️ 偵測到 mock_liff_id，模擬 LIFF 登入狀態');
+                    console.log('[LIFF] 偵測到 mock_liff_id，模擬 LIFF 登入狀態');
                     const mockProfile = {
                         userId: mockLiffId,
                         displayName: 'Mock User',
@@ -102,7 +102,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
         } catch (err) {
-            console.warn('⚠️ LIFF 後台初始化失敗，使用 fallback 或離線模式:', err);
+            console.warn('[LIFF] 後台初始化失敗，使用 fallback 或離線模式:', err);
             setError(err);
             // App 繼續運作，使用快取或離線模式
         }
