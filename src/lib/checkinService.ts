@@ -9,6 +9,7 @@
  */
 
 import { supabase } from './supabase';
+import { analyticsQueue } from '../utils/performance-optimization';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -136,6 +137,12 @@ export async function performCheckin(deviceId: string): Promise<CheckinResult> {
         'daily_checkin',
         `第 ${streakCount} 天簽到 +${pointsAwarded} 積分`,
     );
+
+    analyticsQueue.push('passport_checkin', {
+        streak_count: streakCount,
+        points_awarded: pointsAwarded,
+        is_bonus_day: isBonusDay,
+    });
 
     return {
         success: true,

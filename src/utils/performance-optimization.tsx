@@ -293,43 +293,8 @@ export const OptimizedLogo = React.memo(() => (
 ));
 
 // ================================================================
-// 6️⃣  代碼分割 - Lazy Load 屏幕
+// 6️⃣  代碼分割 - Lazy Load 屏幕（目標檔案未建立，暫時移除）
 // ================================================================
-
-/**
- * 使用 React.lazy 實現代碼分割
- * 只在需要時加載各個屏幕的 JS 代碼
- */
-export const LazyLandingScreen = React.lazy(() =>
-  import('../screens/LandingScreen').then(mod => ({
-    default: mod.LandingScreen
-  }))
-);
-
-export const LazyPassportScreen = React.lazy(() =>
-  import('../screens/PassportScreen').then(mod => ({
-    default: mod.PassportScreen
-  }))
-);
-
-export const LazyARScanner = React.lazy(() =>
-  import('../components/ARScanner').then(mod => ({
-    default: mod.ARScanner
-  }))
-);
-
-/**
- * 使用方式：
- * 
- * const App = () => {
- *   return (
- *     <Suspense fallback={<LoadingScreen />}>
- *       {screen === 'landing' && <LazyLandingScreen />}
- *       {screen === 'passport' && <LazyPassportScreen />}
- *     </Suspense>
- *   );
- * };
- */
 
 // ================================================================
 // 7️⃣  Web Worker - 後台處理
