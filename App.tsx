@@ -65,7 +65,7 @@ const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void;
   const [stampCount, setStampCount] = useState(0);
   const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
 
-  // ⭐ P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
+  // P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
   useEffect(() => {
     // 初始化 stamp count
     setStampCount(getUnlockedStampCount());
@@ -1248,7 +1248,7 @@ function App() {
       // Show passport and success message after unlocking
       if (stampUnlocked) {
         // Show success message
-        alert('🎉 成功解鎖印章！請查看你的護照。');
+        alert('成功解鎖印章，請查看你的護照。');
 
         // Open passport to show the unlocked stamp
         prevScreenRef.current = screen;

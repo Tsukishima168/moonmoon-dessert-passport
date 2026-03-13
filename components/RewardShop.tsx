@@ -11,6 +11,18 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import {
+    X,
+    Coins,
+    Gift,
+    Sparkles,
+    Coffee,
+    CupSoda,
+    CakeSlice,
+    ShoppingBag,
+    Sticker as StickerIcon,
+    type LucideIcon,
+} from 'lucide-react';
 import { getPassportPointsBalance, redeemItem } from '../passportUtils';
 import { REDEEMABLE_ITEMS } from '../constants';
 import { RedeemableItem } from '../types';
@@ -33,17 +45,17 @@ interface RewardCardProps {
 
 // ─── 商品卡片 ──────────────────────────────────────────────
 
-const REWARD_EMOJI: Record<string, string> = {
-    tea_buckwheat: '🍵',
-    coffee_iced: '☕',
-    coffee_sicily: '🍋',
-    latte_matcha: '🍵',
-    second_half: '🥤',
-    pudding_classic: '🍮',
-    chiffon_slice: '🍰',
-    seasonal_fruit: '🍓',
-    sticker_set: '🎭',
-    cooler_bag: '👜',
+const REWARD_ICON_MAP: Record<string, { Icon: LucideIcon; accent: string; bg: string }> = {
+    tea_buckwheat: { Icon: CupSoda, accent: '#0f766e', bg: '#d1fae5' },
+    coffee_iced: { Icon: Coffee, accent: '#7c2d12', bg: '#ffedd5' },
+    coffee_sicily: { Icon: Coffee, accent: '#9a3412', bg: '#ffedd5' },
+    latte_matcha: { Icon: CupSoda, accent: '#166534', bg: '#dcfce7' },
+    second_half: { Icon: CupSoda, accent: '#1d4ed8', bg: '#dbeafe' },
+    pudding_classic: { Icon: CakeSlice, accent: '#b45309', bg: '#fef3c7' },
+    chiffon_slice: { Icon: CakeSlice, accent: '#c2410c', bg: '#ffedd5' },
+    seasonal_fruit: { Icon: Sparkles, accent: '#be185d', bg: '#fce7f3' },
+    sticker_set: { Icon: StickerIcon, accent: '#6d28d9', bg: '#ede9fe' },
+    cooler_bag: { Icon: ShoppingBag, accent: '#1f2937', bg: '#e5e7eb' },
 };
 
 const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem }) => {
@@ -53,6 +65,8 @@ const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem })
         : reward.category === 'dessert'
             ? '甜點'
             : '周邊';
+    const iconMeta = REWARD_ICON_MAP[reward.id] ?? { Icon: Gift, accent: '#92400e', bg: '#fef3c7' };
+    const RewardIcon = iconMeta.Icon;
 
     return (
         <div
@@ -90,7 +104,21 @@ const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem })
             </span>
 
             {/* 主體 */}
-            <div style={{ fontSize: 40 }}>{REWARD_EMOJI[reward.id] ?? '🎁'}</div>
+            <div
+                style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: iconMeta.bg,
+                    color: iconMeta.accent,
+                    border: `1px solid ${canAfford ? iconMeta.accent : '#d1d5db'}`,
+                }}
+            >
+                <RewardIcon size={34} strokeWidth={2.2} />
+            </div>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#3d2c00' }}>
                 {reward.name}
             </h3>
@@ -101,13 +129,14 @@ const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem })
                 style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 4,
+                    gap: 6,
                     fontSize: 18,
                     fontWeight: 800,
                     color: canAfford ? '#e65100' : '#9e9e9e',
                 }}
             >
-                🪙 {reward.pointsCost} 積分
+                <Coins size={18} />
+                <span>{reward.pointsCost} 積分</span>
             </div>
 
             <button
@@ -165,7 +194,21 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ reward, onConfirm, onCanc
                 textAlign: 'center',
             }}
         >
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🎁</div>
+            <div
+                style={{
+                    width: 56,
+                    height: 56,
+                    margin: '0 auto 8px',
+                    borderRadius: 18,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#fff7ed',
+                    color: '#ea580c',
+                }}
+            >
+                <Gift size={28} />
+            </div>
             <h3 style={{ margin: '0 0 8px', color: '#3d2c00' }}>確認兌換？</h3>
             <p style={{ margin: '0 0 24px', color: '#666', fontSize: 14 }}>
                 <strong>{reward.name}</strong>
@@ -230,7 +273,21 @@ const SuccessDialog: React.FC<SuccessDialogProps> = ({ reward, onClose }) => (
                 textAlign: 'center',
             }}
         >
-            <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
+            <div
+                style={{
+                    width: 68,
+                    height: 68,
+                    margin: '0 auto 12px',
+                    borderRadius: 22,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.85)',
+                    color: '#f59e0b',
+                }}
+            >
+                <Sparkles size={34} />
+            </div>
             <h2 style={{ margin: '0 0 8px', color: '#3d2c00' }}>兌換成功！</h2>
             <p style={{ color: '#5d4037', margin: '0 0 16px', fontSize: 15 }}>
                 <strong>{reward.name}</strong><br />已成功兌換
@@ -363,11 +420,11 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                             style={{
                                 width: 36, height: 36, borderRadius: 18,
                                 border: 'none', background: '#f5f5f5',
-                                fontSize: 18, cursor: 'pointer', color: '#666',
+                                cursor: 'pointer', color: '#666',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}
                         >
-                            ✕
+                            <X size={18} />
                         </button>
                     )}
                 </div>
@@ -386,11 +443,25 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 >
                     <div>
                         <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>我的積分餘額</p>
-                        <p style={{ margin: '4px 0 0', fontSize: 32, fontWeight: 800, color: '#fff' }}>
-                            🪙 {userPoints}
-                        </p>
+                        <div style={{ margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
+                            <Coins size={24} />
+                            <p style={{ margin: 0, fontSize: 32, fontWeight: 800 }}>{userPoints}</p>
+                        </div>
                     </div>
-                    <div style={{ fontSize: 40 }}>👜</div>
+                    <div
+                        style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 18,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(255,255,255,0.16)',
+                            color: '#fff',
+                        }}
+                    >
+                        <ShoppingBag size={28} />
+                    </div>
                 </div>
 
                 {/* 篩選器 */}

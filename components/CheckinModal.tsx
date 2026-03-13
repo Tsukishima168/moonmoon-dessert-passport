@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Flame, Trophy, Calendar, CheckCircle, Sparkles } from 'lucide-react';
+import { X, Flame, Trophy, Calendar, CheckCircle, Sparkles, Medal, Crown, type LucideIcon } from 'lucide-react';
 import { getPassportState, canCheckinToday, performDailyCheckin } from '../passportUtils';
 import { adjustPointsByIdentity } from '../src/api/points';
 import { useLiff } from '../src/contexts/LiffContext';
@@ -111,11 +111,11 @@ function getStreak(): number {
     return streak;
 }
 
-const MILESTONES = [
-    { days: 7, label: '週冠軍', emoji: '🥇' },
-    { days: 14, label: '半月達人', emoji: '🌟' },
-    { days: 30, label: '月島守護者', emoji: '🏆' },
-    { days: 100, label: '傳說月靈', emoji: '👑' },
+const MILESTONES: Array<{ days: number; label: string; Icon: LucideIcon }> = [
+    { days: 7, label: '週冠軍', Icon: Medal },
+    { days: 14, label: '半月達人', Icon: Sparkles },
+    { days: 30, label: '月島守護者', Icon: Trophy },
+    { days: 100, label: '傳說月靈', Icon: Crown },
 ];
 
 const MONTH_NAMES = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
@@ -135,6 +135,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
     const monthLabel = MONTH_NAMES[now.getMonth()];
     const nextMilestone = MILESTONES.find(m => m.days > streak);
     const daysToNextMilestone = nextMilestone ? nextMilestone.days - streak : 0;
+    const NextMilestoneIcon = nextMilestone?.Icon;
 
     const handleCheckin = useCallback(async () => {
         if (!canCheckin || checking) return;
@@ -202,7 +203,9 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
             {/* Confetti shimmer */}
             {showConfetti && (
                 <div className="absolute inset-0 pointer-events-none z-[10000] flex items-center justify-center">
-                    <div className="text-6xl animate-bounce">🎉</div>
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-black/85 text-brand-lime animate-bounce shadow-2xl">
+                        <Sparkles size={42} />
+                    </div>
                 </div>
             )}
 
@@ -230,8 +233,9 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                             <span className="text-sm font-bold">{streak} 天連簽</span>
                         </div>
                         {nextMilestone && (
-                            <span className="text-xs text-white/60">
-                                距離 {nextMilestone.emoji} {nextMilestone.label} 還剩 {daysToNextMilestone} 天
+                            <span className="inline-flex items-center gap-1.5 text-xs text-white/60">
+                                {NextMilestoneIcon && <NextMilestoneIcon size={12} className="text-brand-lime" />}
+                                <span>距離 {nextMilestone.label} 還剩 {daysToNextMilestone} 天</span>
                             </span>
                         )}
                     </div>
@@ -288,7 +292,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                                     : 'bg-gray-50 border-gray-200 text-gray-400'
                                 }`}
                         >
-                            <span>{m.emoji}</span>
+                            <m.Icon size={12} />
                             <span>{m.days}天</span>
                             {streak >= m.days && <CheckCircle size={10} />}
                         </div>
@@ -314,13 +318,14 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                             ) : (
                                 <>
                                     <Calendar size={16} className="text-brand-lime" />
-                                    今日簽到，領取積分 🪙
+                                    今日簽到，領取積分
                                 </>
                             )}
                         </button>
                     ) : (
-                        <div className="text-center py-3 text-sm text-gray-400 font-medium">
-                            ✅ 今日已簽到，明天見！
+                        <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-400 font-medium">
+                            <CheckCircle size={16} className="text-brand-black/50" />
+                            <span>今日已簽到，明天見</span>
                         </div>
                     )}
 

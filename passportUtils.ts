@@ -213,7 +213,7 @@ export function performDailyCheckin(): DailyCheckinResult {
 
     const state = getPassportState();
 
-    // 1. ✅ 即時更新時間戳 + 直接按本地 streak 給點（保證 UI 同步更新，不等 Supabase）
+    // 1. 即時更新時間戳 + 直接按本地 streak 給點（保證 UI 同步更新，不等 Supabase）
     state.lastCheckinAt = Date.now();
     state.lastUpdatedAt = Date.now();
     const streakCount = getLocalCheckinStreakFromState(state);

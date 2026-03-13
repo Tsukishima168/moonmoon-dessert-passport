@@ -142,7 +142,7 @@ export const REWARD_TIERS: RewardTier[] = [
     id: 'tier_8',
     requiredStamps: 8,
     title: '經典烤布丁',
-    description: '招牌經典烤布丁乙個 🎉 全收集獎勵！',
+    description: '招牌經典烤布丁乙個，全收集獎勵。',
     imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
     canRepeat: false,
     redemptionMethod: 'show-screen'

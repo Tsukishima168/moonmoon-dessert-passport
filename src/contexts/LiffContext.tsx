@@ -22,7 +22,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [profile, setProfile] = useState<LiffContextType['profile']>(null);
     const [error, setError] = useState<any>(null);
-    const [liffReady, setLiffReady] = useState(false);  // ⭐ P0 優化：標記 LIFF 是否就緒（非阻塞）
+    const [liffReady, setLiffReady] = useState(false);  // P0 優化：標記 LIFF 是否就緒（非阻塞）
 
     // Get LIFF ID from environment variable
     const liffId = import.meta.env.VITE_LIFF_ID;
@@ -30,14 +30,14 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         if (!liffId) {
             console.warn('LIFF ID is not set in environment variables.');
-            setLiffReady(true);  // ⭐ 即使沒有 liffId，UI 也能繼續
+            setLiffReady(true);  // 即使沒有 liffId，UI 也能繼續
             return;
         }
 
-        // ⭐ P0 優化：立即標記為 ready，不等 LIFF 初始化
+        // P0 優化：立即標記為 ready，不等 LIFF 初始化
         setLiffReady(true);
 
-        // ⭐ 後台初始化 LIFF，不阻塞主線程
+        // 後台初始化 LIFF，不阻塞主線程
         initLiffInBackground(liffId);
     }, [liffId]);
 
@@ -52,7 +52,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 console.log('[LIFF] 使用快取 profile');
             }
 
-            // 2. ⭐ 超時控制：5 秒後自動 fallback
+            // 2. 超時控制：5 秒後自動 fallback
             const liffInit = Promise.race([
                 liff.init({ liffId: id }),
                 new Promise((_, reject) =>

@@ -43,7 +43,7 @@ export function createOptimizedLiffProvider() {
     componentDidMount() {
       const liffId = import.meta.env.VITE_LIFF_ID;
       
-      // ⭐ 非阻塞初始化：不等 LIFF，先渲染 UI
+      // 非阻塞初始化：不等 LIFF，先渲染 UI
       if (liffId) {
         // 後台初始化，不阻塞主線程
         this.initLiffInBackground(liffId);
@@ -133,7 +133,7 @@ class AnalyticsQueue {
     this.isProcessing = true;
 
     if ('requestIdleCallback' in window) {
-      // ⭐ 推薦：在瀏覽器空閒時發送
+      // 推薦：在瀏覽器空閒時發送
       requestIdleCallback(
         () => this.sendBatch(),
         { timeout: 2000 }  // 最多等 2 秒
@@ -247,7 +247,7 @@ export const OptimizedButton = React.memo(
       </button>
     );
   },
-  // ⭐ 自訂比較函數：只比較關鍵 props
+  // 自訂比較函數：只比較關鍵 props
   (prevProps, nextProps) => {
     return (
       prevProps.variant === nextProps.variant &&
