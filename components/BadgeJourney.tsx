@@ -47,20 +47,21 @@ const IconMap: Record<string, any> = {
     ShoppingBag,
     Star,
     Search,
-    Navigation
+    Navigation,
+    Sparkles,
 };
 
 const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheckin, isCheckingLocation, gpsDebug }) => {
     const [externalPending, setExternalPending] = useState<string | null>(null);
     const [showCollected, setShowCollected] = useState(false);
+    const visibleStamps = STAMPS.filter(stamp => !stamp.isSecret);
     const unlockedCount = getUnlockedStampCount();
     const nextStamp = getNextStampInJourney();
-    const totalStamps = STAMPS.length;
+    const totalStamps = visibleStamps.length;
     const allComplete = unlockedCount >= totalStamps;
 
     // Separate stamps into collected and uncollected
     const collectedStamps = STAMPS.filter(s => isStampUnlocked(s.id));
-    const remainingStamps = STAMPS.filter(s => !isStampUnlocked(s.id));
 
     const handleExternalGo = (stamp: Stamp) => {
         if (stamp.externalLink) {

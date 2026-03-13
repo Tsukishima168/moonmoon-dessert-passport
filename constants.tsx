@@ -29,9 +29,9 @@ export const STAMPS: Stamp[] = [
     guideCta: '定位簽到',
     guideHint: '到店後按一下，GPS 自動偵測！',
     location: {
-      lat: 23.0463,
-      lng: 120.2113,
-      radius: 300
+      lat: 23.0473181,
+      lng: 120.1987003,
+      radius: 100
     }
   },
   {
@@ -109,6 +109,17 @@ export const STAMPS: Stamp[] = [
     externalLink: LINKS.GOOGLE_MAPS,
     guideCta: '寫評論',
     guideHint: '幫月島留下評論，讓更多人認識我們！'
+  },
+  {
+    id: 'egg_master_2026_q1',
+    name: '島主限定徽章',
+    description: '於月島地圖找齊 8 顆彩蛋後解鎖的限定徽章',
+    icon: 'Sparkles',
+    animationType: 'float',
+    unlockMethod: 'qr',
+    isSecret: true,
+    guideCta: '領取限定徽章',
+    guideHint: '完成月島地圖彩蛋挑戰後，可透過限定連結領取。'
   },
 ];
 

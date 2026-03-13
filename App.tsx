@@ -18,7 +18,7 @@ import {
   handleIncomingPointsSync
 } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
-import { consumeRewardClaim } from './rewardClaim';
+import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
 import { initLiffAndAuth } from './src/lib/liffAuth';
 import {
   trackEvent,
@@ -1090,13 +1090,13 @@ function App() {
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
     const rewardParam = params.get('reward');
-    const codeParam = params.get('code');
+    const claimCodeParam = params.get('claim_code') || params.get('code');
     const debugParam = params.get('debug');
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
 
-    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !codeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
+    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !claimCodeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
       return;
     }
 
@@ -1230,43 +1230,67 @@ function App() {
 
 
       // Reward Claim handling (Easter Egg Master, etc.)
-      if (rewardParam && codeParam) {
-        const result = await consumeRewardClaim(codeParam, rewardParam);
+      if (rewardParam && claimCodeParam) {
+        const rewardTarget = resolveRewardClaimTarget(rewardParam);
 
-        if (!result.ok) {
-          const errorReason = (result as any).reason;
-          console.error('Reward claim failed:', errorReason);
-          trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam });
+        if (!rewardTarget) {
+          trackEvent('stamp_claim_failed', { reason: 'unsupported_reward_id', reward_id: rewardParam });
+          setAppNotice({
+            tone: 'error',
+            message: `目前尚未支援這個限定徽章（${rewardParam}），請通知管理員協助確認。`,
+          });
+        } else {
+          const result = await consumeRewardClaim(claimCodeParam, rewardParam);
 
-          if (errorReason === 'invalid_or_used') {
-            // Check if already unlocked locally
-            const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
-            if (currentState.unlockedStamps?.includes(rewardParam)) {
-              stampUnlocked = true; // Already have it, just open passport
+          if (!result.ok) {
+            const errorReason = (result as any).reason;
+            console.error('Reward claim failed:', errorReason);
+            trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam, stamp_id: rewardTarget.stampId });
+
+            if (errorReason === 'invalid_or_used') {
+              // Check if already unlocked locally
+              const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
+              if (currentState.unlockedStamps?.includes(rewardTarget.stampId)) {
+                stampUnlocked = true; // Already have it, just open passport
+              } else {
+                setAppNotice({
+                  tone: 'error',
+                  message: '此兌換碼無效、已被使用，或與目前要領取的徽章不符。',
+                });
+              }
+            } else if (errorReason === 'unconfigured') {
+              setAppNotice({
+                tone: 'error',
+                message: 'Passport 尚未完成 reward claim 設定，請先確認 Supabase 環境變數。',
+              });
             } else {
               setAppNotice({
                 tone: 'error',
-                message: '此兌換碼無效或已被使用。',
+                message: '兌換失敗，請稍後再試。',
               });
             }
           } else {
-            setAppNotice({
-              tone: 'error',
-              message: '兌換失敗，請稍後再試。',
+            // Success
+            unlockStamp(rewardTarget.stampId);
+            trackEvent('stamp_auto_unlocked', { stamp_id: rewardTarget.stampId, source: 'reward_claim', reward_id: rewardParam });
+            trackEvent('stamp_claim', {
+              status: 'success',
+              source: 'reward_claim',
+              reward_id: rewardParam,
+              stamp_id: rewardTarget.stampId,
             });
+            setAppNotice({
+              tone: 'success',
+              message: `成功領取「${rewardTarget.stampName}」徽章。`,
+            });
+            stampUnlocked = true;
           }
-        } else {
-          // Success
-          unlockStamp(rewardParam);
-          trackEvent('stamp_auto_unlocked', { stamp_id: rewardParam, source: 'reward_claim' });
-          trackEvent('stamp_claim', { status: 'success', source: 'reward_claim', reward_id: rewardParam });
-          stampUnlocked = true;
         }
       }
 
       // Show passport and success message after unlocking
       if (stampUnlocked) {
-        setAppNotice({
+        setAppNotice((currentNotice) => currentNotice ?? {
           tone: 'success',
           message: '成功解鎖印章，請查看你的護照。',
         });

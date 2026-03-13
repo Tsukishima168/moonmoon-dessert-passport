@@ -6,6 +6,15 @@ import { getCheckinPoints } from './types/gamification-types';
 const STORAGE_KEY = 'moonmoon_passport';
 const DEVICE_ID_KEY = 'moonmoon_device_id';
 
+function getJourneyStamps() {
+    return STAMPS.filter(stamp => !stamp.isSecret);
+}
+
+function getUnlockedJourneyStampCountFromState(state: PassportState): number {
+    const journeyStampIds = new Set(getJourneyStamps().map(stamp => stamp.id));
+    return state.unlockedStamps.filter(stampId => journeyStampIds.has(stampId)).length;
+}
+
 // ─── Device ID（持久化 UUID，跨模組共用）───
 export function getDeviceId(): string {
     let id = localStorage.getItem(DEVICE_ID_KEY);
@@ -135,7 +144,7 @@ export function getPassportState(): PassportState {
 // Achievement logic: stamp count
 function checkAchievements(state: PassportState): string[] {
     const newUnlockedIds: string[] = [];
-    const currentStampCount = state.unlockedStamps.length;
+    const currentStampCount = getUnlockedJourneyStampCountFromState(state);
 
     ACHIEVEMENTS.forEach(achievement => {
         if (state.unlockedAchievements.includes(achievement.id)) return;
@@ -294,7 +303,7 @@ export function performDailyCheckin(): DailyCheckinResult {
  */
 export function calculateUserLevel(): number {
     const state = getPassportState();
-    const stampPoints = state.unlockedStamps.length * 50;
+    const stampPoints = getUnlockedJourneyStampCountFromState(state) * 50;
     const achievementPoints = state.unlockedAchievements.length * 100;
     const sitePoints = state.visitedSites.length * 20;
 
@@ -315,7 +324,7 @@ export function isStampUnlocked(stampId: string): boolean {
 
 export function getUnlockedStampCount(): number {
     const state = getPassportState();
-    return state.unlockedStamps.length;
+    return getUnlockedJourneyStampCountFromState(state);
 }
 
 export function getUnlockedAchievements(): string[] {
@@ -350,7 +359,7 @@ export function emitStampUnlockedEvent(stampId: string) {
 
 export function getNextStampInJourney(): typeof STAMPS[number] | null {
     const state = getPassportState();
-    return STAMPS.find(stamp => !state.unlockedStamps.includes(stamp.id)) || null;
+    return getJourneyStamps().find(stamp => !state.unlockedStamps.includes(stamp.id)) || null;
 }
 
 // ─── Points System ───

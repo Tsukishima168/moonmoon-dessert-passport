@@ -142,7 +142,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
         const handlePassportMigrated = () => {
             const newState = getPassportState();
-            setUnlockedCount(newState.unlockedStamps.length);
+            setUnlockedCount(getUnlockedStampCount());
             setRedeemedRewards(newState.redeemedRewards);
             void refreshPoints();
         };
