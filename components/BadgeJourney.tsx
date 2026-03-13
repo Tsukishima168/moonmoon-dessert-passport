@@ -29,6 +29,13 @@ interface BadgeJourneyProps {
     onStampUnlocked: (newAchievements: string[]) => void;
     onGpsCheckin: (stamp: Stamp) => void;
     isCheckingLocation: boolean;
+    gpsDebug?: {
+        stampId: string;
+        status: 'success' | 'out_of_range' | 'permission_denied' | 'position_unavailable' | 'timeout' | 'unsupported' | 'error';
+        distanceMeters?: number;
+        accuracyMeters?: number;
+        checkedAt: string;
+    } | null;
 }
 
 // Map icon names to Lucide components
@@ -43,7 +50,7 @@ const IconMap: Record<string, any> = {
     Navigation
 };
 
-const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheckin, isCheckingLocation }) => {
+const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheckin, isCheckingLocation, gpsDebug }) => {
     const [externalPending, setExternalPending] = useState<string | null>(null);
     const [showCollected, setShowCollected] = useState(false);
     const unlockedCount = getUnlockedStampCount();
@@ -120,17 +127,28 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
 
                             {/* Action Buttons based on unlockMethod */}
                             {nextStamp.unlockMethod === 'gps' && (
-                                <button
-                                    onClick={() => onGpsCheckin(nextStamp)}
-                                    disabled={isCheckingLocation}
-                                    className="w-full py-3 bg-brand-black text-white rounded-xl font-bold text-sm border-2 border-brand-black shadow-[3px_3px_0px_rgba(212,255,0,0.5)] active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2"
-                                >
-                                    {isCheckingLocation ? (
-                                        <><Loader2 size={16} className="animate-spin" /> 定位中...</>
-                                    ) : (
-                                        <><Navigation size={16} /> {nextStamp.guideCta}</>
-                                    )}
-                                </button>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => onGpsCheckin(nextStamp)}
+                                        disabled={isCheckingLocation}
+                                        className="w-full py-3 bg-brand-black text-white rounded-xl font-bold text-sm border-2 border-brand-black shadow-[3px_3px_0px_rgba(212,255,0,0.5)] active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isCheckingLocation ? (
+                                            <><Loader2 size={16} className="animate-spin" /> 定位中...</>
+                                        ) : (
+                                            <><Navigation size={16} /> {nextStamp.guideCta}</>
+                                        )}
+                                    </button>
+                                    <div className="rounded-xl bg-brand-gray/10 px-3 py-2 text-[11px] text-gray-500">
+                                        判定半徑 {nextStamp.location?.radius ?? 0} m，建議站在戶外並開啟高精準定位。
+                                        {gpsDebug?.stampId === nextStamp.id && (
+                                            <span className="block mt-1 font-medium text-brand-black/70">
+                                                最近一次：{typeof gpsDebug.distanceMeters === 'number' ? `距離 ${Math.round(gpsDebug.distanceMeters)} m` : '未取得距離'}
+                                                {typeof gpsDebug.accuracyMeters === 'number' ? ` · 精度 ±${Math.round(gpsDebug.accuracyMeters)} m` : ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             )}
 
                             {nextStamp.unlockMethod === 'external' && (
