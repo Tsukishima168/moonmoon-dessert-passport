@@ -32,6 +32,7 @@ import {
 import BadgeJourney from './components/BadgeJourney';
 import MemberHub from './components/MemberHub';
 import RewardShop from './components/RewardShop';
+import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
@@ -309,7 +310,15 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'hub' && <MemberHub />}
 
-                    {activeTab === 'shop' && <RewardShop />}
+                    {activeTab === 'shop' && (
+                        <div className="space-y-6">
+                            <ShopOrderHistory
+                                userId={user?.id ?? null}
+                                onLogin={signInWithGoogle}
+                            />
+                            <RewardShop />
+                        </div>
+                    )}
                 </div>
 
                 {/* ─── Checkin Modal ─── */}
