@@ -16,6 +16,7 @@ import {
     Coins,
     Gift,
     Sparkles,
+    CircleAlert,
     Coffee,
     CupSoda,
     CakeSlice,
@@ -332,6 +333,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
     const [userPoints, setUserPoints] = useState(() => getPassportPointsBalance());
     const [pendingReward, setPendingReward] = useState<RedeemableItem | null>(null);
     const [successReward, setSuccessReward] = useState<RedeemableItem | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'drink' | 'dessert' | 'merch'>('all');
 
     useEffect(() => {
@@ -355,6 +357,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
     }, []);
 
     const handleRedeemClick = useCallback((reward: RedeemableItem) => {
+        setErrorMessage(null);
         setPendingReward(reward);
     }, []);
 
@@ -364,6 +367,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
         const result = redeemItem(pendingReward.id);
         if (result.success) {
             setUserPoints(result.newBalance);
+            setErrorMessage(null);
             if (user?.id || profile?.userId) {
                 await adjustPointsByIdentity(
                     {
@@ -378,7 +382,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
             }
             setSuccessReward(pendingReward);
         } else {
-            alert(result.error || '兌換失敗，請稍後再試');
+            setErrorMessage(result.error || '兌換失敗，請稍後再試');
         }
         setPendingReward(null);
     }, [pendingReward, profile?.userId, user?.id]);
@@ -428,6 +432,44 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                         </button>
                     )}
                 </div>
+
+                {errorMessage && (
+                    <div
+                        style={{
+                            marginBottom: 16,
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 10,
+                            borderRadius: 16,
+                            border: '1px solid #fecaca',
+                            background: '#fef2f2',
+                            color: '#b91c1c',
+                            padding: '12px 14px',
+                        }}
+                    >
+                        <CircleAlert size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ flex: 1, fontSize: 13, lineHeight: 1.5, fontWeight: 600 }}>
+                            {errorMessage}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setErrorMessage(null)}
+                            style={{
+                                border: 'none',
+                                background: 'transparent',
+                                color: '#b91c1c',
+                                cursor: 'pointer',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                            aria-label="關閉錯誤訊息"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
 
                 {/* 積分餘額卡 */}
                 <div

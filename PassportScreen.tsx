@@ -6,7 +6,9 @@ import {
     ShieldCheck,
     Star,
     Trophy,
-    Lock
+    Lock,
+    CheckCircle2,
+    Gift,
 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS } from './constants';
 import { Stamp } from './types';

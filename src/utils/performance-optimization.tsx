@@ -3,6 +3,11 @@
 // 文件：src/utils/performance-optimization.ts
 // ================================================================
 
+import React from 'react';
+import liff from '@line/liff';
+import { getUnlockedStampCount } from '../../passportUtils';
+import { LiffContext, type LiffContextType } from '../contexts/LiffContext';
+
 /**
  * 優化方案集合 - 可直接複製到項目中
  * 包含：LIFF 優化、GA4 優化、圖片優化等
@@ -32,49 +37,55 @@ export async function initLiffWithTimeout(liffId: string, timeoutMs: number = 50
 }
 
 // 改進的 LiffContext Provider
+interface OptimizedLiffProviderState {
+  liffReady: boolean;
+  isLoggedIn: boolean;
+  profile: LiffContextType['profile'];
+}
+
 export function createOptimizedLiffProvider() {
-  return class LiffProvider extends React.Component {
-    state = {
+  const OptimizedLiffProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+    const [state, setState] = React.useState<OptimizedLiffProviderState>({
       liffReady: false,
       isLoggedIn: false,
       profile: null,
-    };
+    });
 
-    componentDidMount() {
+    React.useEffect(() => {
       const liffId = import.meta.env.VITE_LIFF_ID;
-      
-      // 非阻塞初始化：不等 LIFF，先渲染 UI
-      if (liffId) {
-        // 後台初始化，不阻塞主線程
-        this.initLiffInBackground(liffId);
+
+      setState((prevState) => ({
+        ...prevState,
+        liffReady: true,
+      }));
+
+      if (!liffId) {
+        return;
       }
 
-      // 立即標記 LIFF 就緒，UI 可以渲染
-      this.setState({ liffReady: true });
-    }
+      void (async () => {
+        try {
+          const cachedProfile = localStorage.getItem('liff_profile_cache');
+          if (cachedProfile) {
+            setState((prevState) => ({
+              ...prevState,
+              isLoggedIn: true,
+              profile: JSON.parse(cachedProfile) as LiffContextType['profile'],
+            }));
+          }
 
-    private async initLiffInBackground(liffId: string) {
-      try {
-        // 1. 檢查 localStorage 快取
-        const cachedProfile = localStorage.getItem('liff_profile_cache');
-        if (cachedProfile) {
-          this.setState({
-            isLoggedIn: true,
-            profile: JSON.parse(cachedProfile),
-          });
-        }
+          await initLiffWithTimeout(liffId, 5000);
 
-        // 2. 超時初始化（5秒）
-        await initLiffWithTimeout(liffId, 5000);
+          if (!liff.isLoggedIn()) {
+            return;
+          }
 
-        // 3. 如果登入，獲取最新 profile
-        if (liff.isLoggedIn()) {
           const profile = await Promise.race([
             liff.getProfile(),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('getProfile timeout')), 3000)
-            )
-          ]);
+            ),
+          ]) as NonNullable<LiffContextType['profile']>;
 
           const profileData = {
             userId: profile.userId,
@@ -82,30 +93,54 @@ export function createOptimizedLiffProvider() {
             pictureUrl: profile.pictureUrl,
           };
 
-          // 快取到 localStorage
           localStorage.setItem('liff_profile_cache', JSON.stringify(profileData));
-
-          this.setState({
+          setState((prevState) => ({
+            ...prevState,
             isLoggedIn: true,
             profile: profileData,
-          });
+          }));
+        } catch (err) {
+          console.error('LIFF background init failed:', err);
         }
-      } catch (err) {
-        console.error('LIFF background init failed:', err);
-        // Fallback：繼續使用 cached 數據或離線模式
+      })();
+    }, []);
+
+    const login = () => {
+      if (!liff.isLoggedIn()) {
+        liff.login();
       }
-    }
+    };
 
-    render() {
-      const { liffReady, isLoggedIn, profile } = this.state;
+    const logout = () => {
+      if (liff.isLoggedIn()) {
+        liff.logout();
+      }
 
-      return (
-        <LiffContext.Provider value={{ liffReady, isLoggedIn, profile }}>
-          {this.props.children}
-        </LiffContext.Provider>
-      );
-    }
+      setState((prevState) => ({
+        ...prevState,
+        isLoggedIn: false,
+        profile: null,
+      }));
+    };
+
+    return (
+      <LiffContext.Provider
+        value={{
+          liff,
+          isLoggedIn: state.isLoggedIn,
+          profile: state.profile,
+          error: null,
+          login,
+          logout,
+        }}
+      >
+        {children}
+      </LiffContext.Provider>
+    );
   };
+
+  OptimizedLiffProvider.displayName = 'OptimizedLiffProvider';
+  return OptimizedLiffProvider;
 }
 
 // ================================================================

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import liff from '@line/liff';
 
-interface LiffContextType {
+export interface LiffContextType {
     liff: typeof liff | null;
     isLoggedIn: boolean;
     profile: {
@@ -15,7 +15,7 @@ interface LiffContextType {
     logout: () => void;
 }
 
-const LiffContext = createContext<LiffContextType | undefined>(undefined);
+export const LiffContext = createContext<LiffContextType | undefined>(undefined);
 
 export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [liffObject, setLiffObject] = useState<typeof liff | null>(null);

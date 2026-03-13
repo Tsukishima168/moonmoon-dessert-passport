@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, LogIn, LogOut } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation, Stamp } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, STICKERS, STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING } from './constants';
 import { Button } from './components/Button';
@@ -983,6 +983,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<UserAnswers>({});
   const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
+  const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
 
   // LIFF & Initial Loading Simulation
@@ -993,6 +994,18 @@ function App() {
     }, 1500); // 1.5s for brand impact
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!appNotice) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAppNotice(null);
+    }, 3600);
+
+    return () => window.clearTimeout(timer);
+  }, [appNotice]);
 
   // Handle cross-site points sync from Gacha redirect URL
   useEffect(() => {
@@ -1231,10 +1244,16 @@ function App() {
             if (currentState.unlockedStamps?.includes(rewardParam)) {
               stampUnlocked = true; // Already have it, just open passport
             } else {
-              alert('此兌換碼無效或已被使用。');
+              setAppNotice({
+                tone: 'error',
+                message: '此兌換碼無效或已被使用。',
+              });
             }
           } else {
-            alert('兌換失敗，請稍後再試。');
+            setAppNotice({
+              tone: 'error',
+              message: '兌換失敗，請稍後再試。',
+            });
           }
         } else {
           // Success
@@ -1247,8 +1266,10 @@ function App() {
 
       // Show passport and success message after unlocking
       if (stampUnlocked) {
-        // Show success message
-        alert('成功解鎖印章，請查看你的護照。');
+        setAppNotice({
+          tone: 'success',
+          message: '成功解鎖印章，請查看你的護照。',
+        });
 
         // Open passport to show the unlocked stamp
         prevScreenRef.current = screen;
@@ -1282,6 +1303,33 @@ function App() {
       {/* Google Login is now inside <Header /> */}
 
       <Header onPassportClick={openPassport} onHomeClick={restart} />
+
+      {appNotice && (
+        <div className="fixed top-24 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
+          <div
+            className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-3 shadow-[4px_4px_0px_black] ${
+              appNotice.tone === 'success'
+                ? 'border-brand-black bg-brand-lime text-brand-black'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+          >
+            {appNotice.tone === 'success' ? (
+              <Sparkles size={18} className="mt-0.5 shrink-0" />
+            ) : (
+              <CircleAlert size={18} className="mt-0.5 shrink-0" />
+            )}
+            <p className="flex-1 text-sm font-semibold leading-6">{appNotice.message}</p>
+            <button
+              type="button"
+              onClick={() => setAppNotice(null)}
+              className="rounded-full p-1 transition-colors hover:bg-black/5"
+              aria-label="關閉通知"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <main>
         {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}
