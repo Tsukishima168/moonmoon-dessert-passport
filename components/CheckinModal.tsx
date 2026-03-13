@@ -11,12 +11,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Flame, Trophy, Calendar, CheckCircle, Sparkles } from 'lucide-react';
 import { getPassportState, canCheckinToday, performDailyCheckin } from '../passportUtils';
-import { addPoints } from '../src/api/points';
+import { adjustPointsByIdentity } from '../src/api/points';
 import { useLiff } from '../src/contexts/LiffContext';
+import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 
 interface CheckinModalProps {
     onClose: () => void;
-    onCheckinComplete?: (points: number) => void;
+    onCheckinComplete?: (balance: number) => void;
 }
 
 interface CalendarDay {
@@ -121,6 +122,7 @@ const MONTH_NAMES = ['一月', '二月', '三月', '四月', '五月', '六月',
 
 const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete }) => {
     const { profile } = useLiff();
+    const { user } = useSupabaseAuth();
     const [canCheckin, setCanCheckin] = useState(canCheckinToday());
     const [checking, setChecking] = useState(false);
     const [justCheckedIn, setJustCheckedIn] = useState(false);
@@ -139,23 +141,29 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
         setChecking(true);
 
         try {
-            const points = performDailyCheckin();
+            const result = performDailyCheckin();
 
-            // Sync to Supabase if logged in
-            if (profile?.userId && points > 0) {
-                await addPoints(profile.userId, points, '每日簽到獎勵').catch(err =>
-                    console.warn('[CheckinModal] Supabase sync failed:', err)
+            if (result.pointsAwarded > 0 && (user?.id || profile?.userId)) {
+                await adjustPointsByIdentity(
+                    {
+                        authUserId: user?.id,
+                        lineUserId: profile?.userId,
+                    },
+                    result.pointsAwarded,
+                    `daily_checkin_day_${result.streakCount}`
+                ).catch(err =>
+                    console.warn('[CheckinModal] Profile point sync failed:', err)
                 );
             }
 
             // Update UI
             setJustCheckedIn(true);
             setCanCheckin(false);
-            setPointsAwarded(points || 10);
+            setPointsAwarded(result.pointsAwarded);
             setCalendar(getMonthCalendar());
-            setStreak(getStreak());
+            setStreak(result.streakCount);
             setShowConfetti(true);
-            onCheckinComplete?.(points || 10);
+            onCheckinComplete?.(result.newBalance);
 
             // GA4: passport_checkin 每日線上簽到
             if (typeof window !== 'undefined' && window.gtag) {
@@ -169,14 +177,15 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
         } finally {
             setChecking(false);
         }
-    }, [canCheckin, checking, profile, onCheckinComplete]);
+    }, [canCheckin, checking, onCheckinComplete, profile?.userId, user?.id]);
 
     // Listen for external checkin events (e.g. from BadgeJourney)
     useEffect(() => {
-        const handler = () => {
+        const handler = (e: Event) => {
+            const evt = e as CustomEvent<{ streakCount?: number }>;
             setCanCheckin(false);
             setCalendar(getMonthCalendar());
-            setStreak(getStreak());
+            setStreak(evt.detail?.streakCount ?? getStreak());
         };
         document.addEventListener('daily-checkin', handler);
         return () => document.removeEventListener('daily-checkin', handler);

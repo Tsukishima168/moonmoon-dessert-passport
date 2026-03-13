@@ -39,12 +39,19 @@ import { Button } from './components/Button';
 import { useLiff } from './src/contexts/LiffContext';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 import { trackEvent, trackButtonClick, trackOutboundNavigation } from './analytics';
-import { getUserPoints } from './src/api/points';
+import { getUserPointsByIdentity } from './src/api/points';
 
 
 interface PassportScreenProps {
     onClose: () => void;
 }
+
+const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
+    journey: '任務',
+    rewards: '集章獎勵',
+    shop: '會員福利',
+    hub: '宇宙足跡',
+};
 
 const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('journey');
@@ -60,19 +67,30 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const { user, signInWithGoogle } = useSupabaseAuth();
     const [points, setPoints] = useState(0);
 
+    const refreshPoints = React.useCallback(async () => {
+        const state = getPassportState();
+        const localPoints = state.points || 0;
+
+        if (user?.id) {
+            const remotePoints = await getUserPointsByIdentity({ authUserId: user.id });
+            setPoints(remotePoints || localPoints);
+            return;
+        }
+
+        if (profile?.userId) {
+            const remotePoints = await getUserPointsByIdentity({ lineUserId: profile.userId });
+            setPoints(remotePoints || localPoints);
+            return;
+        }
+
+        setPoints(localPoints);
+    }, [profile?.userId, user?.id]);
+
     useEffect(() => {
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
-
-        if (user?.id) {
-            getUserPoints(user.id, true).then(p => setPoints(p));
-        } else if (isLoggedIn && profile?.userId) {
-            // Fallback for visual points if only LIFF is active
-            setPoints(state.points || 0);
-        } else {
-            setPoints(state.points || 0);
-        }
+        void refreshPoints();
 
         // LIFF-4: Listen for cross-site points from Gacha
         const handleExternalPoints = (e: Event) => {
@@ -86,21 +104,28 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             const newState = getPassportState();
             setUnlockedCount(newState.unlockedStamps.length);
             setRedeemedRewards(newState.redeemedRewards);
-            if (user?.id) {
-                getUserPoints(user.id, true).then(p => setPoints(p));
-            } else {
-                setPoints(newState.points || 0);
+            void refreshPoints();
+        };
+
+        const handlePointsUpdated = (e: Event) => {
+            const evt = e as CustomEvent<{ balance?: number }>;
+            if (typeof evt.detail?.balance === 'number') {
+                setPoints(evt.detail.balance);
+                return;
             }
+            void refreshPoints();
         };
 
         document.addEventListener('kiwimu:points_earned', handleExternalPoints);
         document.addEventListener('kiwimu:passport_migrated', handlePassportMigrated);
+        document.addEventListener('passport-points-updated', handlePointsUpdated);
 
         return () => {
             document.removeEventListener('kiwimu:points_earned', handleExternalPoints);
             document.removeEventListener('kiwimu:passport_migrated', handlePassportMigrated);
+            document.removeEventListener('passport-points-updated', handlePointsUpdated);
         };
-    }, [isLoggedIn, profile, user]);
+    }, [isLoggedIn, profile, refreshPoints, user]);
 
     const handleStampUnlocked = (newAchievementIds: string[]) => {
         setUnlockedCount(getUnlockedStampCount());
@@ -220,7 +245,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                     : 'text-gray-400 hover:text-brand-black'
                                     }`}
                             >
-                                {tab === 'shop' ? '🛒' : tab}
+                                {TAB_LABELS[tab]}
                             </button>
                         ))}
                     </div>
@@ -270,6 +295,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'rewards' && (
                         <div className="space-y-4">
+                            <div className="rounded-2xl border border-brand-black/10 bg-white p-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Stamp Milestones</p>
+                                <p className="mt-2 text-xs font-medium leading-relaxed text-gray-500">
+                                    這裡是「集章里程碑獎勵」。完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。
+                                </p>
+                            </div>
                             {REWARD_TIERS.map((reward) => {
                                 const isUnlocked = unlockedCount >= reward.requiredStamps;
                                 const isRedeemed = redeemedRewards.includes(reward.id);
@@ -316,7 +347,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 userId={user?.id ?? null}
                                 onLogin={signInWithGoogle}
                             />
-                            <RewardShop />
+                            <RewardShop currentPoints={points} />
                         </div>
                     )}
                 </div>
@@ -325,9 +356,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 {showCheckinModal && (
                     <CheckinModal
                         onClose={() => setShowCheckinModal(false)}
-                        onCheckinComplete={(pts) => {
-                            // Refresh points in header
-                            setPoints(prev => prev + pts);
+                        onCheckinComplete={(balance) => {
+                            setPoints(balance);
                         }}
                     />
                 )}

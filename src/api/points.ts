@@ -1,4 +1,3 @@
-
 const SUPABASE_URL = (import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL) as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_MOON_ISLAND_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string;
 
@@ -9,29 +8,68 @@ export interface PointLog {
     created_at: string;
 }
 
+export interface PointIdentity {
+    authUserId?: string | null;
+    lineUserId?: string | null;
+}
+
+interface ProfilePointRecord {
+    id: string;
+    points: number;
+}
+
+function getAuthHeaders(contentType?: boolean): HeadersInit {
+    return {
+        ...(contentType ? { 'Content-Type': 'application/json' } : {}),
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    };
+}
+
+async function resolveProfile(identity: PointIdentity): Promise<ProfilePointRecord | null> {
+    const query = identity.authUserId
+        ? `id=eq.${identity.authUserId}`
+        : identity.lineUserId
+            ? `line_user_id=eq.${identity.lineUserId}`
+            : null;
+
+    if (!query) return null;
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${query}&select=id,points`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+        throw new Error('Failed to fetch profile points');
+    }
+
+    const data = await res.json();
+    if (!data || data.length === 0) return null;
+
+    return {
+        id: data[0].id,
+        points: data[0].points || 0,
+    };
+}
+
 export async function getUserPoints(userId: string, isLineId: boolean = false): Promise<number> {
     try {
-        let query = `id=eq.${userId}`;
-        if (isLineId) {
-            query = `line_user_id=eq.${userId}`;
-        }
-
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${query}&select=points`, {
-            headers: {
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            }
-        });
-
-        if (!res.ok) throw new Error('Failed to fetch points');
-
-        const data = await res.json();
-        if (data && data.length > 0) {
-            return data[0].points || 0;
-        }
-        return 0;
+        const profile = await resolveProfile(
+            isLineId ? { lineUserId: userId } : { authUserId: userId }
+        );
+        return profile?.points || 0;
     } catch (error) {
         console.error('Error fetching points:', error);
+        return 0;
+    }
+}
+
+export async function getUserPointsByIdentity(identity: PointIdentity): Promise<number> {
+    try {
+        const profile = await resolveProfile(identity);
+        return profile?.points || 0;
+    } catch (error) {
+        console.error('Error fetching points by identity:', error);
         return 0;
     }
 }
@@ -43,10 +81,7 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
 
         if (isLineId) {
             const resProfile = await fetch(`${SUPABASE_URL}/rest/v1/profiles?line_user_id=eq.${userId}&select=id`, {
-                headers: {
-                    apikey: SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                }
+                headers: getAuthHeaders(),
             });
             const dataProfile = await resProfile.json();
             if (dataProfile && dataProfile.length > 0) {
@@ -57,10 +92,7 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
         }
 
         const res = await fetch(`${SUPABASE_URL}/rest/v1/point_logs?user_id=eq.${targetUuid}&select=*&order=created_at.desc`, {
-            headers: {
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            }
+            headers: getAuthHeaders(),
         });
 
         if (!res.ok) throw new Error('Failed to fetch point logs');
@@ -76,29 +108,20 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
 export async function addPoints(userId: string, amount: number, reason: string, isLineId: boolean = true): Promise<{ ok: boolean, error?: string }> {
     try {
         // 1. Get current profile to find UUID and current points
-        let query = `line_user_id=eq.${userId}`;
-        if (!isLineId) query = `id=eq.${userId}`;
+        const profile = await resolveProfile(
+            isLineId ? { lineUserId: userId } : { authUserId: userId }
+        );
 
-        const resProfile = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${query}&select=id,points`, {
-            headers: {
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            }
-        });
+        if (!profile) return { ok: false, error: 'User not found' };
 
-        const profiles = await resProfile.json();
-        if (!profiles || profiles.length === 0) return { ok: false, error: 'User not found' };
-
-        const { id, points } = profiles[0];
+        const { id, points } = profile;
         const newPoints = (points || 0) + amount;
 
         // 2. Update profiles table
         const resUpdate = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
             method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                ...getAuthHeaders(true),
                 Prefer: 'return=minimal'
             },
             body: JSON.stringify({ points: newPoints })
@@ -110,9 +133,7 @@ export async function addPoints(userId: string, amount: number, reason: string, 
         await fetch(`${SUPABASE_URL}/rest/v1/point_logs`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                ...getAuthHeaders(true),
                 Prefer: 'return=minimal'
             },
             body: JSON.stringify({
@@ -129,3 +150,44 @@ export async function addPoints(userId: string, amount: number, reason: string, 
     }
 }
 
+export async function adjustPointsByIdentity(
+    identity: PointIdentity,
+    amount: number,
+    reason: string
+): Promise<{ ok: boolean; balance?: number; error?: string }> {
+    try {
+        const profile = await resolveProfile(identity);
+        if (!profile) return { ok: false, error: 'User not found' };
+
+        const newPoints = (profile.points || 0) + amount;
+
+        const resUpdate = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${profile.id}`, {
+            method: 'PATCH',
+            headers: {
+                ...getAuthHeaders(true),
+                Prefer: 'return=minimal',
+            },
+            body: JSON.stringify({ points: newPoints }),
+        });
+
+        if (!resUpdate.ok) throw new Error('Failed to update points');
+
+        await fetch(`${SUPABASE_URL}/rest/v1/point_logs`, {
+            method: 'POST',
+            headers: {
+                ...getAuthHeaders(true),
+                Prefer: 'return=minimal',
+            },
+            body: JSON.stringify({
+                user_id: profile.id,
+                amount,
+                reason,
+            }),
+        });
+
+        return { ok: true, balance: newPoints };
+    } catch (error) {
+        console.error('Error adjusting points by identity:', error);
+        return { ok: false, error: String(error) };
+    }
+}
