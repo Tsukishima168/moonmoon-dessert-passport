@@ -10,35 +10,64 @@
  * - DEV ONLY：尚未部署，Claude Code 接手後可整合至 PassportScreen.tsx
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    X,
+    Coins,
+    Gift,
+    Sparkles,
+    CircleAlert,
+    Coffee,
+    CupSoda,
+    CakeSlice,
+    ShoppingBag,
+    Sticker as StickerIcon,
+    type LucideIcon,
+} from 'lucide-react';
 import { getPassportPointsBalance, redeemItem } from '../passportUtils';
-import { DEFAULT_REWARDS } from '../types/gamification-types';
+import { REDEEMABLE_ITEMS } from '../constants';
+import { RedeemableItem } from '../types';
+import { adjustPointsByIdentity } from '../src/api/points';
+import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
+import { useLiff } from '../src/contexts/LiffContext';
 
 // ─── 型別 ──────────────────────────────────────────────────
 
 interface RewardShopProps {
     onClose?: () => void;
+    currentPoints?: number;
 }
 
 interface RewardCardProps {
-    reward: typeof DEFAULT_REWARDS[number];
+    reward: RedeemableItem;
     userPoints: number;
-    onRedeem: (rewardId: string, rewardName: string) => void;
+    onRedeem: (reward: RedeemableItem) => void;
 }
 
 // ─── 商品卡片 ──────────────────────────────────────────────
 
-const REWARD_EMOJI: Record<string, string> = {
-    sticker_basic: '🎭',
-    card_limited: '🃏',
-    drink_discount: '🧋',
-    sr_character: '⭐',
-    free_dessert: '🍰',
+const REWARD_ICON_MAP: Record<string, { Icon: LucideIcon; accent: string; bg: string }> = {
+    tea_buckwheat: { Icon: CupSoda, accent: '#0f766e', bg: '#d1fae5' },
+    coffee_iced: { Icon: Coffee, accent: '#7c2d12', bg: '#ffedd5' },
+    coffee_sicily: { Icon: Coffee, accent: '#9a3412', bg: '#ffedd5' },
+    latte_matcha: { Icon: CupSoda, accent: '#166534', bg: '#dcfce7' },
+    second_half: { Icon: CupSoda, accent: '#1d4ed8', bg: '#dbeafe' },
+    pudding_classic: { Icon: CakeSlice, accent: '#b45309', bg: '#fef3c7' },
+    chiffon_slice: { Icon: CakeSlice, accent: '#c2410c', bg: '#ffedd5' },
+    seasonal_fruit: { Icon: Sparkles, accent: '#be185d', bg: '#fce7f3' },
+    sticker_set: { Icon: StickerIcon, accent: '#6d28d9', bg: '#ede9fe' },
+    cooler_bag: { Icon: ShoppingBag, accent: '#1f2937', bg: '#e5e7eb' },
 };
 
 const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem }) => {
-    const canAfford = userPoints >= reward.costPoints;
-    const isOffline = reward.type === 'offline';
+    const canAfford = userPoints >= reward.pointsCost;
+    const categoryLabel = reward.category === 'drink'
+        ? '飲品'
+        : reward.category === 'dessert'
+            ? '甜點'
+            : '周邊';
+    const iconMeta = REWARD_ICON_MAP[reward.id] ?? { Icon: Gift, accent: '#92400e', bg: '#fef3c7' };
+    const RewardIcon = iconMeta.Icon;
 
     return (
         <div
@@ -67,53 +96,52 @@ const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem })
                     fontSize: 10,
                     padding: '2px 8px',
                     borderRadius: 99,
-                    background: isOffline ? '#e8f5e9' : '#e3f2fd',
-                    color: isOffline ? '#388e3c' : '#1565c0',
+                    background: reward.category === 'drink' ? '#e3f2fd' : reward.category === 'dessert' ? '#fff3e0' : '#ede7f6',
+                    color: reward.category === 'drink' ? '#1565c0' : reward.category === 'dessert' ? '#e65100' : '#6a1b9a',
                     fontWeight: 600,
                 }}
             >
-                {isOffline ? '🏪 線下' : '💻 數位'}
+                {categoryLabel}
             </span>
 
-            {/* 庫存警告 */}
-            {reward.stock !== undefined && (
-                <span
-                    style={{
-                        position: 'absolute',
-                        top: 8,
-                        left: 8,
-                        fontSize: 10,
-                        padding: '2px 8px',
-                        borderRadius: 99,
-                        background: '#fff3e0',
-                        color: '#e65100',
-                        fontWeight: 600,
-                    }}
-                >
-                    剩 {reward.stock} 份
-                </span>
-            )}
-
             {/* 主體 */}
-            <div style={{ fontSize: 40 }}>{REWARD_EMOJI[reward.id] ?? '🎁'}</div>
+            <div
+                style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: iconMeta.bg,
+                    color: iconMeta.accent,
+                    border: `1px solid ${canAfford ? iconMeta.accent : '#d1d5db'}`,
+                }}
+            >
+                <RewardIcon size={34} strokeWidth={2.2} />
+            </div>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#3d2c00' }}>
                 {reward.name}
             </h3>
+            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, textAlign: 'center', color: '#8d6e63', minHeight: 36 }}>
+                {reward.description}
+            </p>
             <div
                 style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 4,
+                    gap: 6,
                     fontSize: 18,
                     fontWeight: 800,
                     color: canAfford ? '#e65100' : '#9e9e9e',
                 }}
             >
-                🪙 {reward.costPoints} 積分
+                <Coins size={18} />
+                <span>{reward.pointsCost} 積分</span>
             </div>
 
             <button
-                onClick={() => onRedeem(reward.id, reward.name)}
+                onClick={() => onRedeem(reward)}
                 disabled={!canAfford}
                 style={{
                     width: '100%',
@@ -130,7 +158,7 @@ const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem })
                     transition: 'all 0.15s ease',
                 }}
             >
-                {canAfford ? '立即兌換' : `還需 ${reward.costPoints - userPoints} 積分`}
+                {canAfford ? '立即兌換' : `還需 ${reward.pointsCost - userPoints} 積分`}
             </button>
         </div>
     );
@@ -139,13 +167,12 @@ const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem })
 // ─── 確認彈窗 ────────────────────────────────────────────
 
 interface ConfirmDialogProps {
-    rewardId: string;
-    rewardName: string;
+    reward: RedeemableItem;
     onConfirm: () => void;
     onCancel: () => void;
 }
 
-const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ rewardName, onConfirm, onCancel }) => (
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ reward, onConfirm, onCancel }) => (
     <div
         style={{
             position: 'fixed',
@@ -168,12 +195,26 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ rewardName, onConfirm, on
                 textAlign: 'center',
             }}
         >
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🎁</div>
+            <div
+                style={{
+                    width: 56,
+                    height: 56,
+                    margin: '0 auto 8px',
+                    borderRadius: 18,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#fff7ed',
+                    color: '#ea580c',
+                }}
+            >
+                <Gift size={28} />
+            </div>
             <h3 style={{ margin: '0 0 8px', color: '#3d2c00' }}>確認兌換？</h3>
             <p style={{ margin: '0 0 24px', color: '#666', fontSize: 14 }}>
-                <strong>{rewardName}</strong>
+                <strong>{reward.name}</strong>
                 <br />
-                兌換後積分將立即扣除，請確認。
+                本次將扣除 <strong>{reward.pointsCost} 點</strong>，請確認你要兌換這項福利。
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
                 <button
@@ -205,12 +246,11 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ rewardName, onConfirm, on
 // ─── 兌換成功彈窗 ─────────────────────────────────────────
 
 interface SuccessDialogProps {
-    rewardName: string;
-    isOffline: boolean;
+    reward: RedeemableItem;
     onClose: () => void;
 }
 
-const SuccessDialog: React.FC<SuccessDialogProps> = ({ rewardName, isOffline, onClose }) => (
+const SuccessDialog: React.FC<SuccessDialogProps> = ({ reward, onClose }) => (
     <div
         style={{
             position: 'fixed',
@@ -234,43 +274,41 @@ const SuccessDialog: React.FC<SuccessDialogProps> = ({ rewardName, isOffline, on
                 textAlign: 'center',
             }}
         >
-            <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
+            <div
+                style={{
+                    width: 68,
+                    height: 68,
+                    margin: '0 auto 12px',
+                    borderRadius: 22,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.85)',
+                    color: '#f59e0b',
+                }}
+            >
+                <Sparkles size={34} />
+            </div>
             <h2 style={{ margin: '0 0 8px', color: '#3d2c00' }}>兌換成功！</h2>
             <p style={{ color: '#5d4037', margin: '0 0 16px', fontSize: 15 }}>
-                <strong>{rewardName}</strong><br />已成功兌換
+                <strong>{reward.name}</strong><br />已成功兌換
             </p>
 
-            {isOffline ? (
-                <div
-                    style={{
-                        background: '#fff',
-                        border: '1px solid #f0c070',
-                        borderRadius: 12,
-                        padding: 16,
-                        marginBottom: 20,
-                        fontSize: 13,
-                        color: '#5d4037',
-                    }}
-                >
-                    📍 <strong>線下核銷說明</strong><br />
-                    請於店內出示此畫面給店員掃描核銷<br />
-                    <span style={{ fontSize: 11, color: '#9e7b3a' }}>（此畫面有效時間：10 分鐘）</span>
-                </div>
-            ) : (
-                <div
-                    style={{
-                        background: '#e3f2fd',
-                        borderRadius: 12,
-                        padding: 16,
-                        marginBottom: 20,
-                        fontSize: 13,
-                        color: '#1565c0',
-                    }}
-                >
-                    💻 <strong>數位獎品說明</strong><br />
-                    請截圖保存，或等待系統自動發送至您的帳號
-                </div>
-            )}
+            <div
+                style={{
+                    background: reward.category === 'merch' ? '#ede7f6' : '#fff',
+                    border: '1px solid #f0c070',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 20,
+                    fontSize: 13,
+                    color: '#5d4037',
+                }}
+            >
+                <strong>兌換提醒</strong><br />
+                請於店內出示此畫面給店員確認兌換。<br />
+                <span style={{ fontSize: 11, color: '#9e7b3a' }}>目前仍為 MVP 測試版，實際核銷以店內流程為準。</span>
+            </div>
 
             <button
                 onClick={onClose}
@@ -289,35 +327,68 @@ const SuccessDialog: React.FC<SuccessDialogProps> = ({ rewardName, isOffline, on
 
 // ─── 主元件 ────────────────────────────────────────────────
 
-const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
+const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
+    const { user } = useSupabaseAuth();
+    const { profile } = useLiff();
     const [userPoints, setUserPoints] = useState(() => getPassportPointsBalance());
-    const [pendingReward, setPendingReward] = useState<{ id: string; name: string } | null>(null);
-    const [successReward, setSuccessReward] = useState<{ name: string; isOffline: boolean } | null>(null);
-    const [filter, setFilter] = useState<'all' | 'digital' | 'offline'>('all');
+    const [pendingReward, setPendingReward] = useState<RedeemableItem | null>(null);
+    const [successReward, setSuccessReward] = useState<RedeemableItem | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [filter, setFilter] = useState<'all' | 'drink' | 'dessert' | 'merch'>('all');
 
-    const handleRedeemClick = useCallback((rewardId: string, rewardName: string) => {
-        setPendingReward({ id: rewardId, name: rewardName });
+    useEffect(() => {
+        if (typeof currentPoints === 'number') {
+            setUserPoints(currentPoints);
+        }
+    }, [currentPoints]);
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const evt = e as CustomEvent<{ balance?: number }>;
+            if (typeof evt.detail?.balance === 'number') {
+                setUserPoints(evt.detail.balance);
+                return;
+            }
+            setUserPoints(getPassportPointsBalance());
+        };
+
+        document.addEventListener('passport-points-updated', handler);
+        return () => document.removeEventListener('passport-points-updated', handler);
     }, []);
 
-    const handleConfirm = useCallback(() => {
+    const handleRedeemClick = useCallback((reward: RedeemableItem) => {
+        setErrorMessage(null);
+        setPendingReward(reward);
+    }, []);
+
+    const handleConfirm = useCallback(async () => {
         if (!pendingReward) return;
 
         const result = redeemItem(pendingReward.id);
         if (result.success) {
             setUserPoints(result.newBalance);
-            const rewardDef = DEFAULT_REWARDS.find(r => r.id === pendingReward.id);
-            setSuccessReward({
-                name: pendingReward.name,
-                isOffline: rewardDef?.type === 'offline',
-            });
+            setErrorMessage(null);
+            if (user?.id || profile?.userId) {
+                await adjustPointsByIdentity(
+                    {
+                        authUserId: user?.id,
+                        lineUserId: profile?.userId,
+                    },
+                    -pendingReward.pointsCost,
+                    `reward_redeem_${pendingReward.id}`
+                ).catch((error) => {
+                    console.warn('[RewardShop] Profile point sync failed:', error);
+                });
+            }
+            setSuccessReward(pendingReward);
         } else {
-            alert(result.error || '兌換失敗，請稍後再試');
+            setErrorMessage(result.error || '兌換失敗，請稍後再試');
         }
         setPendingReward(null);
-    }, [pendingReward]);
+    }, [pendingReward, profile?.userId, user?.id]);
 
-    const filteredRewards = DEFAULT_REWARDS.filter(r =>
-        filter === 'all' ? true : r.type === filter
+    const filteredRewards = REDEEMABLE_ITEMS.filter(r =>
+        filter === 'all' ? true : r.category === filter
     );
 
     return (
@@ -325,8 +396,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
             {/* 確認彈窗 */}
             {pendingReward && (
                 <ConfirmDialog
-                    rewardId={pendingReward.id}
-                    rewardName={pendingReward.name}
+                    reward={pendingReward}
                     onConfirm={handleConfirm}
                     onCancel={() => setPendingReward(null)}
                 />
@@ -335,8 +405,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
             {/* 成功彈窗 */}
             {successReward && (
                 <SuccessDialog
-                    rewardName={successReward.name}
-                    isOffline={successReward.isOffline}
+                    reward={successReward}
                     onClose={() => setSuccessReward(null)}
                 />
             )}
@@ -346,8 +415,8 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
                 {/* 標題列 */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: 22, color: '#3d2c00' }}>🏪 兌換商城</h2>
-                        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9e7b3a' }}>用積分換取專屬獎勵</p>
+                        <h2 style={{ margin: 0, fontSize: 22, color: '#3d2c00' }}>會員福利</h2>
+                        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9e7b3a' }}>這裡是點數兌換，不是集章里程碑</p>
                     </div>
                     {onClose && (
                         <button
@@ -355,14 +424,52 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
                             style={{
                                 width: 36, height: 36, borderRadius: 18,
                                 border: 'none', background: '#f5f5f5',
-                                fontSize: 18, cursor: 'pointer', color: '#666',
+                                cursor: 'pointer', color: '#666',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}
                         >
-                            ✕
+                            <X size={18} />
                         </button>
                     )}
                 </div>
+
+                {errorMessage && (
+                    <div
+                        style={{
+                            marginBottom: 16,
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 10,
+                            borderRadius: 16,
+                            border: '1px solid #fecaca',
+                            background: '#fef2f2',
+                            color: '#b91c1c',
+                            padding: '12px 14px',
+                        }}
+                    >
+                        <CircleAlert size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ flex: 1, fontSize: 13, lineHeight: 1.5, fontWeight: 600 }}>
+                            {errorMessage}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setErrorMessage(null)}
+                            style={{
+                                border: 'none',
+                                background: 'transparent',
+                                color: '#b91c1c',
+                                cursor: 'pointer',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                            aria-label="關閉錯誤訊息"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
 
                 {/* 積分餘額卡 */}
                 <div
@@ -378,16 +485,30 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
                 >
                     <div>
                         <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>我的積分餘額</p>
-                        <p style={{ margin: '4px 0 0', fontSize: 32, fontWeight: 800, color: '#fff' }}>
-                            🪙 {userPoints}
-                        </p>
+                        <div style={{ margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
+                            <Coins size={24} />
+                            <p style={{ margin: 0, fontSize: 32, fontWeight: 800 }}>{userPoints}</p>
+                        </div>
                     </div>
-                    <div style={{ fontSize: 40 }}>👜</div>
+                    <div
+                        style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 18,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(255,255,255,0.16)',
+                            color: '#fff',
+                        }}
+                    >
+                        <ShoppingBag size={28} />
+                    </div>
                 </div>
 
                 {/* 篩選器 */}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                    {(['all', 'digital', 'offline'] as const).map(type => (
+                    {(['all', 'drink', 'dessert', 'merch'] as const).map(type => (
                         <button
                             key={type}
                             onClick={() => setFilter(type)}
@@ -400,7 +521,13 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
                                 fontSize: 13, cursor: 'pointer', transition: 'all 0.15s',
                             }}
                         >
-                            {type === 'all' ? '全部' : type === 'digital' ? '💻 數位' : '🏪 線下'}
+                            {type === 'all'
+                                ? '全部'
+                                : type === 'drink'
+                                    ? '飲品'
+                                    : type === 'dessert'
+                                        ? '甜點'
+                                        : '周邊'}
                         </button>
                     ))}
                 </div>
@@ -424,8 +551,8 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose }) => {
                         color: '#bdbdbd', lineHeight: 1.6,
                     }}
                 >
-                    🪙 積分可通過每日簽到、MBTI 測驗、分享好友等行為獲得<br />
-                    線下獎品請於店內出示兌換畫面
+                    點數福利會和 shop 訂購會員測試活動一起使用。<br />
+                    線下品項目前請於店內出示兌換畫面，由店員人工確認。
                 </p>
             </div>
         </>

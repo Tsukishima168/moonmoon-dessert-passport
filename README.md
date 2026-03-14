@@ -4,6 +4,24 @@
 
 # 月島甜點護照 | MoonMoon Dessert Passport
 
+---
+
+## 冷啟動快照 · 2026-03-10
+
+### 當前狀態
+- GA4 埋點：已部署
+- Resend：已串接（noreply@kiwimu.com）
+- SOC 三層：完成
+- LINE Pay：架構待建，等 Channel ID
+
+### 分支狀態
+- main：production
+- feat/mbti-v2：進行中
+- feat/admin-polish：進行中
+
+### 環境變數清單
+- GEMINI_API_KEY
+- VITE_GA4_ID
 An interactive quiz application to help users discover their perfect dessert and personality sticker from MoonMoon Dessert.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1EY88RN2I_BA_Bnovrs2PVeMKqjEUYOPF
@@ -131,3 +149,14 @@ moonmoon-dessert-passport/
 ## 📝 License
 
 This project was created with Google AI Studio.
+
+---
+
+## Phase 1 Gate (Current)
+**Goal: Validate traffic funnel**
+
+### Metrics
+- MBTI completions: 1000
+- Orders: 200
+- AOV: NT
+- Monthly revenue: NTk

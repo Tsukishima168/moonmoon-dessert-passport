@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     CheckCircle,
     Navigation,
@@ -6,7 +6,6 @@ import {
     ExternalLink,
     ChevronDown,
     ChevronUp,
-    Calendar,
     Sparkles,
     MapPin,
     Instagram,
@@ -23,17 +22,20 @@ import {
     unlockStamp,
     getUnlockedStampCount,
     getNextStampInJourney,
-    canCheckinToday,
-    performDailyCheckin
 } from '../passportUtils';
 import { trackEvent, trackOutboundNavigation } from '../analytics';
-import { addPoints } from '../src/api/points';
-import { useLiff } from '../src/contexts/LiffContext';
 
 interface BadgeJourneyProps {
     onStampUnlocked: (newAchievements: string[]) => void;
     onGpsCheckin: (stamp: Stamp) => void;
     isCheckingLocation: boolean;
+    gpsDebug?: {
+        stampId: string;
+        status: 'success' | 'out_of_range' | 'permission_denied' | 'position_unavailable' | 'timeout' | 'unsupported' | 'error';
+        distanceMeters?: number;
+        accuracyMeters?: number;
+        checkedAt: string;
+    } | null;
 }
 
 // Map icon names to Lucide components
@@ -45,25 +47,21 @@ const IconMap: Record<string, any> = {
     ShoppingBag,
     Star,
     Search,
-    Navigation
+    Navigation,
+    Sparkles,
 };
 
-const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheckin, isCheckingLocation }) => {
+const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheckin, isCheckingLocation, gpsDebug }) => {
     const [externalPending, setExternalPending] = useState<string | null>(null);
     const [showCollected, setShowCollected] = useState(false);
-    const [checkingIn, setCheckingIn] = useState(false);
-    const [justCheckedIn, setJustCheckedIn] = useState(false);
-
-    const { profile } = useLiff();
+    const visibleStamps = STAMPS.filter(stamp => !stamp.isSecret);
     const unlockedCount = getUnlockedStampCount();
     const nextStamp = getNextStampInJourney();
-    const totalStamps = STAMPS.length;
+    const totalStamps = visibleStamps.length;
     const allComplete = unlockedCount >= totalStamps;
-    const canCheckin = canCheckinToday();
 
     // Separate stamps into collected and uncollected
     const collectedStamps = STAMPS.filter(s => isStampUnlocked(s.id));
-    const remainingStamps = STAMPS.filter(s => !isStampUnlocked(s.id));
 
     const handleExternalGo = (stamp: Stamp) => {
         if (stamp.externalLink) {
@@ -81,33 +79,6 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
         onStampUnlocked(newIds);
     };
 
-    const handleCheckin = async () => {
-        if (!canCheckin || checkingIn) return;
-        setCheckingIn(true);
-
-        try {
-            const points = performDailyCheckin();
-            if (points > 0) {
-                // Always save points locally
-                const localPoints = parseInt(localStorage.getItem('moonmoon_local_points') || '0', 10);
-                localStorage.setItem('moonmoon_local_points', String(localPoints + points));
-
-                // Try to sync to Supabase if logged in
-                if (profile?.userId) {
-                    await addPoints(profile.userId, points, '每日簽到獎勵').catch(err => {
-                        console.warn('Supabase point sync failed, saved locally:', err);
-                    });
-                }
-            }
-            setJustCheckedIn(true);
-            trackEvent('daily_checkin_success', { points });
-        } catch (err) {
-            console.error('Checkin failed:', err);
-        } finally {
-            setCheckingIn(false);
-        }
-    };
-
     const getAnimClass = (type?: string) => {
         switch (type) {
             case 'pulse': return 'animate-pulse';
@@ -120,37 +91,6 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
 
     return (
         <div className="space-y-4">
-            {/* ─── Daily Check-in Section ─── */}
-            <div className={`rounded-2xl p-4 border-2 border-brand-black shadow-[4px_4px_0px_black] transition-all ${canCheckin ? 'bg-brand-lime' : 'bg-white opacity-80'
-                }`}>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl border-2 border-brand-black flex items-center justify-center bg-white shadow-[2px_2px_0px_black] ${canCheckin ? 'animate-bounce' : ''}`}>
-                            {checkingIn ? <Loader2 size={20} className="animate-spin" /> : <Calendar size={20} />}
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-brand-black">每日簽到</h3>
-                            <p className="text-[10px] text-gray-600 font-medium">每天打開護照領點數</p>
-                        </div>
-                    </div>
-
-                    {canCheckin && !justCheckedIn ? (
-                        <button
-                            onClick={handleCheckin}
-                            disabled={checkingIn}
-                            className="px-4 py-2 bg-brand-black text-white rounded-xl font-bold text-xs border-2 border-brand-black active:translate-y-0.5 transition-all"
-                        >
-                            簽到領 10P
-                        </button>
-                    ) : (
-                        <div className="flex items-center gap-1.5 text-brand-lime-dark font-bold text-xs">
-                            <CheckCircle size={14} />
-                            <span>{justCheckedIn ? '+10P！' : '今日已完成'}</span>
-                        </div>
-                    )}
-                </div>
-            </div>
-
             {/* ─── Progress Tracker ─── */}
             <div className="bg-white rounded-2xl p-4 border-2 border-brand-black shadow-[4px_4px_0px_black]">
                 <div className="flex items-center justify-between mb-3">
@@ -188,17 +128,28 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
 
                             {/* Action Buttons based on unlockMethod */}
                             {nextStamp.unlockMethod === 'gps' && (
-                                <button
-                                    onClick={() => onGpsCheckin(nextStamp)}
-                                    disabled={isCheckingLocation}
-                                    className="w-full py-3 bg-brand-black text-white rounded-xl font-bold text-sm border-2 border-brand-black shadow-[3px_3px_0px_rgba(212,255,0,0.5)] active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2"
-                                >
-                                    {isCheckingLocation ? (
-                                        <><Loader2 size={16} className="animate-spin" /> 定位中...</>
-                                    ) : (
-                                        <><Navigation size={16} /> {nextStamp.guideCta}</>
-                                    )}
-                                </button>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => onGpsCheckin(nextStamp)}
+                                        disabled={isCheckingLocation}
+                                        className="w-full py-3 bg-brand-black text-white rounded-xl font-bold text-sm border-2 border-brand-black shadow-[3px_3px_0px_rgba(212,255,0,0.5)] active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isCheckingLocation ? (
+                                            <><Loader2 size={16} className="animate-spin" /> 定位中...</>
+                                        ) : (
+                                            <><Navigation size={16} /> {nextStamp.guideCta}</>
+                                        )}
+                                    </button>
+                                    <div className="rounded-xl bg-brand-gray/10 px-3 py-2 text-[11px] text-gray-500">
+                                        判定半徑 {nextStamp.location?.radius ?? 0} m，建議站在戶外並開啟高精準定位。
+                                        {gpsDebug?.stampId === nextStamp.id && (
+                                            <span className="block mt-1 font-medium text-brand-black/70">
+                                                最近一次：{typeof gpsDebug.distanceMeters === 'number' ? `距離 ${Math.round(gpsDebug.distanceMeters)} m` : '未取得距離'}
+                                                {typeof gpsDebug.accuracyMeters === 'number' ? ` · 精度 ±${Math.round(gpsDebug.accuracyMeters)} m` : ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             )}
 
                             {nextStamp.unlockMethod === 'external' && (

@@ -9,8 +9,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
-import { getIsMigratedToSupabase, markMigratedToSupabase, getPassportState, setDeviceId } from '../../passportUtils';
-import { migrateFromLocalStorage } from '../api/passport';
+import { setDeviceId } from '../../passportUtils';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL) as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_MOON_ISLAND_SUPABASE_ANON_KEY) as string;
@@ -97,20 +96,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         // Always ensure the deviceId points to the logged in user
         setDeviceId(currentUser.id);
 
-        if (!getIsMigratedToSupabase()) {
-          try {
-            console.log('🔄 開始傳送 LocalStorage 資料到 Supabase 帳號...');
-            const localState = getPassportState();
-            const migrated = await migrateFromLocalStorage(currentUser.id, localState);
-            if (migrated) {
-              markMigratedToSupabase();
-              console.log('✅ 靜默轉移成功！');
-              document.dispatchEvent(new CustomEvent('kiwimu:passport_migrated'));
-            }
-          } catch (e) {
-            console.error('Migration failed:', e);
-          }
-        }
+        // Legacy migration logic removed
       }
     });
 

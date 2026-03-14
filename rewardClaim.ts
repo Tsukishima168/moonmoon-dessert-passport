@@ -2,6 +2,34 @@ export type RewardClaimResult =
     | { ok: true; rewardId: string }
     | { ok: false; reason: 'unconfigured' | 'invalid_or_used' | 'request_failed' };
 
+export interface RewardClaimTarget {
+    rewardId: string;
+    stampId: string;
+    stampName: string;
+}
+
+const REWARD_CLAIM_TARGETS: Record<string, RewardClaimTarget> = {
+    store_visit_2026_q1: {
+        rewardId: 'store_visit_2026_q1',
+        stampId: 'shop_checkin',
+        stampName: '月島登陸',
+    },
+    egg_master_2026_q1: {
+        rewardId: 'egg_master_2026_q1',
+        stampId: 'egg_master_2026_q1',
+        stampName: '島主限定徽章',
+    },
+};
+
+export function resolveRewardClaimTarget(rewardId: string | null | undefined): RewardClaimTarget | null {
+    if (!rewardId) {
+        return null;
+    }
+
+    const normalizedRewardId = rewardId.trim();
+    return REWARD_CLAIM_TARGETS[normalizedRewardId] ?? null;
+}
+
 const SUPABASE_URL =
     (import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL ||
         import.meta.env.VITE_SUPABASE_URL) as string | undefined;
@@ -14,6 +42,9 @@ export async function consumeRewardClaim(code: string, rewardId: string): Promis
         return { ok: false, reason: 'unconfigured' };
     }
 
+    const normalizedCode = code.trim();
+    const normalizedRewardId = rewardId.trim();
+
     try {
         // Attempt to update the claim record:
         // WHERE code = code
@@ -23,8 +54,8 @@ export async function consumeRewardClaim(code: string, rewardId: string): Promis
 
         // Supabase REST API: PATCH /reward_claims?code=eq.CODE&reward_id=eq.ID&claimed_at=is.null
         const query = new URLSearchParams({
-            code: `eq.${code}`,
-            reward_id: `eq.${rewardId}`,
+            code: `eq.${normalizedCode}`,
+            reward_id: `eq.${normalizedRewardId}`,
             claimed_at: 'is.null',
         });
 

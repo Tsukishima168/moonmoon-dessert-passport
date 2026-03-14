@@ -29,9 +29,9 @@ export const STAMPS: Stamp[] = [
     guideCta: '定位簽到',
     guideHint: '到店後按一下，GPS 自動偵測！',
     location: {
-      lat: 23.0463,
-      lng: 120.2113,
-      radius: 300
+      lat: 23.0473181,
+      lng: 120.1987003,
+      radius: 100
     }
   },
   {
@@ -110,6 +110,17 @@ export const STAMPS: Stamp[] = [
     guideCta: '寫評論',
     guideHint: '幫月島留下評論，讓更多人認識我們！'
   },
+  {
+    id: 'egg_master_2026_q1',
+    name: '島主限定徽章',
+    description: '於月島地圖找齊 8 顆彩蛋後解鎖的限定徽章',
+    icon: 'Sparkles',
+    animationType: 'float',
+    unlockMethod: 'qr',
+    isSecret: true,
+    guideCta: '領取限定徽章',
+    guideHint: '完成月島地圖彩蛋挑戰後，可透過限定連結領取。'
+  },
 ];
 
 // ─── Reward Tiers (4 tiers) ───
@@ -142,7 +153,7 @@ export const REWARD_TIERS: RewardTier[] = [
     id: 'tier_8',
     requiredStamps: 8,
     title: '經典烤布丁',
-    description: '招牌經典烤布丁乙個 🎉 全收集獎勵！',
+    description: '招牌經典烤布丁乙個，全收集獎勵。',
     imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
     canRepeat: false,
     redemptionMethod: 'show-screen'
@@ -193,7 +204,7 @@ export const MOONMOON_SITES: MoonSite[] = [
   {
     id: 'dessert_booking',
     name: '甜點預訂',
-    url: 'https://shop.kiwimu.com',
+    url: 'https://map.kiwimu.com/menu',
     description: '線上預訂甜點',
     iconType: 'CakeSlice'
   },

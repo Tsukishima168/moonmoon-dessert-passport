@@ -1,21 +1,16 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     X,
     MapPin,
-    Award,
-    Gift,
-    ChevronRight,
-    CheckCircle2,
-    Clock,
-    ArrowRight,
+    ExternalLink,
     ShieldCheck,
     Star,
-    Sparkles,
     Trophy,
-    Navigation,
-    Lock
+    Lock,
+    CheckCircle2,
+    Gift,
 } from 'lucide-react';
-import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING, MOONMOON_SITES } from './constants';
+import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS } from './constants';
 import { Stamp } from './types';
 import {
     getPassportState,
@@ -32,18 +27,70 @@ import {
 import BadgeJourney from './components/BadgeJourney';
 import MemberHub from './components/MemberHub';
 import RewardShop from './components/RewardShop';
+import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
 import { useLiff } from './src/contexts/LiffContext';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
-import { trackEvent, trackButtonClick, trackOutboundNavigation } from './analytics';
-import { getUserPoints } from './src/api/points';
+import { trackEvent } from './analytics';
+import { getUserPointsByIdentity } from './src/api/points';
 
 
 interface PassportScreenProps {
     onClose: () => void;
 }
+
+const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
+    journey: '任務',
+    rewards: '集章獎勵',
+    shop: '會員福利',
+    hub: '宇宙足跡',
+};
+
+type GpsDebugStatus =
+    | 'success'
+    | 'out_of_range'
+    | 'permission_denied'
+    | 'position_unavailable'
+    | 'timeout'
+    | 'unsupported'
+    | 'error';
+
+interface GpsDebugInfo {
+    stampId: string;
+    stampName: string;
+    status: GpsDebugStatus;
+    message: string;
+    checkedAt: string;
+    allowedRadiusMeters: number;
+    distanceMeters?: number;
+    accuracyMeters?: number;
+    userLat?: number;
+    userLng?: number;
+    targetLat: number;
+    targetLng: number;
+}
+
+const GPS_STATUS_STYLE: Record<GpsDebugStatus, string> = {
+    success: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    out_of_range: 'bg-amber-100 text-amber-700 border-amber-200',
+    permission_denied: 'bg-red-100 text-red-700 border-red-200',
+    position_unavailable: 'bg-orange-100 text-orange-700 border-orange-200',
+    timeout: 'bg-orange-100 text-orange-700 border-orange-200',
+    unsupported: 'bg-gray-100 text-gray-700 border-gray-200',
+    error: 'bg-red-100 text-red-700 border-red-200',
+};
+
+const GPS_STATUS_LABEL: Record<GpsDebugStatus, string> = {
+    success: '判定成功',
+    out_of_range: '尚未進圈',
+    permission_denied: '權限被拒',
+    position_unavailable: '定位不可用',
+    timeout: '定位逾時',
+    unsupported: '裝置不支援',
+    error: '定位錯誤',
+};
 
 const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('journey');
@@ -53,25 +100,37 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+    const [gpsDebug, setGpsDebug] = useState<GpsDebugInfo | null>(null);
 
 
     const { isLoggedIn, profile } = useLiff();
     const { user, signInWithGoogle } = useSupabaseAuth();
     const [points, setPoints] = useState(0);
 
+    const refreshPoints = React.useCallback(async () => {
+        const state = getPassportState();
+        const localPoints = state.points || 0;
+
+        if (user?.id) {
+            const remotePoints = await getUserPointsByIdentity({ authUserId: user.id });
+            setPoints(remotePoints || localPoints);
+            return;
+        }
+
+        if (profile?.userId) {
+            const remotePoints = await getUserPointsByIdentity({ lineUserId: profile.userId });
+            setPoints(remotePoints || localPoints);
+            return;
+        }
+
+        setPoints(localPoints);
+    }, [profile?.userId, user?.id]);
+
     useEffect(() => {
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
-
-        if (user?.id) {
-            getUserPoints(user.id, true).then(p => setPoints(p));
-        } else if (isLoggedIn && profile?.userId) {
-            // Fallback for visual points if only LIFF is active
-            setPoints(state.points || 0);
-        } else {
-            setPoints(state.points || 0);
-        }
+        void refreshPoints();
 
         // LIFF-4: Listen for cross-site points from Gacha
         const handleExternalPoints = (e: Event) => {
@@ -83,23 +142,30 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
         const handlePassportMigrated = () => {
             const newState = getPassportState();
-            setUnlockedCount(newState.unlockedStamps.length);
+            setUnlockedCount(getUnlockedStampCount());
             setRedeemedRewards(newState.redeemedRewards);
-            if (user?.id) {
-                getUserPoints(user.id, true).then(p => setPoints(p));
-            } else {
-                setPoints(newState.points || 0);
+            void refreshPoints();
+        };
+
+        const handlePointsUpdated = (e: Event) => {
+            const evt = e as CustomEvent<{ balance?: number }>;
+            if (typeof evt.detail?.balance === 'number') {
+                setPoints(evt.detail.balance);
+                return;
             }
+            void refreshPoints();
         };
 
         document.addEventListener('kiwimu:points_earned', handleExternalPoints);
         document.addEventListener('kiwimu:passport_migrated', handlePassportMigrated);
+        document.addEventListener('passport-points-updated', handlePointsUpdated);
 
         return () => {
             document.removeEventListener('kiwimu:points_earned', handleExternalPoints);
             document.removeEventListener('kiwimu:passport_migrated', handlePassportMigrated);
+            document.removeEventListener('passport-points-updated', handlePointsUpdated);
         };
-    }, [isLoggedIn, profile, user]);
+    }, [isLoggedIn, profile, refreshPoints, user]);
 
     const handleStampUnlocked = (newAchievementIds: string[]) => {
         setUnlockedCount(getUnlockedStampCount());
@@ -113,6 +179,26 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         if (!stamp.location) return;
         setIsCheckingLocation(true);
         setLocationError(null);
+        const baseDebug = {
+            stampId: stamp.id,
+            stampName: stamp.name,
+            checkedAt: new Date().toISOString(),
+            allowedRadiusMeters: stamp.location.radius,
+            targetLat: stamp.location.lat,
+            targetLng: stamp.location.lng,
+        };
+
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+            const message = '這台裝置不支援 GPS 定位，請改用手機瀏覽器並開啟定位服務。';
+            setLocationError(message);
+            setGpsDebug({
+                ...baseDebug,
+                status: 'unsupported',
+                message,
+            });
+            setIsCheckingLocation(false);
+            return;
+        }
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -122,21 +208,73 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     stamp.location!.lat,
                     stamp.location!.lng
                 );
+                const accuracy = pos.coords.accuracy || 0;
+                const precisionHint = accuracy > 80
+                    ? ` 目前 GPS 精度約 ±${Math.round(accuracy)} 公尺，建議走到室外或打開高精準定位再試一次。`
+                    : '';
 
                 if (dist <= stamp.location!.radius) {
                     const newIds = unlockStamp(stamp.id);
                     handleStampUnlocked(newIds);
                     trackEvent('stamp_unlocked', { stamp_id: stamp.id, method: 'gps', distance: dist });
+                    setGpsDebug({
+                        ...baseDebug,
+                        status: 'success',
+                        message: `已進入 ${stamp.location!.radius} 公尺判定範圍，印章解鎖成功。`,
+                        distanceMeters: dist,
+                        accuracyMeters: accuracy,
+                        userLat: pos.coords.latitude,
+                        userLng: pos.coords.longitude,
+                    });
+
+                    // GA4: passport_checkin 實體門市打卡
+                    if (typeof window !== 'undefined' && window.gtag) {
+                        window.gtag('event', 'passport_checkin', { location: stamp.name });
+                    }
                 } else {
-                    setLocationError(`你距離月島還有約 ${Math.round(dist)} 公尺，再靠近一點吧！`);
+                    const message = `你距離月島約 ${Math.round(dist)} 公尺，需進入 ${stamp.location!.radius} 公尺內才能解鎖。${precisionHint}`;
+                    setLocationError(message);
+                    setGpsDebug({
+                        ...baseDebug,
+                        status: 'out_of_range',
+                        message,
+                        distanceMeters: dist,
+                        accuracyMeters: accuracy,
+                        userLat: pos.coords.latitude,
+                        userLng: pos.coords.longitude,
+                    });
                     trackEvent('stamp_unlock_failed_distance', { stamp_id: stamp.id, distance: dist });
                 }
                 setIsCheckingLocation(false);
             },
             (err) => {
-                setLocationError('無法取得定位權限，請檢查手機設定。');
+                let status: GpsDebugStatus = 'error';
+                let message = '定位失敗，請稍後再試。';
+
+                if (err.code === err.PERMISSION_DENIED) {
+                    status = 'permission_denied';
+                    message = '你目前拒絕了定位權限，請到瀏覽器設定把此站點的位置權限改成「允許」。';
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    status = 'position_unavailable';
+                    message = '裝置目前抓不到穩定位置，請確認已開啟定位服務，並移動到訊號較好的位置。';
+                } else if (err.code === err.TIMEOUT) {
+                    status = 'timeout';
+                    message = '定位逾時，請確認網路與 GPS 已開啟，再重新嘗試一次。';
+                }
+
+                setLocationError(message);
+                setGpsDebug({
+                    ...baseDebug,
+                    status,
+                    message,
+                });
                 trackEvent('stamp_unlock_failed_error', { stamp_id: stamp.id, error: err.message });
                 setIsCheckingLocation(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 0,
             }
         );
     };
@@ -155,7 +293,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     };
 
     const userLevel = calculateUserLevel();
-    const nextReward = REWARD_TIERS.find(r => unlockedCount < r.requiredStamps) || REWARD_TIERS[REWARD_TIERS.length - 1];
+    const gpsNavigationUrl = gpsDebug
+        ? `https://maps.google.com/?q=${gpsDebug.targetLat},${gpsDebug.targetLng}`
+        : null;
 
     return (
         <div className="fixed inset-0 z-50 bg-brand-bg md:bg-black/20 md:flex md:items-center md:justify-center overflow-hidden">
@@ -214,7 +354,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                     : 'text-gray-400 hover:text-brand-black'
                                     }`}
                             >
-                                {tab === 'shop' ? '🛒' : tab}
+                                {TAB_LABELS[tab]}
                             </button>
                         ))}
                     </div>
@@ -252,11 +392,76 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 }}
                             />
 
+                            {gpsDebug && (
+                                <section className="rounded-2xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black] overflow-hidden">
+                                    <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black px-4 py-3 bg-brand-gray/10">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">GPS Debug</p>
+                                            <h3 className="text-sm font-black text-brand-black">{gpsDebug.stampName} 驗證結果</h3>
+                                        </div>
+                                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${GPS_STATUS_STYLE[gpsDebug.status]}`}>
+                                            {GPS_STATUS_LABEL[gpsDebug.status]}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3 p-4">
+                                        <p className="text-xs font-medium leading-relaxed text-gray-600">{gpsDebug.message}</p>
+
+                                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
+                                                <p className="font-bold uppercase tracking-wider text-gray-400">判定半徑</p>
+                                                <p className="mt-1 font-semibold text-brand-black/80">{gpsDebug.allowedRadiusMeters} m</p>
+                                            </div>
+                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
+                                                <p className="font-bold uppercase tracking-wider text-gray-400">最近檢查</p>
+                                                <p className="mt-1 font-semibold text-brand-black/80">
+                                                    {new Date(gpsDebug.checkedAt).toLocaleString('zh-TW', { hour12: false })}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
+                                                <p className="font-bold uppercase tracking-wider text-gray-400">距離店面</p>
+                                                <p className="mt-1 font-semibold text-brand-black/80">
+                                                    {typeof gpsDebug.distanceMeters === 'number' ? `${Math.round(gpsDebug.distanceMeters)} m` : '尚未取得'}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
+                                                <p className="font-bold uppercase tracking-wider text-gray-400">GPS 精度</p>
+                                                <p className="mt-1 font-semibold text-brand-black/80">
+                                                    {typeof gpsDebug.accuracyMeters === 'number' ? `±${Math.round(gpsDebug.accuracyMeters)} m` : '尚未取得'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {(typeof gpsDebug.userLat === 'number' || gpsNavigationUrl) && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {gpsNavigationUrl && (
+                                                    <button
+                                                        onClick={() => window.open(gpsNavigationUrl, '_blank')}
+                                                        className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-3 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
+                                                    >
+                                                        開啟導航
+                                                        <ExternalLink size={12} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => window.open(LINKS.NAVIGATION, '_blank')}
+                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+                                                >
+                                                    月島地圖
+                                                    <ExternalLink size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+
                             {/* ─── Stamp Journey ─── */}
                             <BadgeJourney
                                 onStampUnlocked={handleStampUnlocked}
                                 onGpsCheckin={handleGpsCheckin}
                                 isCheckingLocation={isCheckingLocation}
+                                gpsDebug={gpsDebug}
                             />
                         </div>
                     )}
@@ -264,6 +469,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'rewards' && (
                         <div className="space-y-4">
+                            <div className="rounded-2xl border border-brand-black/10 bg-white p-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Stamp Milestones</p>
+                                <p className="mt-2 text-xs font-medium leading-relaxed text-gray-500">
+                                    這裡是「集章里程碑獎勵」。完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。
+                                </p>
+                            </div>
                             {REWARD_TIERS.map((reward) => {
                                 const isUnlocked = unlockedCount >= reward.requiredStamps;
                                 const isRedeemed = redeemedRewards.includes(reward.id);
@@ -304,16 +515,23 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'hub' && <MemberHub />}
 
-                    {activeTab === 'shop' && <RewardShop />}
+                    {activeTab === 'shop' && (
+                        <div className="space-y-6">
+                            <ShopOrderHistory
+                                userId={user?.id ?? null}
+                                onLogin={signInWithGoogle}
+                            />
+                            <RewardShop currentPoints={points} />
+                        </div>
+                    )}
                 </div>
 
                 {/* ─── Checkin Modal ─── */}
                 {showCheckinModal && (
                     <CheckinModal
                         onClose={() => setShowCheckinModal(false)}
-                        onCheckinComplete={(pts) => {
-                            // Refresh points in header
-                            setPoints(prev => prev + pts);
+                        onCheckinComplete={(balance) => {
+                            setPoints(balance);
                         }}
                     />
                 )}

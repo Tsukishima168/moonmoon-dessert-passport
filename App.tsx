@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, LogIn, LogOut } from 'lucide-react';
+import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
 import { Screen, UserAnswers, Option, DessertRecommendation, Stamp } from './types';
 import { QUESTION_SETS, DESSERTS, LINKS, STICKERS, STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING } from './constants';
 import { Button } from './components/Button';
@@ -18,7 +18,7 @@ import {
   handleIncomingPointsSync
 } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
-import { consumeRewardClaim } from './rewardClaim';
+import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
 import { initLiffAndAuth } from './src/lib/liffAuth';
 import {
   trackEvent,
@@ -63,8 +63,9 @@ const StickerBadge = ({
 // -- Header --
 const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void; onHomeClick: () => void }) => {
   const [stampCount, setStampCount] = useState(0);
+  const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
 
-  // ⭐ P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
+  // P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
   useEffect(() => {
     // 初始化 stamp count
     setStampCount(getUnlockedStampCount());
@@ -143,6 +144,26 @@ const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void;
             Pass
           </Button>
         </a>
+
+        {/* Auth 狀態列 */}
+        {!/Line\//i.test(navigator.userAgent) && (
+          <>
+            {supabaseUser ? (
+              <div className="flex items-center bg-white border border-brand-black rounded-full px-2 py-1 shadow-[2px_2px_0px_black] ml-1 gap-2">
+                <button onClick={supabaseSignOut} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-brand-black transition-colors">
+                  <LogOut size={12} /> <span className="hidden sm:inline">登出</span>
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={signInWithGoogle} 
+                className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-[1px] hover:shadow-[1px_1px_0px_black] transition-all"
+              >
+                <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
+              </button>
+            )}
+          </>
+        )}
       </div>
     </header>
   );
@@ -962,6 +983,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<UserAnswers>({});
   const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
+  const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
 
   // LIFF & Initial Loading Simulation
@@ -972,6 +994,18 @@ function App() {
     }, 1500); // 1.5s for brand impact
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!appNotice) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAppNotice(null);
+    }, 3600);
+
+    return () => window.clearTimeout(timer);
+  }, [appNotice]);
 
   // Handle cross-site points sync from Gacha redirect URL
   useEffect(() => {
@@ -1056,13 +1090,13 @@ function App() {
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
     const rewardParam = params.get('reward');
-    const codeParam = params.get('code');
+    const claimCodeParam = params.get('claim_code') || params.get('code');
     const debugParam = params.get('debug');
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
 
-    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !codeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
+    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !claimCodeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
       return;
     }
 
@@ -1196,38 +1230,70 @@ function App() {
 
 
       // Reward Claim handling (Easter Egg Master, etc.)
-      if (rewardParam && codeParam) {
-        const result = await consumeRewardClaim(codeParam, rewardParam);
+      if (rewardParam && claimCodeParam) {
+        const rewardTarget = resolveRewardClaimTarget(rewardParam);
 
-        if (!result.ok) {
-          const errorReason = (result as any).reason;
-          console.error('Reward claim failed:', errorReason);
-          trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam });
+        if (!rewardTarget) {
+          trackEvent('stamp_claim_failed', { reason: 'unsupported_reward_id', reward_id: rewardParam });
+          setAppNotice({
+            tone: 'error',
+            message: `目前尚未支援這個限定徽章（${rewardParam}），請通知管理員協助確認。`,
+          });
+        } else {
+          const result = await consumeRewardClaim(claimCodeParam, rewardParam);
 
-          if (errorReason === 'invalid_or_used') {
-            // Check if already unlocked locally
-            const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
-            if (currentState.unlockedStamps?.includes(rewardParam)) {
-              stampUnlocked = true; // Already have it, just open passport
+          if (!result.ok) {
+            const errorReason = (result as any).reason;
+            console.error('Reward claim failed:', errorReason);
+            trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam, stamp_id: rewardTarget.stampId });
+
+            if (errorReason === 'invalid_or_used') {
+              // Check if already unlocked locally
+              const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
+              if (currentState.unlockedStamps?.includes(rewardTarget.stampId)) {
+                stampUnlocked = true; // Already have it, just open passport
+              } else {
+                setAppNotice({
+                  tone: 'error',
+                  message: '此兌換碼無效、已被使用，或與目前要領取的徽章不符。',
+                });
+              }
+            } else if (errorReason === 'unconfigured') {
+              setAppNotice({
+                tone: 'error',
+                message: 'Passport 尚未完成 reward claim 設定，請先確認 Supabase 環境變數。',
+              });
             } else {
-              alert('此兌換碼無效或已被使用。');
+              setAppNotice({
+                tone: 'error',
+                message: '兌換失敗，請稍後再試。',
+              });
             }
           } else {
-            alert('兌換失敗，請稍後再試。');
+            // Success
+            unlockStamp(rewardTarget.stampId);
+            trackEvent('stamp_auto_unlocked', { stamp_id: rewardTarget.stampId, source: 'reward_claim', reward_id: rewardParam });
+            trackEvent('stamp_claim', {
+              status: 'success',
+              source: 'reward_claim',
+              reward_id: rewardParam,
+              stamp_id: rewardTarget.stampId,
+            });
+            setAppNotice({
+              tone: 'success',
+              message: `成功領取「${rewardTarget.stampName}」徽章。`,
+            });
+            stampUnlocked = true;
           }
-        } else {
-          // Success
-          unlockStamp(rewardParam);
-          trackEvent('stamp_auto_unlocked', { stamp_id: rewardParam, source: 'reward_claim' });
-          trackEvent('stamp_claim', { status: 'success', source: 'reward_claim', reward_id: rewardParam });
-          stampUnlocked = true;
         }
       }
 
       // Show passport and success message after unlocking
       if (stampUnlocked) {
-        // Show success message
-        alert('🎉 成功解鎖印章！請查看你的護照。');
+        setAppNotice((currentNotice) => currentNotice ?? {
+          tone: 'success',
+          message: '成功解鎖印章，請查看你的護照。',
+        });
 
         // Open passport to show the unlocked stamp
         prevScreenRef.current = screen;
@@ -1258,25 +1324,36 @@ function App() {
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
       {loading && <LoadingScreen />}
 
-      {/* Auth 狀態列（非 LINE 環境顯示 Google 登入） */}
-      {!/Line\//i.test(navigator.userAgent) && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex justify-end px-4 py-2 bg-brand-black/90 backdrop-blur-sm">
-          {supabaseUser ? (
-            <div className="flex items-center gap-2 text-xs text-brand-lime">
-              <span className="truncate max-w-[120px]">{supabaseUser.email?.split('@')[0]}</span>
-              <button onClick={supabaseSignOut} className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
-                <LogOut size={12} /> 登出
-              </button>
-            </div>
-          ) : (
-            <button onClick={signInWithGoogle} className="flex items-center gap-1.5 text-xs bg-brand-lime text-brand-black px-3 py-1.5 rounded-full font-medium hover:bg-white transition-colors">
-              <LogIn size={12} /> Google 登入
-            </button>
-          )}
-        </div>
-      )}
+      {/* Google Login is now inside <Header /> */}
 
       <Header onPassportClick={openPassport} onHomeClick={restart} />
+
+      {appNotice && (
+        <div className="fixed top-24 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
+          <div
+            className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-3 shadow-[4px_4px_0px_black] ${
+              appNotice.tone === 'success'
+                ? 'border-brand-black bg-brand-lime text-brand-black'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+          >
+            {appNotice.tone === 'success' ? (
+              <Sparkles size={18} className="mt-0.5 shrink-0" />
+            ) : (
+              <CircleAlert size={18} className="mt-0.5 shrink-0" />
+            )}
+            <p className="flex-1 text-sm font-semibold leading-6">{appNotice.message}</p>
+            <button
+              type="button"
+              onClick={() => setAppNotice(null)}
+              className="rounded-full p-1 transition-colors hover:bg-black/5"
+              aria-label="關閉通知"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <main>
         {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}

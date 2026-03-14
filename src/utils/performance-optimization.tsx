@@ -3,6 +3,11 @@
 // 文件：src/utils/performance-optimization.ts
 // ================================================================
 
+import React from 'react';
+import liff from '@line/liff';
+import { getUnlockedStampCount } from '../../passportUtils';
+import { LiffContext, type LiffContextType } from '../contexts/LiffContext';
+
 /**
  * 優化方案集合 - 可直接複製到項目中
  * 包含：LIFF 優化、GA4 優化、圖片優化等
@@ -23,58 +28,64 @@ export async function initLiffWithTimeout(liffId: string, timeoutMs: number = 50
     ]);
 
     await liffInit;
-    console.log('✅ LIFF 初始化成功');
+    console.log('[LIFF] 初始化成功');
     return true;
   } catch (err) {
-    console.warn('⚠️ LIFF 初始化失敗，使用 fallback:', err);
+    console.warn('[LIFF] 初始化失敗，使用 fallback:', err);
     return false;
   }
 }
 
 // 改進的 LiffContext Provider
+interface OptimizedLiffProviderState {
+  liffReady: boolean;
+  isLoggedIn: boolean;
+  profile: LiffContextType['profile'];
+}
+
 export function createOptimizedLiffProvider() {
-  return class LiffProvider extends React.Component {
-    state = {
+  const OptimizedLiffProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+    const [state, setState] = React.useState<OptimizedLiffProviderState>({
       liffReady: false,
       isLoggedIn: false,
       profile: null,
-    };
+    });
 
-    componentDidMount() {
+    React.useEffect(() => {
       const liffId = import.meta.env.VITE_LIFF_ID;
-      
-      // ⭐ 非阻塞初始化：不等 LIFF，先渲染 UI
-      if (liffId) {
-        // 後台初始化，不阻塞主線程
-        this.initLiffInBackground(liffId);
+
+      setState((prevState) => ({
+        ...prevState,
+        liffReady: true,
+      }));
+
+      if (!liffId) {
+        return;
       }
 
-      // 立即標記 LIFF 就緒，UI 可以渲染
-      this.setState({ liffReady: true });
-    }
+      void (async () => {
+        try {
+          const cachedProfile = localStorage.getItem('liff_profile_cache');
+          if (cachedProfile) {
+            setState((prevState) => ({
+              ...prevState,
+              isLoggedIn: true,
+              profile: JSON.parse(cachedProfile) as LiffContextType['profile'],
+            }));
+          }
 
-    private async initLiffInBackground(liffId: string) {
-      try {
-        // 1. 檢查 localStorage 快取
-        const cachedProfile = localStorage.getItem('liff_profile_cache');
-        if (cachedProfile) {
-          this.setState({
-            isLoggedIn: true,
-            profile: JSON.parse(cachedProfile),
-          });
-        }
+          await initLiffWithTimeout(liffId, 5000);
 
-        // 2. 超時初始化（5秒）
-        await initLiffWithTimeout(liffId, 5000);
+          if (!liff.isLoggedIn()) {
+            return;
+          }
 
-        // 3. 如果登入，獲取最新 profile
-        if (liff.isLoggedIn()) {
           const profile = await Promise.race([
             liff.getProfile(),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('getProfile timeout')), 3000)
-            )
-          ]);
+            ),
+          ]) as NonNullable<LiffContextType['profile']>;
 
           const profileData = {
             userId: profile.userId,
@@ -82,30 +93,54 @@ export function createOptimizedLiffProvider() {
             pictureUrl: profile.pictureUrl,
           };
 
-          // 快取到 localStorage
           localStorage.setItem('liff_profile_cache', JSON.stringify(profileData));
-
-          this.setState({
+          setState((prevState) => ({
+            ...prevState,
             isLoggedIn: true,
             profile: profileData,
-          });
+          }));
+        } catch (err) {
+          console.error('LIFF background init failed:', err);
         }
-      } catch (err) {
-        console.error('LIFF background init failed:', err);
-        // Fallback：繼續使用 cached 數據或離線模式
+      })();
+    }, []);
+
+    const login = () => {
+      if (!liff.isLoggedIn()) {
+        liff.login();
       }
-    }
+    };
 
-    render() {
-      const { liffReady, isLoggedIn, profile } = this.state;
+    const logout = () => {
+      if (liff.isLoggedIn()) {
+        liff.logout();
+      }
 
-      return (
-        <LiffContext.Provider value={{ liffReady, isLoggedIn, profile }}>
-          {this.props.children}
-        </LiffContext.Provider>
-      );
-    }
+      setState((prevState) => ({
+        ...prevState,
+        isLoggedIn: false,
+        profile: null,
+      }));
+    };
+
+    return (
+      <LiffContext.Provider
+        value={{
+          liff,
+          isLoggedIn: state.isLoggedIn,
+          profile: state.profile,
+          error: null,
+          login,
+          logout,
+        }}
+      >
+        {children}
+      </LiffContext.Provider>
+    );
   };
+
+  OptimizedLiffProvider.displayName = 'OptimizedLiffProvider';
+  return OptimizedLiffProvider;
 }
 
 // ================================================================
@@ -133,7 +168,7 @@ class AnalyticsQueue {
     this.isProcessing = true;
 
     if ('requestIdleCallback' in window) {
-      // ⭐ 推薦：在瀏覽器空閒時發送
+      // 推薦：在瀏覽器空閒時發送
       requestIdleCallback(
         () => this.sendBatch(),
         { timeout: 2000 }  // 最多等 2 秒
@@ -247,7 +282,7 @@ export const OptimizedButton = React.memo(
       </button>
     );
   },
-  // ⭐ 自訂比較函數：只比較關鍵 props
+  // 自訂比較函數：只比較關鍵 props
   (prevProps, nextProps) => {
     return (
       prevProps.variant === nextProps.variant &&
@@ -293,43 +328,8 @@ export const OptimizedLogo = React.memo(() => (
 ));
 
 // ================================================================
-// 6️⃣  代碼分割 - Lazy Load 屏幕
+// 6️⃣  代碼分割 - Lazy Load 屏幕（目標檔案未建立，暫時移除）
 // ================================================================
-
-/**
- * 使用 React.lazy 實現代碼分割
- * 只在需要時加載各個屏幕的 JS 代碼
- */
-export const LazyLandingScreen = React.lazy(() =>
-  import('../screens/LandingScreen').then(mod => ({
-    default: mod.LandingScreen
-  }))
-);
-
-export const LazyPassportScreen = React.lazy(() =>
-  import('../screens/PassportScreen').then(mod => ({
-    default: mod.PassportScreen
-  }))
-);
-
-export const LazyARScanner = React.lazy(() =>
-  import('../components/ARScanner').then(mod => ({
-    default: mod.ARScanner
-  }))
-);
-
-/**
- * 使用方式：
- * 
- * const App = () => {
- *   return (
- *     <Suspense fallback={<LoadingScreen />}>
- *       {screen === 'landing' && <LazyLandingScreen />}
- *       {screen === 'passport' && <LazyPassportScreen />}
- *     </Suspense>
- *   );
- * };
- */
 
 // ================================================================
 // 7️⃣  Web Worker - 後台處理
@@ -364,10 +364,10 @@ export const createAnalyticsWorker = () => {
 // ================================================================
 
 export const OPTIMIZED_CLOUDINARY_URLS = {
-  // ❌ 舊做法
+  // 舊做法
   LOGO_OLD: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_300/v1768743629/Dessert-Chinese_u8uoxt.png',
 
-  // ✅ 新做法：最佳化參數
+  // 新做法：最佳化參數
   LOGO_NEW: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_auto:best,w_200,dpr_2/Dessert-Chinese.png',
   // 參數說明：
   // f_auto - 自動選擇格式（WebP > AVIF > PNG）

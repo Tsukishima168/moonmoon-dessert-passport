@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import liff from '@line/liff';
 
-interface LiffContextType {
+export interface LiffContextType {
     liff: typeof liff | null;
     isLoggedIn: boolean;
     profile: {
@@ -15,14 +15,14 @@ interface LiffContextType {
     logout: () => void;
 }
 
-const LiffContext = createContext<LiffContextType | undefined>(undefined);
+export const LiffContext = createContext<LiffContextType | undefined>(undefined);
 
 export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [liffObject, setLiffObject] = useState<typeof liff | null>(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [profile, setProfile] = useState<LiffContextType['profile']>(null);
     const [error, setError] = useState<any>(null);
-    const [liffReady, setLiffReady] = useState(false);  // ⭐ P0 優化：標記 LIFF 是否就緒（非阻塞）
+    const [liffReady, setLiffReady] = useState(false);  // P0 優化：標記 LIFF 是否就緒（非阻塞）
 
     // Get LIFF ID from environment variable
     const liffId = import.meta.env.VITE_LIFF_ID;
@@ -30,14 +30,14 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         if (!liffId) {
             console.warn('LIFF ID is not set in environment variables.');
-            setLiffReady(true);  // ⭐ 即使沒有 liffId，UI 也能繼續
+            setLiffReady(true);  // 即使沒有 liffId，UI 也能繼續
             return;
         }
 
-        // ⭐ P0 優化：立即標記為 ready，不等 LIFF 初始化
+        // P0 優化：立即標記為 ready，不等 LIFF 初始化
         setLiffReady(true);
 
-        // ⭐ 後台初始化 LIFF，不阻塞主線程
+        // 後台初始化 LIFF，不阻塞主線程
         initLiffInBackground(liffId);
     }, [liffId]);
 
@@ -49,10 +49,10 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const cached = JSON.parse(cachedProfile);
                 setProfile(cached);
                 setIsLoggedIn(true);
-                console.log('✅ LIFF: 使用快取 profile');
+                console.log('[LIFF] 使用快取 profile');
             }
 
-            // 2. ⭐ 超時控制：5 秒後自動 fallback
+            // 2. 超時控制：5 秒後自動 fallback
             const liffInit = Promise.race([
                 liff.init({ liffId: id }),
                 new Promise((_, reject) =>
@@ -62,7 +62,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             await liffInit;
             setLiffObject(liff);
-            console.log('✅ LIFF 初始化成功');
+            console.log('[LIFF] 初始化成功');
 
             // 3. 並行獲取最新 profile
             if (liff.isLoggedIn()) {
@@ -85,14 +85,14 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 localStorage.setItem('liff_profile_cache', JSON.stringify(profileObj));
                 setProfile(profileObj);
                 setIsLoggedIn(true);
-                console.log('✅ LIFF profile 更新成功');
+                console.log('[LIFF] profile 更新成功');
 
             } else {
                 // 如果是在一般瀏覽器開發測試 (帶有 mock 參數)
                 const urlParams = new URLSearchParams(window.location.search);
                 const mockLiffId = urlParams.get('mock_liff_id');
                 if (mockLiffId) {
-                    console.log('🛠️ 偵測到 mock_liff_id，模擬 LIFF 登入狀態');
+                    console.log('[LIFF] 偵測到 mock_liff_id，模擬 LIFF 登入狀態');
                     const mockProfile = {
                         userId: mockLiffId,
                         displayName: 'Mock User',
@@ -102,7 +102,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
         } catch (err) {
-            console.warn('⚠️ LIFF 後台初始化失敗，使用 fallback 或離線模式:', err);
+            console.warn('[LIFF] 後台初始化失敗，使用 fallback 或離線模式:', err);
             setError(err);
             // App 繼續運作，使用快取或離線模式
         }

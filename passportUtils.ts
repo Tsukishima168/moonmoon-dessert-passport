@@ -1,9 +1,19 @@
 import { PassportState, Achievement, PointTransaction, RedeemableItem } from './types';
 import { ACHIEVEMENTS, STAMPS, REDEEMABLE_ITEMS } from './constants';
 import { performCheckin, recordPointTransaction } from './src/lib/checkinService';
+import { getCheckinPoints } from './types/gamification-types';
 
 const STORAGE_KEY = 'moonmoon_passport';
 const DEVICE_ID_KEY = 'moonmoon_device_id';
+
+function getJourneyStamps() {
+    return STAMPS.filter(stamp => !stamp.isSecret);
+}
+
+function getUnlockedJourneyStampCountFromState(state: PassportState): number {
+    const journeyStampIds = new Set(getJourneyStamps().map(stamp => stamp.id));
+    return state.unlockedStamps.filter(stampId => journeyStampIds.has(stampId)).length;
+}
 
 // ─── Device ID（持久化 UUID，跨模組共用）───
 export function getDeviceId(): string {
@@ -46,6 +56,56 @@ function safeSetItem(key: string, value: string) {
     }
 }
 
+function buildCheckinDayStrings(state: PassportState): Set<string> {
+    const checkedDayStrings = new Set(
+        (state.pointsHistory || [])
+            .filter(tx => tx.type === 'daily_checkin')
+            .map(tx => {
+                const d = new Date(tx.timestamp);
+                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+            })
+    );
+
+    if (state.lastCheckinAt) {
+        const d = new Date(state.lastCheckinAt);
+        checkedDayStrings.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+    }
+
+    return checkedDayStrings;
+}
+
+function getLocalCheckinStreakFromState(state: PassportState): number {
+    const now = new Date();
+    const checkDate = new Date(now);
+    const checkedDayStrings = buildCheckinDayStrings(state);
+    let streak = 0;
+
+    for (let i = 0; i < 365; i++) {
+        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+        if (checkedDayStrings.has(key)) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+
+    return streak;
+}
+
+function dispatchPointsUpdated(balance: number, delta: number, reason: string) {
+    document.dispatchEvent(new CustomEvent('passport-points-updated', {
+        detail: { balance, delta, reason, timestamp: Date.now() }
+    }));
+}
+
+export interface DailyCheckinResult {
+    pointsAwarded: number;
+    streakCount: number;
+    newBalance: number;
+    isBonusDay: boolean;
+}
+
 export function getPassportState(): PassportState {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -84,7 +144,7 @@ export function getPassportState(): PassportState {
 // Achievement logic: stamp count
 function checkAchievements(state: PassportState): string[] {
     const newUnlockedIds: string[] = [];
-    const currentStampCount = state.unlockedStamps.length;
+    const currentStampCount = getUnlockedJourneyStampCountFromState(state);
 
     ACHIEVEMENTS.forEach(achievement => {
         if (state.unlockedAchievements.includes(achievement.id)) return;
@@ -141,27 +201,40 @@ export function canCheckinToday(): boolean {
     );
 }
 
+export function getLocalCheckinStreak(): number {
+    return getLocalCheckinStreakFromState(getPassportState());
+}
+
 /**
  * Performs daily check-in — localStorage 即時 + Supabase 持久化雙寫
  * 
- * @returns points awarded (0 = already checked in today)
+ * @returns check-in result
  */
-export function performDailyCheckin(): number {
-    if (!canCheckinToday()) return 0;
+export function performDailyCheckin(): DailyCheckinResult {
+    if (!canCheckinToday()) {
+        return {
+            pointsAwarded: 0,
+            streakCount: getLocalCheckinStreak(),
+            newBalance: getPassportPointsBalance(),
+            isBonusDay: false,
+        };
+    }
 
     const state = getPassportState();
 
-    // 1. ✅ 即時更新時間戳 + 先給 1 點（保證 UI 同步更新，不等 Supabase）
+    // 1. 即時更新時間戳 + 直接按本地 streak 給點（保證 UI 同步更新，不等 Supabase）
     state.lastCheckinAt = Date.now();
     state.lastUpdatedAt = Date.now();
-    // 先同步寫入 1 點，讓 UI 即時顯示
-    state.points = (state.points || 0) + 1;
+    const streakCount = getLocalCheckinStreakFromState(state);
+    const pointsAwarded = getCheckinPoints(streakCount);
+    const isBonusDay = streakCount % 7 === 0;
+    state.points = (state.points || 0) + pointsAwarded;
     if (!state.pointsHistory) state.pointsHistory = [];
     state.pointsHistory.push({
         id: crypto.randomUUID(),
         type: 'daily_checkin',
-        amount: 1,
-        description: '每日簽到（即時）',
+        amount: pointsAwarded,
+        description: `第 ${streakCount} 天簽到 +${pointsAwarded} 積分`,
         timestamp: Date.now(),
     });
     safeSetItem(STORAGE_KEY, JSON.stringify(state));
@@ -177,18 +250,27 @@ export function performDailyCheckin(): number {
 
     // 派送即時 UI 事件（讓 React 元件立刻更新顯示）
     document.dispatchEvent(new CustomEvent('daily-checkin', {
-        detail: { timestamp: state.lastCheckinAt, points: 1, streakCount: 1, isBonusDay: false }
+        detail: {
+            timestamp: state.lastCheckinAt,
+            points: pointsAwarded,
+            streakCount,
+            isBonusDay,
+            balance: state.points,
+            source: 'local',
+        }
     }));
+    dispatchPointsUpdated(state.points, pointsAwarded, 'daily_checkin');
 
     // 2. async 呼叫 Supabase — 取得真實 streak，並做差值補正
     const deviceId = getDeviceId();
+    const expectedPoints = pointsAwarded;
     performCheckin(deviceId).then((result) => {
-        if (result.success && result.pointsAwarded > 1) {
-            // 真實點數 > 1 → 補足差值（避免重複給 1 點）
-            const diff = result.pointsAwarded - 1;
-            addPassportPoints(diff, 'daily_checkin', `第 ${result.streakCount} 天簽到（補正 +${diff}）`);
-        } else if (result.success) {
-            // 1 點已在上面給了，只需 dispatch 正確的 streakCount 事件
+        let balance = getPassportPointsBalance();
+        if (result.success && result.pointsAwarded !== expectedPoints) {
+            const diff = result.pointsAwarded - expectedPoints;
+            if (diff !== 0) {
+                balance = addPassportPoints(diff, 'daily_checkin', `第 ${result.streakCount} 天簽到（補正 ${diff > 0 ? '+' : ''}${diff}）`);
+            }
         }
         // 派送 Supabase 確認後的完整事件（讓 UI 更新 streak 顯示）
         document.dispatchEvent(new CustomEvent('daily-checkin', {
@@ -197,14 +279,20 @@ export function performDailyCheckin(): number {
                 points: result.pointsAwarded,
                 streakCount: result.streakCount,
                 isBonusDay: result.isBonusDay,
+                balance,
+                source: 'server',
             }
         }));
     }).catch((e) => {
-        // Supabase 失敗 → 1 點已在上面給了，不需再補
-        console.warn('[performDailyCheckin] Supabase failed, 1pt already applied from localStorage:', e);
+        console.warn('[performDailyCheckin] Supabase failed, local points already applied:', e);
     });
 
-    return 1;
+    return {
+        pointsAwarded,
+        streakCount,
+        newBalance: state.points,
+        isBonusDay,
+    };
 }
 
 // ─── Gamification: Level & Points ───
@@ -215,7 +303,7 @@ export function performDailyCheckin(): number {
  */
 export function calculateUserLevel(): number {
     const state = getPassportState();
-    const stampPoints = state.unlockedStamps.length * 50;
+    const stampPoints = getUnlockedJourneyStampCountFromState(state) * 50;
     const achievementPoints = state.unlockedAchievements.length * 100;
     const sitePoints = state.visitedSites.length * 20;
 
@@ -236,7 +324,7 @@ export function isStampUnlocked(stampId: string): boolean {
 
 export function getUnlockedStampCount(): number {
     const state = getPassportState();
-    return state.unlockedStamps.length;
+    return getUnlockedJourneyStampCountFromState(state);
 }
 
 export function getUnlockedAchievements(): string[] {
@@ -271,7 +359,7 @@ export function emitStampUnlockedEvent(stampId: string) {
 
 export function getNextStampInJourney(): typeof STAMPS[number] | null {
     const state = getPassportState();
-    return STAMPS.find(stamp => !state.unlockedStamps.includes(stamp.id)) || null;
+    return getJourneyStamps().find(stamp => !state.unlockedStamps.includes(stamp.id)) || null;
 }
 
 // ─── Points System ───
@@ -307,6 +395,7 @@ export function addPassportPoints(
     }
 
     safeSetItem(STORAGE_KEY, JSON.stringify(state));
+    dispatchPointsUpdated(state.points, amount, type);
 
     // Async 寫入 Supabase（非 daily_checkin，那個由 checkinService 直接處理）
     if (type !== 'daily_checkin') {
@@ -359,6 +448,7 @@ export function redeemItem(itemId: string): { success: boolean; newBalance: numb
     }
 
     safeSetItem(STORAGE_KEY, JSON.stringify(state));
+    dispatchPointsUpdated(state.points, -item.pointsCost, `redeem:${item.id}`);
     return { success: true, newBalance: state.points };
 }
 
@@ -376,6 +466,9 @@ export function getPointsHistory(): PointTransaction[] {
  */
 export function handleIncomingPointsSync(): { credited: number } | null {
     try {
+        const SYNC_KEY = 'moonmoon_points_last_sync_ts';
+        const ACK_COOKIE = 'moonmoon_passport_sync_ack_ts';
+        const COOKIE_DOMAIN = '.kiwimu.com';
         const params = new URLSearchParams(window.location.search);
         const action = params.get('action');
         const amount = params.get('amount');
@@ -387,14 +480,29 @@ export function handleIncomingPointsSync(): { credited: number } | null {
         const pointsAmount = parseInt(amount, 10);
         if (isNaN(pointsAmount) || pointsAmount <= 0) return null;
 
+        const writeAckCookie = () => {
+            document.cookie = [
+                `${ACK_COOKIE}=${encodeURIComponent(ts)}`,
+                `domain=${COOKIE_DOMAIN}`,
+                'path=/',
+                'max-age=600',
+                'SameSite=Lax',
+            ].join('; ');
+        };
+
         // Prevent duplicate sync: check if this timestamp was already processed
-        const SYNC_KEY = 'moonmoon_points_last_sync_ts';
         const lastSyncTs = localStorage.getItem(SYNC_KEY);
-        if (lastSyncTs === ts) return null; // Already processed
+        if (lastSyncTs === ts) {
+            writeAckCookie();
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+            return null; // Already processed
+        }
 
         // Credit points
         addPassportPoints(pointsAmount, 'gacha_earn', `扭蛋同步 +${pointsAmount} 積分`);
         localStorage.setItem(SYNC_KEY, ts);
+        writeAckCookie();
 
         // Clean up URL
         const cleanUrl = window.location.pathname;

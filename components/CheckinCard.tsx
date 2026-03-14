@@ -99,7 +99,7 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium mt-0.5">
                         {canCheckin
-                            ? '打開護照，領今日積分 🪙'
+                            ? '打開護照，領今日積分'
                             : '今日已完成，明天再來'
                         }
                     </p>
