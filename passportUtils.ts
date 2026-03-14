@@ -466,6 +466,9 @@ export function getPointsHistory(): PointTransaction[] {
  */
 export function handleIncomingPointsSync(): { credited: number } | null {
     try {
+        const SYNC_KEY = 'moonmoon_points_last_sync_ts';
+        const ACK_COOKIE = 'moonmoon_passport_sync_ack_ts';
+        const COOKIE_DOMAIN = '.kiwimu.com';
         const params = new URLSearchParams(window.location.search);
         const action = params.get('action');
         const amount = params.get('amount');
@@ -477,14 +480,29 @@ export function handleIncomingPointsSync(): { credited: number } | null {
         const pointsAmount = parseInt(amount, 10);
         if (isNaN(pointsAmount) || pointsAmount <= 0) return null;
 
+        const writeAckCookie = () => {
+            document.cookie = [
+                `${ACK_COOKIE}=${encodeURIComponent(ts)}`,
+                `domain=${COOKIE_DOMAIN}`,
+                'path=/',
+                'max-age=600',
+                'SameSite=Lax',
+            ].join('; ');
+        };
+
         // Prevent duplicate sync: check if this timestamp was already processed
-        const SYNC_KEY = 'moonmoon_points_last_sync_ts';
         const lastSyncTs = localStorage.getItem(SYNC_KEY);
-        if (lastSyncTs === ts) return null; // Already processed
+        if (lastSyncTs === ts) {
+            writeAckCookie();
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+            return null; // Already processed
+        }
 
         // Credit points
         addPassportPoints(pointsAmount, 'gacha_earn', `扭蛋同步 +${pointsAmount} 積分`);
         localStorage.setItem(SYNC_KEY, ts);
+        writeAckCookie();
 
         // Clean up URL
         const cleanUrl = window.location.pathname;
