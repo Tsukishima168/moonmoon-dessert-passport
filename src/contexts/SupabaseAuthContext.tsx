@@ -10,31 +10,10 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { setDeviceId } from '../../passportUtils';
+import { createCookieStorage, getOAuthRedirectUrl } from '../lib/authStorage';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL) as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_MOON_ISLAND_SUPABASE_ANON_KEY) as string;
-const COOKIE_DOMAIN = '.kiwimu.com';
-
-// ── Cookie helpers ────────────────────────────────────────────────────────────
-
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
-function setCookie(name: string, value: string, maxAgeSec = 60 * 60 * 24 * 365) {
-  document.cookie = [
-    `${name}=${encodeURIComponent(value)}`,
-    `domain=${COOKIE_DOMAIN}`,
-    `path=/`,
-    `max-age=${maxAgeSec}`,
-    'SameSite=Lax',
-  ].join('; ');
-}
-
-function deleteCookie(name: string) {
-  document.cookie = `${name}=; domain=${COOKIE_DOMAIN}; path=/; max-age=0`;
-}
 
 // ── Auth Client（cookie storage，單例）───────────────────────────────────────
 
@@ -44,15 +23,13 @@ function getAuthClient(): SupabaseClient | null {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
   if (_authClient) return _authClient;
 
+  const cookieStorage = createCookieStorage();
+
   _authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       detectSessionInUrl: true,
-      storage: {
-        getItem: (key) => getCookie(key),
-        setItem: (key, value) => setCookie(key, value),
-        removeItem: (key) => deleteCookie(key),
-      },
+      ...(cookieStorage ? { storage: cookieStorage } : {}),
     },
   });
 
@@ -64,8 +41,10 @@ function getAuthClient(): SupabaseClient | null {
 interface SupabaseAuthContextType {
   user: User | null;
   loading: boolean;
+  error: string | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  clearError: () => void;
 }
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextType | undefined>(undefined);
@@ -73,6 +52,7 @@ const SupabaseAuthContext = createContext<SupabaseAuthContextType | undefined>(u
 export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const client = getAuthClient();
@@ -85,6 +65,10 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     client.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
       setLoading(false);
+
+      if (user && window.location.pathname === '/auth/callback') {
+        window.history.replaceState({}, '', '/');
+      }
     });
 
     // 監聽 auth 狀態變化
@@ -98,6 +82,14 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         // Legacy migration logic removed
       }
+
+      if (currentUser) {
+        setError(null);
+      }
+
+      if (currentUser && window.location.pathname === '/auth/callback') {
+        window.history.replaceState({}, '', '/');
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -105,13 +97,32 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const signInWithGoogle = async () => {
     const client = getAuthClient();
-    if (!client) return;
-    await client.auth.signInWithOAuth({
+    if (!client) {
+      setError('Supabase Auth 尚未設定完成，Google 登入目前不可用。');
+      return;
+    }
+
+    setError(null);
+
+    const { error: signInError } = await client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getOAuthRedirectUrl(),
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
+
+    if (signInError) {
+      const redirectUrl = getOAuthRedirectUrl();
+      const message = signInError.message.toLowerCase().includes('redirect')
+        ? `Google 登入 redirect 設定有誤，請確認 Supabase Auth 的 Redirect URL 是否包含：${redirectUrl}`
+        : `Google 登入失敗：${signInError.message}`;
+
+      console.error('[SupabaseAuth] Google sign-in failed:', signInError);
+      setError(message);
+    }
   };
 
   const handleSignOut = async () => {
@@ -122,7 +133,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   return (
-    <SupabaseAuthContext.Provider value={{ user, loading, signInWithGoogle, signOut: handleSignOut }}>
+    <SupabaseAuthContext.Provider value={{ user, loading, error, signInWithGoogle, signOut: handleSignOut, clearError: () => setError(null) }}>
       {children}
     </SupabaseAuthContext.Provider>
   );

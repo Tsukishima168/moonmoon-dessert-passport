@@ -978,7 +978,7 @@ const ResultScreen: React.FC<{
 // -- Main App --
 
 function App() {
-  const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
+  const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut, error: authError, clearError: clearAuthError } = useSupabaseAuth();
   const [screen, setScreen] = useState<Screen>('landing');
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<UserAnswers>({});
@@ -1006,6 +1006,17 @@ function App() {
 
     return () => window.clearTimeout(timer);
   }, [appNotice]);
+
+  useEffect(() => {
+    if (!authError) {
+      return;
+    }
+
+    setAppNotice({
+      tone: 'error',
+      message: authError,
+    });
+  }, [authError]);
 
   // Handle cross-site points sync from Gacha redirect URL
   useEffect(() => {
@@ -1345,7 +1356,10 @@ function App() {
             <p className="flex-1 text-sm font-semibold leading-6">{appNotice.message}</p>
             <button
               type="button"
-              onClick={() => setAppNotice(null)}
+              onClick={() => {
+                setAppNotice(null);
+                clearAuthError();
+              }}
               className="rounded-full p-1 transition-colors hover:bg-black/5"
               aria-label="關閉通知"
             >
