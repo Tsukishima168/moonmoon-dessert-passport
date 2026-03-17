@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
 import PassportPage from './src/pages/PassportPage';
-import InvitePage from './src/pages/InvitePage';
+import JoinPage from './src/pages/JoinPage';
 import RedeemPage from './src/pages/RedeemPage';
 
 const rootElement = document.getElementById('root');
@@ -22,7 +22,7 @@ root.render(
         <BrowserRouter>
           <Routes>
             <Route path="/passport/:id" element={<PassportPage />} />
-            <Route path="/invite/:id" element={<InvitePage />} />
+            <Route path="/join/:passportId" element={<JoinPage />} />
             <Route path="/redeem" element={<RedeemPage />} />
             <Route path="*" element={<App />} />
           </Routes>

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getPassportById, type Passport } from '../api/passportSystem'
 import PageHeader from '../components/PageHeader'
 
 export default function PassportPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const [passport, setPassport] = useState<Passport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!id) { setError('無效的護照連結'); setLoading(false); return }
@@ -76,10 +76,14 @@ export default function PassportPage() {
         {/* Invite button */}
         {canInvite && (
           <button
-            onClick={() => navigate(`/invite/${id}`)}
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/join/${id}`)
+              setCopied(true)
+              setTimeout(() => setCopied(false), 1500)
+            }}
             className="w-full bg-brand-black text-brand-bg rounded-full py-4 text-sm tracking-wide hover:opacity-80 transition-opacity"
           >
-            邀請朋友 →
+            {copied ? '已複製 ✓' : '複製邀請連結'}
           </button>
         )}
 
