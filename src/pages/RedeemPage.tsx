@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { getPassportByNumber, redeemPudding, type Passport } from '../api/passportSystem'
+import PageHeader from '../components/PageHeader'
 
 const REDEEM_PASSWORD = 'MOONMOON2025'
 
@@ -68,24 +69,25 @@ export default function RedeemPage() {
   // Step 1: Password
   if (!authed) {
     return (
-      <div className="min-h-screen bg-brand-black font-sans flex items-center justify-center">
+      <div className="min-h-screen bg-brand-bg font-sans flex items-center justify-center">
+        <PageHeader />
         <div className="max-w-sm mx-auto px-5 w-full">
-          <p className="text-brand-bg/40 text-xs tracking-widest uppercase mb-2">月島端驗證</p>
-          <h1 className="font-serif text-3xl text-brand-bg mb-8">兌換驗證</h1>
+          <p className="text-brand-black/40 text-xs tracking-widest uppercase mb-2">月島端驗證</p>
+          <h1 className="font-serif text-3xl text-brand-black mb-8">兌換驗證</h1>
           <form onSubmit={handlePasswordSubmit}>
             <input
               type="password"
               value={pwInput}
               onChange={e => { setPwInput(e.target.value); setPwError(false) }}
               placeholder="店員密碼"
-              className="w-full bg-white/10 text-brand-bg rounded-2xl px-5 py-4 text-sm outline-none placeholder:text-brand-bg/30 mb-3"
+              className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-none placeholder:text-brand-black/30 mb-3"
               autoComplete="current-password"
               required
             />
             {pwError && <p className="text-red-400 text-xs mb-3 px-1">密碼錯誤</p>}
             <button
               type="submit"
-              className="w-full bg-brand-lime text-brand-black rounded-full py-4 text-sm font-medium"
+              className="w-full bg-brand-black text-brand-bg border border-brand-black rounded-full py-4 text-sm font-medium shadow-[2px_2px_0px_black]"
             >
               進入
             </button>
@@ -98,7 +100,8 @@ export default function RedeemPage() {
   // Step 2: Lookup + redeem
   return (
     <div className="min-h-screen bg-brand-bg font-sans">
-      <div className="max-w-md mx-auto px-5 py-10">
+      <PageHeader />
+      <div className="max-w-md mx-auto px-5 pt-28 pb-10">
 
         <div className="mb-8">
           <p className="text-xs text-brand-black/40 tracking-widest uppercase">月島端驗證</p>

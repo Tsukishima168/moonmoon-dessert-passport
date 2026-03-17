@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPassportById, type Passport } from '../api/passportSystem'
+import PageHeader from '../components/PageHeader'
 
 export default function PassportPage() {
   const { id } = useParams<{ id: string }>()
@@ -27,7 +28,8 @@ export default function PassportPage() {
 
   return (
     <div className="min-h-screen bg-brand-bg font-sans">
-      <div className="max-w-md mx-auto px-5 py-10">
+      <PageHeader />
+      <div className="max-w-md mx-auto px-5 pt-28 pb-10">
 
         {/* Header */}
         <div className="mb-8">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPassportById, createInvitation, type Passport } from '../api/passportSystem'
+import PageHeader from '../components/PageHeader'
 
 export default function InvitePage() {
   const { id } = useParams<{ id: string }>()
@@ -68,7 +69,8 @@ export default function InvitePage() {
 
   return (
     <div className="min-h-screen bg-brand-bg font-sans">
-      <div className="max-w-md mx-auto px-5 py-10">
+      <PageHeader />
+      <div className="max-w-md mx-auto px-5 pt-28 pb-10">
 
         <button
           onClick={() => navigate(`/passport/${id}`)}
