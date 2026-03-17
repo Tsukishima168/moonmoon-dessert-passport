@@ -34,7 +34,7 @@ export default function PassportPage() {
         {/* Header */}
         <div className="mb-8">
           <p className="text-xs text-brand-black/40 tracking-widest uppercase">Kiwimu Passport</p>
-          <h1 className="font-serif text-5xl text-brand-black mt-2">
+          <h1 className="font-sans font-black text-5xl text-brand-black mt-2">
             #{String(passport.passport_number).padStart(3, '0')}
           </h1>
           <p className="text-brand-black/60 mt-1">{passport.holder_name}</p>
