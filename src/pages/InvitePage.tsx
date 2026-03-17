@@ -40,6 +40,9 @@ export default function InvitePage() {
       setError('提交失敗，請再試一次')
       setSubmitting(false)
     } else {
+      // Refetch passport to get updated invite_slots_used
+      const { data: updated } = await getPassportById(id)
+      if (updated) setPassport(updated)
       setSuccess(true)
     }
   }

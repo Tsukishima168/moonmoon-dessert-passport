@@ -80,7 +80,9 @@ CREATE TABLE redemptions (
   reward_type reward_type NOT NULL,
   redeemed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   verified_by TEXT NOT NULL,
-  notes TEXT
+  source TEXT NOT NULL DEFAULT 'passport',
+  notes TEXT,
+  CONSTRAINT redemptions_passport_reward_unique UNIQUE (passport_id, reward_type)
 );
 
 CREATE INDEX idx_redemptions_passport ON redemptions(passport_id);
@@ -93,35 +95,27 @@ ALTER TABLE passports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE redemptions ENABLE ROW LEVEL SECURITY;
 
--- passports: 持有人只能看自己的護照
-CREATE POLICY "passport_select_own" ON passports
-  FOR SELECT USING (auth.uid() = user_id);
+-- passports: 公開 SELECT（UUID 即身份，有連結才能看）
+CREATE POLICY "passport_select_public" ON passports
+  FOR SELECT USING (true);
 
-CREATE POLICY "passport_update_own" ON passports
-  FOR UPDATE USING (auth.uid() = user_id);
+-- passports: 公開 UPDATE（供兌換流程更新 pudding_claimed）
+CREATE POLICY "passport_update_public" ON passports
+  FOR UPDATE USING (true);
 
--- invitations: 持有人只能看自己發出的邀請
-CREATE POLICY "invitation_select_own" ON invitations
-  FOR SELECT USING (
-    from_passport_id IN (
-      SELECT id FROM passports WHERE user_id = auth.uid()
-    )
-  );
+-- invitations: 公開 SELECT + INSERT（持有護照連結者可邀請）
+CREATE POLICY "invitation_select_public" ON invitations
+  FOR SELECT USING (true);
 
-CREATE POLICY "invitation_insert_own" ON invitations
-  FOR INSERT WITH CHECK (
-    from_passport_id IN (
-      SELECT id FROM passports WHERE user_id = auth.uid()
-    )
-  );
+CREATE POLICY "invitation_insert_public" ON invitations
+  FOR INSERT WITH CHECK (true);
 
--- redemptions: 持有人只能看自己的兌換紀錄
-CREATE POLICY "redemption_select_own" ON redemptions
-  FOR SELECT USING (
-    passport_id IN (
-      SELECT id FROM passports WHERE user_id = auth.uid()
-    )
-  );
+-- redemptions: 公開 SELECT + INSERT（供密碼驗證後的店員兌換）
+CREATE POLICY "redemption_select_public" ON redemptions
+  FOR SELECT USING (true);
+
+CREATE POLICY "redemption_insert_public" ON redemptions
+  FOR INSERT WITH CHECK (true);
 
 -- ────────────────────────────────────────────
 -- 6. Function: 更新 invite_slots_used
@@ -184,7 +178,7 @@ BEGIN
   FROM passports
   WHERE id = p_passport_id;
 
-  RETURN (slots_used >= 3 AND NOT already_claimed);
+  RETURN (slots_used >= slots_total AND NOT already_claimed);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
