@@ -23,7 +23,7 @@ root.render(
           <Routes>
             <Route path="/passport/:id" element={<PassportPage />} />
             <Route path="/invite/:id" element={<InvitePage />} />
-            <Route path="/redeem/:id" element={<RedeemPage />} />
+            <Route path="/redeem" element={<RedeemPage />} />
             <Route path="*" element={<App />} />
           </Routes>
         </BrowserRouter>
