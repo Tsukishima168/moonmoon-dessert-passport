@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
+import PassportPage from './src/pages/PassportPage';
+import InvitePage from './src/pages/InvitePage';
+import RedeemPage from './src/pages/RedeemPage';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,7 +19,14 @@ root.render(
   <React.StrictMode>
     <SupabaseAuthProvider>
       <LiffProvider>
-        <App />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/passport/:id" element={<PassportPage />} />
+            <Route path="/invite/:id" element={<InvitePage />} />
+            <Route path="/redeem/:id" element={<RedeemPage />} />
+            <Route path="*" element={<App />} />
+          </Routes>
+        </BrowserRouter>
       </LiffProvider>
     </SupabaseAuthProvider>
   </React.StrictMode>
