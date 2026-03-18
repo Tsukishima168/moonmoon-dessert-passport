@@ -10,7 +10,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { setDeviceId } from '../../passportUtils';
-import { createCookieStorage, getOAuthRedirectUrl } from '../lib/authStorage';
+import { createCookieStorage, getOAuthRedirectUrl, saveRedirectTo, getAndClearRedirectTo } from '../lib/authStorage';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL) as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_MOON_ISLAND_SUPABASE_ANON_KEY) as string;
@@ -55,6 +55,16 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 跨站 SSO：若 URL 帶有 ?redirect_to=，存到 sessionStorage 再清除 URL
+    const params = new URLSearchParams(window.location.search);
+    const incomingRedirect = params.get('redirect_to');
+    if (incomingRedirect) {
+      saveRedirectTo(incomingRedirect);
+      params.delete('redirect_to');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
+    }
+
     const client = getAuthClient();
     if (!client) {
       setLoading(false);
@@ -66,8 +76,16 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       setUser(user);
       setLoading(false);
 
-      if (user && window.location.pathname === '/auth/callback') {
-        window.history.replaceState({}, '', '/');
+      if (user) {
+        // 已登入 + 有待跳轉網址 → 直接過去
+        const redirectTo = getAndClearRedirectTo();
+        if (redirectTo) {
+          window.location.href = redirectTo;
+          return;
+        }
+        if (window.location.pathname === '/auth/callback') {
+          window.history.replaceState({}, '', '/');
+        }
       }
     });
 
@@ -80,15 +98,17 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         // Always ensure the deviceId points to the logged in user
         setDeviceId(currentUser.id);
 
-        // Legacy migration logic removed
-      }
-
-      if (currentUser) {
         setError(null);
-      }
 
-      if (currentUser && window.location.pathname === '/auth/callback') {
-        window.history.replaceState({}, '', '/');
+        // 登入完成 → 若有跨站跳轉目標，過去
+        const redirectTo = getAndClearRedirectTo();
+        if (redirectTo) {
+          window.location.href = redirectTo;
+          return;
+        }
+        if (window.location.pathname === '/auth/callback') {
+          window.history.replaceState({}, '', '/');
+        }
       }
     });
 

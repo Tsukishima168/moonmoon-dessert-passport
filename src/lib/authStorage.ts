@@ -60,3 +60,19 @@ export function getOAuthRedirectUrl() {
   const configured = import.meta.env.VITE_SUPABASE_AUTH_REDIRECT_URL as string | undefined;
   return configured || window.location.origin;
 }
+
+const REDIRECT_KEY = 'auth_redirect_to';
+
+/** 儲存登入後要跳轉的網址（給跨站 SSO 用） */
+export function saveRedirectTo(url: string) {
+  try { sessionStorage.setItem(REDIRECT_KEY, url); } catch { /* ignore */ }
+}
+
+/** 取出並清除暫存的跳轉網址 */
+export function getAndClearRedirectTo(): string | null {
+  try {
+    const url = sessionStorage.getItem(REDIRECT_KEY);
+    if (url) sessionStorage.removeItem(REDIRECT_KEY);
+    return url;
+  } catch { return null; }
+}
