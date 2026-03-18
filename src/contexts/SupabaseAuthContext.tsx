@@ -100,6 +100,9 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         setError(null);
 
+        // 記錄活躍時間（fire-and-forget）
+        client.rpc('update_last_seen', { p_site: 'passport' }).then(() => {});
+
         // 登入完成 → 若有跨站跳轉目標，過去
         const redirectTo = getAndClearRedirectTo();
         if (redirectTo) {
