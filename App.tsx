@@ -20,6 +20,7 @@ import {
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
 import { initLiffAndAuth } from './src/lib/liffAuth';
+import { trackUserEvent } from './src/lib/eventTracker';
 import {
   trackEvent,
   trackDessertView,
@@ -1159,6 +1160,7 @@ function App() {
             method: 'qr_code',
             unlock_param: unlockParam
           });
+          trackUserEvent('stamp_earned', { stamp_id: stampId, method: 'qr_code' });
           stampUnlocked = true;
         }
       }
@@ -1193,6 +1195,7 @@ function App() {
             method: 'auto_unlock_url',
             mbti_result: upperType
           });
+          trackUserEvent('stamp_earned', { stamp_id: 'mbti_completed', method: 'mbti', mbti_type: upperType });
 
           stampUnlocked = true;
         }
