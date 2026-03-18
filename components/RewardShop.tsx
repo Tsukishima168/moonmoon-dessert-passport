@@ -306,8 +306,7 @@ const SuccessDialog: React.FC<SuccessDialogProps> = ({ reward, onClose }) => (
                 }}
             >
                 <strong>兌換提醒</strong><br />
-                請於店內出示此畫面給店員確認兌換。<br />
-                <span style={{ fontSize: 11, color: '#9e7b3a' }}>目前仍為 MVP 測試版，實際核銷以店內流程為準。</span>
+                請在店員面前出示此畫面，由店員掃描或確認後完成核銷。
             </div>
 
             <button
@@ -416,7 +415,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: 22, color: '#3d2c00' }}>會員福利</h2>
-                        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9e7b3a' }}>這裡是點數兌換，不是集章里程碑</p>
+                        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9e7b3a' }}>使用積分兌換甜點與專屬福利</p>
                     </div>
                     {onClose && (
                         <button
@@ -551,8 +550,8 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                         color: '#bdbdbd', lineHeight: 1.6,
                     }}
                 >
-                    點數福利會和 shop 訂購會員測試活動一起使用。<br />
-                    線下品項目前請於店內出示兌換畫面，由店員人工確認。
+                    積分可透過每日簽到、完成任務與消費累積。<br />
+                    兌換時請出示此畫面給店員確認。
                 </p>
             </div>
         </>
