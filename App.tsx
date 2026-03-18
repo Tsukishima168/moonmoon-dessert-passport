@@ -19,7 +19,6 @@ import {
 } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
-import { initLiffAndAuth } from './src/lib/liffAuth';
 import { trackUserEvent } from './src/lib/eventTracker';
 import {
   trackEvent,
@@ -987,9 +986,8 @@ function App() {
   const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
 
-  // LIFF & Initial Loading Simulation
+  // Initial Loading Simulation
   useEffect(() => {
-    initLiffAndAuth();
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1500); // 1.5s for brand impact
