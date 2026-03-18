@@ -396,8 +396,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 <section className="rounded-2xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black] overflow-hidden">
                                     <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black px-4 py-3 bg-brand-gray/10">
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">GPS Debug</p>
-                                            <h3 className="text-sm font-black text-brand-black">{gpsDebug.stampName} 驗證結果</h3>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">定位記錄</p>
+                                            <h3 className="text-sm font-black text-brand-black">{gpsDebug.stampName}</h3>
                                         </div>
                                         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${GPS_STATUS_STYLE[gpsDebug.status]}`}>
                                             {GPS_STATUS_LABEL[gpsDebug.status]}
@@ -408,46 +408,25 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                         <p className="text-xs font-medium leading-relaxed text-gray-600">{gpsDebug.message}</p>
 
                                         <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                            {typeof gpsDebug.distanceMeters === 'number' && (
+                                                <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
+                                                    <p className="font-bold uppercase tracking-wider text-gray-400">距離月島</p>
+                                                    <p className="mt-1 font-semibold text-brand-black/80">{Math.round(gpsDebug.distanceMeters)} m</p>
+                                                </div>
+                                            )}
                                             <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                                                <p className="font-bold uppercase tracking-wider text-gray-400">判定半徑</p>
-                                                <p className="mt-1 font-semibold text-brand-black/80">{gpsDebug.allowedRadiusMeters} m</p>
-                                            </div>
-                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                                                <p className="font-bold uppercase tracking-wider text-gray-400">最近檢查</p>
-                                                <p className="mt-1 font-semibold text-brand-black/80">
-                                                    {new Date(gpsDebug.checkedAt).toLocaleString('zh-TW', { hour12: false })}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                                                <p className="font-bold uppercase tracking-wider text-gray-400">距離店面</p>
-                                                <p className="mt-1 font-semibold text-brand-black/80">
-                                                    {typeof gpsDebug.distanceMeters === 'number' ? `${Math.round(gpsDebug.distanceMeters)} m` : '尚未取得'}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                                                <p className="font-bold uppercase tracking-wider text-gray-400">GPS 精度</p>
-                                                <p className="mt-1 font-semibold text-brand-black/80">
-                                                    {typeof gpsDebug.accuracyMeters === 'number' ? `±${Math.round(gpsDebug.accuracyMeters)} m` : '尚未取得'}
-                                                </p>
+                                                <p className="font-bold uppercase tracking-wider text-gray-400">需進入範圍</p>
+                                                <p className="mt-1 font-semibold text-brand-black/80">{gpsDebug.allowedRadiusMeters} m 內</p>
                                             </div>
                                         </div>
 
-                                        {(typeof gpsDebug.userLat === 'number' || gpsNavigationUrl) && (
+                                        {gpsDebug.status !== 'success' && (
                                             <div className="flex flex-wrap gap-2">
-                                                {gpsNavigationUrl && (
-                                                    <button
-                                                        onClick={() => window.open(gpsNavigationUrl, '_blank')}
-                                                        className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-3 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
-                                                    >
-                                                        開啟導航
-                                                        <ExternalLink size={12} />
-                                                    </button>
-                                                )}
                                                 <button
                                                     onClick={() => window.open(LINKS.NAVIGATION, '_blank')}
-                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-3 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
                                                 >
-                                                    月島地圖
+                                                    導航前往月島
                                                     <ExternalLink size={12} />
                                                 </button>
                                             </div>
