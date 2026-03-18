@@ -496,6 +496,27 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'shop' && (
                         <div className="space-y-6">
+                            {/* 遊戲中心導流卡 */}
+                            <a
+                                href="https://gacha.kiwimu.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-purple-200 p-4 no-underline"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-2xl shrink-0 shadow-sm">
+                                        🎮
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <h3 className="text-sm font-black text-stone-800">月島遊戲中心</h3>
+                                            <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">NEW</span>
+                                        </div>
+                                        <p className="text-xs text-stone-500">每日搖珠機 + 幸運轉盤，賺積分、換驚喜</p>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4 text-stone-400 shrink-0" />
+                                </div>
+                            </a>
                             <ShopOrderHistory
                                 userId={user?.id ?? null}
                                 onLogin={signInWithGoogle}
