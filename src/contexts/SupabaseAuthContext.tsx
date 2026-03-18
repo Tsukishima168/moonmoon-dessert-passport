@@ -29,6 +29,7 @@ function getAuthClient(): SupabaseClient | null {
     auth: {
       persistSession: true,
       detectSessionInUrl: true,
+      flowType: 'pkce',
       ...(cookieStorage ? { storage: cookieStorage } : {}),
     },
   });
