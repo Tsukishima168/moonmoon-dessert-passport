@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
-import { ArrowRight, Gift, BrainCircuit, RotateCcw, Sticker, MoveRight, Stamp as StampIcon, ChevronUp, Sparkles, MapPin, Instagram, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
-import { Screen, UserAnswers, Option, DessertRecommendation, Stamp } from './types';
-import { QUESTION_SETS, DESSERTS, LINKS, STICKERS, STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING } from './constants';
+import { Stamp as StampIcon, Sparkles, Instagram, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
+import { Screen, Stamp } from './types';
+import { LINKS, STAMPS, REWARD_TIERS, ACHIEVEMENTS, BRANDING } from './constants';
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
@@ -178,7 +178,7 @@ const OPENING_QUESTIONS = [
   '你有多久沒有好好照顧自己了？',
 ];
 
-const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) => {
+const LandingScreen: React.FC<{ onOpenPassport: () => void }> = ({ onOpenPassport }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSubtext, setShowSubtext] = useState(false);
   const [easterEggModal, setEasterEggModal] = useState<{ type: null | 'moonmoon' | 'dessert', content?: any }>({ type: null });
@@ -311,10 +311,8 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
 
         <div className="flex-none pt-28 md:pt-32 px-4 z-10 pointer-events-none relative flex flex-col items-center">
           <div className="text-center space-y-4 max-w-xl mx-auto">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold text-brand-black leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Don't<br />
-              Hesitate<br />
-              to <span className="italic">Eat!</span>
+            <h1 className="text-7xl sm:text-8xl md:text-9xl font-serif font-black text-brand-black leading-none tracking-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+              PASSPORT
             </h1>
           </div>
         </div>
@@ -362,24 +360,24 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
               <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 opacity-60" />
 
               <p className="font-sans font-medium text-brand-black mb-4 text-sm leading-relaxed">
-                Not just a bakery, but a soul gallery. <br />
-                Find your <span className="font-bold underline decoration-brand-lime decoration-4 underline-offset-2">destined flavor</span> in the exhibition.
+                Kiwimu 宇宙會員中心。<br />
+                到店集章，解鎖<span className="font-bold underline decoration-brand-lime decoration-4 underline-offset-2">限定獎勵</span>。
               </p>
-              <p className="text-xs text-brand-black/80 mb-6">完成測驗解鎖第一枚印章，到店集章兌獎。</p>
+              <p className="text-xs text-brand-black/80 mb-6">集章、積分、兌換，全部在護照裡。</p>
 
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => {
-                    trackButtonClick('enter_exhibition', 'landing_menu');
-                    onStartQuiz();
+                    trackButtonClick('open_passport', 'landing_menu');
+                    onOpenPassport();
                   }}
                   variant="black"
                   size="lg"
                   fullWidth
                   className="rounded-full shadow-lg text-base h-14 group hover:scale-[1.02] transition-all duration-300"
                 >
-                  Enter Exhibition
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <BookOpen className="mr-2 w-5 h-5" />
+                  打開護照
                 </Button>
                 <div className="flex gap-2">
                   <a
@@ -467,522 +465,12 @@ const LandingScreen: React.FC<{ onStartQuiz: () => void }> = ({ onStartQuiz }) =
   );
 };
 
-// Zone Configuration for the Exhibition Journey
-const ZONE_CONFIG = [
-  {
-    id: 'zone_01',
-    title: 'Zone 01 · Awareness',
-    subtitle: '喚醒 · Awakening Senses',
-    description: 'First, let us calibrate your sensory receptors.'
-  },
-  {
-    id: 'zone_02',
-    title: 'Zone 02 · Intuition',
-    subtitle: '直覺 · Trusting Instincts',
-    description: 'Follow your inner voice without hesitation.'
-  },
-  {
-    id: 'zone_03',
-    title: 'Zone 03 · Definition',
-    subtitle: '定義 · Shaping Reality',
-    description: 'Construct your own definition of soul.'
-  }
-];
-
-const QuizScreen: React.FC<{
-  questions: typeof QUESTION_SETS[0],
-  onComplete: (answers: UserAnswers, options: Option[]) => void,
-  onCancel: () => void
-}> = ({ questions, onComplete, onCancel }) => {
-  const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [answers, setAnswers] = useState<UserAnswers>({});
-  const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
-  const [isExiting, setIsExiting] = useState(false);
-
-  // Determine current zone (safe fallback if more questions than zones)
-  const currentZone = ZONE_CONFIG[currentQIndex] || ZONE_CONFIG[ZONE_CONFIG.length - 1];
-  const currentQuestion = questions[currentQIndex];
-  const totalSteps = questions.length;
-  const progress = ((currentQIndex + 1) / totalSteps) * 100;
-
-  const handleOptionSelect = (option: Option) => {
-    trackEvent('question_answered', {
-      question_id: currentQuestion.id,
-      option_id: option.id
-    });
-
-    const newAnswers = { ...answers, [currentQuestion.id]: option.id };
-    const newSelectedOptions = [...selectedOptions, option];
-
-    setAnswers(newAnswers);
-    setSelectedOptions(newSelectedOptions);
-
-    if (currentQIndex < questions.length - 1) {
-      setTimeout(() => setCurrentQIndex(prev => prev + 1), 300);
-    } else {
-      setIsExiting(true);
-      setTimeout(() => onComplete(newAnswers, newSelectedOptions), 500);
-    }
-  };
-
-  return (
-    <div className={`min-h-screen bg-brand-bg flex flex-col pt-16 md:pt-24 px-6 pb-10 transition-all duration-500 ${isExiting ? 'opacity-0 translate-y-4' : 'opacity-100'}`}>
-
-      {/* Exhibition Header / Zone Indicator */}
-      <div className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto mb-8 md:mb-12">
-        <div className="flex justify-between items-end mb-4 border-b border-brand-black/10 pb-4">
-          <div>
-            <span className="block text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">
-              Current Exhibition Zone
-            </span>
-            <h3 className="text-lg md:text-xl font-serif font-bold text-brand-black flex items-center gap-2">
-              {currentZone.title}
-            </h3>
-          </div>
-          <div className="text-right">
-            <span className="font-mono text-xs text-gray-400">
-              {currentQIndex + 1} / {totalSteps}
-            </span>
-          </div>
-        </div>
-
-        {/* Progress Bar styled as 'Exhibit Path' */}
-        <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-brand-black transition-all duration-500 ease-out"
-            style={{ width: `${progress}% ` }}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full flex flex-col justify-center relative">
-        {/* Animated Question Transition */}
-        <div key={currentQIndex} className="animate-fade-in-up">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/60 border border-brand-black/10 text-[10px] font-bold uppercase tracking-wider text-brand-lime-dark mb-4 md:mb-6">
-            {currentZone.subtitle}
-          </span>
-
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-sans font-bold text-brand-black mb-4 md:mb-6 leading-tight">
-            {currentQuestion.question}
-          </h2>
-
-          {currentQuestion.subtitle && (
-            <p className="text-gray-500 font-sans mb-8 text-base md:text-lg lg:text-xl italic">
-              "{currentQuestion.subtitle}"
-            </p>
-          )}
-
-          <div className="space-y-3 md:space-y-4">
-            {currentQuestion.options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleOptionSelect(option)}
-                className="group w-full p-6 md:p-7 lg:p-8 bg-white border border-brand-black rounded-2xl flex items-center justify-between hover:bg-brand-lime hover:shadow-[4px_4px_0px_black] transition-all duration-200 active:translate-y-1 active:shadow-none"
-              >
-                <div className="flex items-center gap-4 w-full">
-                  <span className="text-lg md:text-xl lg:text-2xl font-bold font-sans text-brand-black">
-                    {option.label}
-                  </span>
-                </div>
-                <MoveRight className="text-brand-black opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-200 flex-shrink-0" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <button onClick={onCancel} className="text-sm font-bold text-gray-400 hover:text-brand-black underline decoration-2 underline-offset-4">
-            Cancel & Return
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ResultScreen: React.FC<{
-  selectedOptions: Option[],
-  onRetry: () => void,
-  onOpenPassport?: () => void
-}> = ({ selectedOptions, onRetry, onOpenPassport }) => {
-  const mbtiResultUrl = useMemo(
-    () =>
-      buildUtmUrl(LINKS.MBTI_TEST, {
-        medium: 'result-cta',
-        campaign: '2026-q1-integration',
-        content: 'result_mbti',
-      }),
-    []
-  );
-
-  // QR code unlock moved to App component root level
-
-  // Track time spent on result screen
-  useEffect(() => {
-    const startTime = Date.now();
-    // Auto-unlock quiz completion stamp
-    unlockStamp('quiz_completed');
-    trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'quiz_completion' });
-
-    return () => {
-      const duration = (Date.now() - startTime) / 1000;
-      trackTimeSpent('result', duration);
-    };
-  }, []);
-
-  const { dessertResult, stickerResult } = useMemo(() => {
-    // 1. Calculate Scores
-    const scores = { classic: 0, deep: 0, bright: 0, fruity: 0 };
-    selectedOptions.forEach(opt => {
-      scores.classic += opt.scores.classic;
-      scores.deep += opt.scores.deep;
-      scores.bright += opt.scores.bright;
-      scores.fruity += opt.scores.fruity;
-    });
-
-    // 2. Find Winning Category
-    let maxScore = -1;
-    let winningCategory: '經典' | '深色' | '亮色' | '果香' = '經典';
-
-    (Object.keys(scores) as Array<keyof typeof scores>).forEach(key => {
-      if (scores[key] > maxScore) {
-        maxScore = scores[key];
-        const map: Record<string, typeof winningCategory> = {
-          'classic': '經典', 'deep': '深色', 'bright': '亮色', 'fruity': '果香'
-        };
-        winningCategory = map[key];
-      }
-    });
-
-    // 3. Find Dessert Candidates
-    const candidates = DESSERTS.filter(d => d.style === winningCategory);
-    const finalCandidates = candidates.length > 0 ? candidates : DESSERTS;
-    const selection = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
-
-    // 4. Find Sticker Reward
-    const sticker = STICKERS.find(s => s.style === winningCategory) || STICKERS[0];
-
-    return { dessertResult: selection, stickerResult: sticker, winningCategory };
-  }, [selectedOptions]);
-
-  // 建議書：深度解讀（人際 / 財富 / 健康）
-  const styleReading = useMemo(() => {
-    const readings: Record<'經典' | '深色' | '亮色' | '果香', { relation: string; wealth: string; health: string; dessertWhy: string }> = {
-      經典: {
-        relation: '你是一個可靠的傾聽者，朋友總是在需要時想到你',
-        wealth: '你相信穩健的價值，不追求浮誇，但追求品質',
-        health: '你懂得用簡單的方式照顧自己，不需要複雜的儀式感',
-        dessertWhy: '看似簡單，但內在豐富而深刻',
-      },
-      深色: {
-        relation: '喜歡獨處思考，擁有看透本質的深邃靈魂',
-        wealth: '你重視內在價值，勝過外在的喧囂',
-        health: '你需要深度的休息與沈澱，才能重新充電',
-        dessertWhy: '微苦回甘，像深夜裡的自我對話',
-      },
-      亮色: {
-        relation: '充滿好奇心，總能在平凡中發現閃亮亮的新奇事物',
-        wealth: '你願意嘗試新可能，對價值保持開放',
-        health: '你透過探索與新鮮感來照顧自己的心情',
-        dessertWhy: '層次分明、清新明亮，像一道光',
-      },
-      果香: {
-        relation: '自帶療癒氣場，所到之處都會開出快樂的小花',
-        wealth: '你相信分享與連結，本身就是最大的價值',
-        health: '你用溫暖與甜味給自己與他人充電',
-        dessertWhy: '繽紛有生命力，裝滿快樂的靈感',
-      },
-    };
-    return readings[dessertResult?.style ?? '經典'];
-  }, [dessertResult?.style]);
-
-  // Track result view
-  useEffect(() => {
-    if (dessertResult && stickerResult) {
-      trackEvent('result_viewed', {
-        dessert_name: dessertResult.name,
-        dessert_style: dessertResult.style,
-        sticker_name: stickerResult.name,
-        sticker_style: stickerResult.style,
-        timestamp: new Date().toISOString()
-      });
-
-      // Track as dessert view too
-      trackDessertView(dessertResult.id, dessertResult.name);
-    }
-  }, [dessertResult, stickerResult]);
-
-  // Randomly select drink (Stable vs Sensitive) for display
-  const recommendedDrink = useMemo(() => {
-    return Math.random() > 0.5 ? dessertResult.drink_stable : dessertResult.drink_sensitive;
-  }, [dessertResult]);
-
-  return (
-    <div className="min-h-screen bg-brand-bg pt-20 px-6 pb-12 animate-fade-in flex flex-col items-center">
-
-      <div className="text-center mb-6 max-w-sm">
-        <p className="font-mono text-xs md:text-sm text-gray-500 mb-2 uppercase tracking-widest">Your Soul Mate</p>
-        <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-bold text-brand-black leading-tight">{stickerResult.name}</h2>
-      </div>
-
-      {/* Reward Card Container (Sticker Focus) */}
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border border-brand-black p-4 md:p-6 rounded-[2rem] shadow-[8px_8px_0px_black] mb-6 rotate-1">
-
-        <div className="flex justify-between items-center mb-3 px-1">
-          <div className="flex gap-1">
-            <span className="w-3 h-3 rounded-full bg-brand-lime border border-black"></span>
-            <span className="w-3 h-3 rounded-full bg-white border border-black"></span>
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Moon Character</span>
-        </div>
-
-        {/* Sticker Image Area */}
-        <div className="aspect-square rounded-[1.5rem] overflow-hidden border border-brand-black mb-4 relative bg-gray-50 group flex items-center justify-center p-6">
-          <img
-            src={stickerResult.imageUrl}
-            alt={stickerResult.name}
-            className="w-full h-auto drop-shadow-2xl"
-            loading="lazy"
-            onLoad={() => trackEvent('image_loaded', { image_type: 'sticker', name: stickerResult.name })}
-          />
-        </div>
-
-        <div className="px-2 pb-2">
-          <p className="text-gray-600 font-sans leading-relaxed text-sm mb-6 border-l-2 border-brand-lime pl-3">
-            {stickerResult.description}
-          </p>
-
-          <div className="p-4 bg-brand-gray/20 rounded-xl border border-dashed border-gray-400 text-center mb-2">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Your Mission</p>
-            <p className="text-sm font-bold text-brand-black">
-              截圖出示給店員看<br />
-              獲得<span className="bg-brand-lime px-1">「月島限定小貼紙」</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 集章：解鎖第一枚 + 打開護照 CTA */}
-      {onOpenPassport && (
-        <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-4 bg-brand-lime/25 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
-          <p className="text-sm font-bold text-brand-black mb-2"> 你已解鎖第一枚印章 · 甜點測驗</p>
-          <p className="text-xs text-brand-black/80 mb-4">到店繼續集章、集滿可兌換飲品升級、手工餅乾與千層蛋糕。</p>
-          <Button
-            fullWidth
-            variant="black"
-            size="lg"
-            className="rounded-xl shadow-[4px_4px_0px_#D4FF00]"
-            onClick={() => {
-              trackButtonClick('open_passport', 'result_stamp_cta');
-              onOpenPassport();
-            }}
-          >
-            <BookOpen className="mr-2" size={20} />
-            打開護照看集章進度
-          </Button>
-        </div>
-      )}
-
-
-
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 p-5 bg-brand-lime/15 border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black]">
-        <p className="text-xs font-bold text-brand-black uppercase tracking-widest mb-2">出示你的結果給店員，獲得：</p>
-        <ul className="text-sm font-sans text-brand-black space-y-1.5 mb-3">
-          <li>限時折扣（首次到店）</li>
-          <li>拍照打卡區（分享你的甜點時刻）</li>
-        </ul>
-        <p className="text-xs text-gray-600">到店後掃描 QR Code 可解鎖護照印章；集滿章數可兌換獎勵。</p>
-      </div>
-
-      {/* Secondary Result: The Dessert (Soul Food) */}
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl bg-white border-2 border-brand-black rounded-2xl p-5 mb-8 flex items-center gap-5 shadow-[4px_4px_0px_black] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_black] transition-all duration-300">
-        <div className="relative">
-          <div className="absolute inset-0 bg-brand-lime rounded-lg translate-x-1 translate-y-1"></div>
-          <img
-            src={dessertResult.imageUrl}
-            className="w-20 h-20 rounded-lg object-cover border border-brand-black relative z-10"
-            alt={dessertResult.name}
-            loading="lazy"
-          />
-        </div>
-
-        <div className="flex-1">
-          <span className="inline-block bg-brand-black text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full mb-1 tracking-wider">
-            Soul Food
-          </span>
-          <h3 className="font-bold text-lg text-brand-black font-sans leading-tight mb-1">{dessertResult.name}</h3>
-          <div className="flex items-center text-xs font-bold text-gray-500 gap-1.5">
-            <span>搭配飲品：{recommendedDrink}</span>
-          </div>
-        </div>
-      </div>
-
-
-      {/*  Enhanced LINE@ Landing Bonus - Screenshot to Rewards Flow */}
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-6 bg-white border-2 border-brand-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
-        {/* Header Banner */}
-        <div className="bg-brand-lime border-b-2 border-brand-black px-5 py-3 text-center">
-          <p className="text-sm md:text-base font-bold text-brand-black flex items-center justify-center gap-2">
-            <Sparkles size={18} className="animate-pulse" />
-            獲得專屬登島優惠
-            <Sparkles size={18} className="animate-pulse" />
-          </p>
-        </div>
-
-        <div className="p-5 space-y-4">
-          {/* Step-by-step Instructions */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">1</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-brand-black mb-1">截圖此頁面</p>
-                <p className="text-xs text-gray-600">保存你的專屬角色結果</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">2</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-brand-black mb-1">傳送到 LINE@</p>
-                <p className="text-xs text-gray-600">點擊下方按鈕開啟對話</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-black text-white flex items-center justify-center text-sm font-bold">3</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-brand-black mb-1">留言「登陸」</p>
-                <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-brand-black/20 shadow-sm">
-                  <span className="font-bold text-sm font-serif">登陸</span>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (navigator.clipboard) {
-                        navigator.clipboard.writeText('登陸');
-                        const btn = e.currentTarget;
-                        const originalText = btn.textContent;
-                        btn.textContent = '✓';
-                        setTimeout(() => btn.textContent = originalText, 1500);
-                      }
-                    }}
-                    className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors"
-                  >
-                    COPY
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Rewards Preview */}
-          <div className="bg-white rounded-xl p-4 border-2 border-dashed border-brand-black/30">
-            <p className="text-xs font-bold text-brand-black uppercase tracking-wider mb-3 text-center">你將獲得</p>
-            <div className="space-y-2 text-sm text-brand-black">
-              <div className="flex items-center gap-2">
-                <span className="font-bold">月島小優惠</span>
-                <span className="text-xs text-gray-500">（限時折扣）</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold">專屬角色手機桌布</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold">來自月島的一封信</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Enhanced CTA Button */}
-          <a
-            href={LINKS.LINE_OA}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'result_landing_bonus_cta')}
-          >
-            <Button
-              fullWidth
-              variant="black"
-              size="lg"
-              className="rounded-xl shadow-[4px_4px_0px_#D4FF00] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#D4FF00] active:shadow-none active:translate-y-[4px] transition-all duration-200"
-            >
-              <StampIcon className="mr-2" size={20} />
-              前往 LINE@ 領取登島禮包
-            </Button>
-          </a>
-
-          <p className="text-[10px] text-center text-gray-500">
-            優惠限時提供，請盡快完成領取
-          </p>
-        </div>
-      </div>
-
-      {/* Secondary Actions Container */}
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-3">
-        <p className="text-center text-sm text-gray-500 mb-1">
-          集章、兌換獎勵請點右上角 <strong className="text-brand-black">護照</strong>
-        </p>
-
-        <div className="grid grid-cols-2 gap-3">
-          <a
-            href={mbtiResultUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => trackOutboundNavigation(mbtiResultUrl, 'result_mbti')}
-          >
-            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-              <BrainCircuit size={18} className="mr-2" />
-              深度 MBTI
-            </Button>
-          </a>
-
-          <a
-            href={LINKS.GOOGLE_MAPS}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => trackOutboundNavigation(LINKS.GOOGLE_MAPS, 'result_maps')}
-          >
-            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-              <MapPin size={18} className="mr-2" />
-              前往店舖
-            </Button>
-          </a>
-
-          <a
-            href={LINKS.INSTAGRAM}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => trackOutboundNavigation(LINKS.INSTAGRAM, 'result_ig')}
-          >
-            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-              <Instagram size={18} className="mr-2" />
-              追蹤 IG
-            </Button>
-          </a>
-
-          <button
-            onClick={() => {
-              trackButtonClick('retry_quiz', 'result_page');
-              onRetry();
-            }}
-          >
-            <Button fullWidth variant="outline" size="lg" className="rounded-xl border-brand-black bg-white hover:bg-brand-gray h-14">
-              <RotateCcw size={18} className="mr-2" />
-              重測一次
-            </Button>
-          </button>
-        </div>
-      </div>
-    </div >
-  );
-};
-
 // -- Main App --
 
 function App() {
   const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut, error: authError, clearError: clearAuthError } = useSupabaseAuth();
   const [screen, setScreen] = useState<Screen>('landing');
   const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<UserAnswers>({});
-  const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
   const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
 
@@ -1039,44 +527,7 @@ function App() {
     setScreen('passport');
   }, []);
 
-  // Randomly select one question set on load
-  const [activeQuestionSet, setActiveQuestionSet] = useState(QUESTION_SETS[0]);
-
-  const startQuiz = () => {
-    // Track quiz start
-    trackEvent('quiz_started', {
-      timestamp: new Date().toISOString()
-    });
-
-    // Pick random set
-    const randomSet = QUESTION_SETS[Math.floor(Math.random() * QUESTION_SETS.length)];
-    setActiveQuestionSet(randomSet);
-
-    setScreen('quiz');
-    window.scrollTo(0, 0);
-  };
-
-  const finishQuiz = (userAnswers: UserAnswers, opts: Option[]) => {
-    // Track quiz completion
-    trackEvent('quiz_completed', {
-      total_questions: opts.length,
-      timestamp: new Date().toISOString()
-    });
-
-    setAnswers(userAnswers);
-    setSelectedOptions(opts);
-    setScreen('result');
-    window.scrollTo(0, 0);
-  };
-
-  const restart = () => {
-    // Track quiz restart
-    trackEvent('quiz_restarted', {
-      timestamp: new Date().toISOString()
-    });
-
-    setAnswers({});
-    setSelectedOptions([]);
+  const goHome = () => {
     setScreen('landing');
     window.scrollTo(0, 0);
   };
@@ -1338,7 +789,7 @@ function App() {
 
       {/* Google Login is now inside <Header /> */}
 
-      <Header onPassportClick={openPassport} onHomeClick={restart} />
+      <Header onPassportClick={openPassport} onHomeClick={goHome} />
 
       {appNotice && (
         <div className="fixed top-24 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
@@ -1371,21 +822,7 @@ function App() {
       )}
 
       <main>
-        {screen === 'landing' && <LandingScreen onStartQuiz={startQuiz} />}
-        {screen === 'quiz' && (
-          <QuizScreen
-            questions={activeQuestionSet}
-            onComplete={finishQuiz}
-            onCancel={restart}
-          />
-        )}
-        {screen === 'result' && (
-          <ResultScreen
-            selectedOptions={selectedOptions}
-            onRetry={restart}
-            onOpenPassport={openPassport}
-          />
-        )}
+        {screen === 'landing' && <LandingScreen onOpenPassport={openPassport} />}
         {screen === 'passport' && <PassportScreen onClose={closePassport} />}
       </main>
 

@@ -1,4 +1,4 @@
-export type Screen = 'landing' | 'quiz' | 'result' | 'passport';
+export type Screen = 'landing' | 'passport';
 
 export interface Option {
   id: string;
