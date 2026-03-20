@@ -31,8 +31,10 @@ import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
+import { KiwimuAchievementModal } from './components/kiwimu/KiwimuAchievementModal';
 import { KiwimuMetricCard } from './components/kiwimu/KiwimuMetricCard';
 import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
+import { KiwimuRewardTierCard } from './components/kiwimu/KiwimuRewardTierCard';
 import { KiwimuSectionIntro } from './components/kiwimu/KiwimuSectionIntro';
 import { KiwimuTabs } from './components/kiwimu/KiwimuTabs';
 import { useLiff } from './src/contexts/LiffContext';
@@ -457,35 +459,22 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                 const isUnlocked = unlockedCount >= reward.requiredStamps;
                                 const isRedeemed = redeemedRewards.includes(reward.id);
                                 return (
-                                    <div
+                                    <KiwimuRewardTierCard
                                         key={reward.id}
-                                        className={`p-4 rounded-2xl border-2 border-brand-black shadow-[4px_4px_0px_black] transition-all ${isUnlocked ? 'bg-white' : 'bg-gray-50 opacity-60'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-xl border-2 border-brand-black flex items-center justify-center shadow-[2px_2px_0px_black] ${isUnlocked && !isRedeemed ? 'bg-brand-lime' : 'bg-white'
-                                                }`}>
-                                                {isRedeemed ? <CheckCircle2 size={24} className="text-brand-lime-dark" /> : <Gift size={24} className="text-brand-black" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-xs font-black text-brand-black truncate uppercase">{reward.title}</h3>
-                                                <p className="text-[10px] text-gray-400 font-bold">{reward.requiredStamps} STAMPS REQUIRED</p>
-                                            </div>
-                                            {isUnlocked && !isRedeemed && (
-                                                <button
-                                                    onClick={() => {
-                                                        markRewardRedeemed(reward.id);
-                                                        setRedeemedRewards([...redeemedRewards, reward.id]);
-                                                        trackEvent('reward_redeemed', { reward_id: reward.id });
-                                                    }}
-                                                    className="px-3 py-1.5 bg-brand-black text-white rounded-lg text-[10px] font-black uppercase border border-brand-black active:translate-y-0.5 transition-all"
-                                                >
-                                                    Redeem
-                                                </button>
-                                            )}
-                                            {!isUnlocked && <Lock size={16} className="text-gray-300" />}
-                                        </div>
-                                    </div>
+                                        title={reward.title}
+                                        requiredStamps={reward.requiredStamps}
+                                        isUnlocked={isUnlocked}
+                                        isRedeemed={isRedeemed}
+                                        onRedeem={
+                                            isUnlocked && !isRedeemed
+                                                ? () => {
+                                                      markRewardRedeemed(reward.id);
+                                                      setRedeemedRewards([...redeemedRewards, reward.id]);
+                                                      trackEvent('reward_redeemed', { reward_id: reward.id });
+                                                  }
+                                                : undefined
+                                        }
+                                    />
                                 );
                             })}
                         </div>
@@ -537,36 +526,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                 {/* ─── Achievement Modal ─── */}
                 {showAchievementModal && (
-                    <div className="fixed inset-0 z-[100] bg-brand-black/90 flex items-center justify-center p-8 backdrop-blur-sm">
-                        <div className="bg-white border-4 border-brand-lime rounded-[40px] p-8 w-full max-w-sm text-center relative shadow-[0_0_50px_rgba(212,255,0,0.4)] animate-scale-up">
-                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-brand-lime rounded-full border-4 border-brand-black flex items-center justify-center animate-bounce shadow-xl">
-                                <Star size={48} className="text-brand-black" />
-                            </div>
-
-                            <h2 className="mt-8 text-2xl font-black text-brand-black uppercase tracking-tighter">
-                                New Legend!
-                            </h2>
-                            <p className="text-[10px] font-black text-brand-lime-dark tracking-[0.3em] uppercase mb-6">
-                                Achievement Unlocked
-                            </p>
-
-                            <div className="bg-gray-100 p-4 rounded-3xl mb-8 border-2 border-brand-black/5">
-                                <h3 className="text-lg font-black text-brand-black mb-1">
-                                    {ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.name}
-                                </h3>
-                                <p className="text-xs font-medium text-gray-500">
-                                    {ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.description}
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={() => setShowAchievementModal(null)}
-                                className="w-full py-4 bg-brand-black text-white rounded-[24px] font-black uppercase tracking-widest border-2 border-brand-black shadow-[4px_4px_0px_brand-lime] active:translate-y-1 transition-all"
-                            >
-                                Continue Journey
-                            </button>
-                        </div>
-                    </div>
+                    <KiwimuAchievementModal
+                        title={ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.name ?? ''}
+                        description={ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.description ?? ''}
+                        onClose={() => setShowAchievementModal(null)}
+                    />
                 )}
             </div>
         </div>
