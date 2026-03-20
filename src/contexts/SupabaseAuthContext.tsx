@@ -10,7 +10,16 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { setDeviceId } from '../../passportUtils';
-import { createCookieStorage, getOAuthRedirectUrl, saveRedirectTo, getAndClearRedirectTo } from '../lib/authStorage';
+import {
+  activateRedirectTo,
+  clearRedirectState,
+  clearPendingRedirectTo,
+  createCookieStorage,
+  getAndClearPendingRedirectTo,
+  getAndClearRedirectTo,
+  getOAuthRedirectUrl,
+  saveRedirectTo,
+} from '../lib/authStorage';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL) as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_MOON_ISLAND_SUPABASE_ANON_KEY) as string;
@@ -44,6 +53,7 @@ interface SupabaseAuthContextType {
   loading: boolean;
   error: string | null;
   signInWithGoogle: () => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<{ ok: boolean; message?: string }>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -64,6 +74,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       params.delete('redirect_to');
       const newSearch = params.toString();
       window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
+    } else {
+      clearPendingRedirectTo();
     }
 
     const client = getAuthClient();
@@ -78,6 +90,12 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       setLoading(false);
 
       if (user) {
+        const pendingRedirect = getAndClearPendingRedirectTo();
+        if (pendingRedirect) {
+          window.location.href = pendingRedirect;
+          return;
+        }
+
         // 已登入 + 有待跳轉網址 → 直接過去
         const redirectTo = getAndClearRedirectTo();
         if (redirectTo) {
@@ -127,6 +145,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     setError(null);
+    activateRedirectTo();
 
     const { error: signInError } = await client.auth.signInWithOAuth({
       provider: 'google',
@@ -139,6 +158,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     });
 
     if (signInError) {
+      clearRedirectState();
       const redirectUrl = getOAuthRedirectUrl();
       const message = signInError.message.toLowerCase().includes('redirect')
         ? `Google 登入 redirect 設定有誤，請確認 Supabase Auth 的 Redirect URL 是否包含：${redirectUrl}`
@@ -149,6 +169,42 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
+  const signInWithMagicLink = async (email: string) => {
+    const client = getAuthClient();
+    if (!client) {
+      const message = 'Supabase Auth 尚未設定完成，Magic Link 登入目前不可用。';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return { ok: false, message: '請先輸入 Email。' };
+    }
+
+    setError(null);
+    activateRedirectTo();
+
+    const { error: otpError } = await client.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: getOAuthRedirectUrl(),
+      },
+    });
+
+    if (otpError) {
+      clearRedirectState();
+      const message = `Magic Link 發送失敗：${otpError.message}`;
+      setError(message);
+      return { ok: false, message };
+    }
+
+    return {
+      ok: true,
+      message: '登入連結已寄出，請到信箱點擊 Magic Link 完成登入。',
+    };
+  };
+
   const handleSignOut = async () => {
     const client = getAuthClient();
     if (!client) return;
@@ -157,7 +213,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   return (
-    <SupabaseAuthContext.Provider value={{ user, loading, error, signInWithGoogle, signOut: handleSignOut, clearError: () => setError(null) }}>
+    <SupabaseAuthContext.Provider value={{ user, loading, error, signInWithGoogle, signInWithMagicLink, signOut: handleSignOut, clearError: () => setError(null) }}>
       {children}
     </SupabaseAuthContext.Provider>
   );

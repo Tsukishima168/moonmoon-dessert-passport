@@ -9,6 +9,8 @@ import {
     Lock,
     CheckCircle2,
     Gift,
+    Mail,
+    LoaderCircle,
 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS } from './constants';
 import { Stamp } from './types';
@@ -116,8 +118,14 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
 
 
     const { isLoggedIn, profile } = useLiff();
-    const { user, signInWithGoogle } = useSupabaseAuth();
+    const { user, signInWithGoogle, signInWithMagicLink } = useSupabaseAuth();
     const [points, setPoints] = useState(0);
+    const [magicEmail, setMagicEmail] = useState('');
+    const [magicLinkState, setMagicLinkState] = useState<{
+        tone: 'success' | 'error' | null;
+        message: string;
+    }>({ tone: null, message: '' });
+    const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
 
     const refreshPoints = React.useCallback(async () => {
         const state = getPassportState();
@@ -314,6 +322,28 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
         profile?.displayName ||
         '月島旅人';
     const passportMode = user || profile ? '已啟用' : '訪客模式';
+    const handleMagicLinkSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (isSendingMagicLink) {
+            return;
+        }
+
+        setIsSendingMagicLink(true);
+        setMagicLinkState({ tone: null, message: '' });
+
+        const result = await signInWithMagicLink(magicEmail);
+
+        setMagicLinkState({
+            tone: result.ok ? 'success' : 'error',
+            message: result.message || (result.ok ? '登入連結已寄出。' : 'Magic Link 發送失敗。'),
+        });
+
+        if (result.ok) {
+            setMagicEmail('');
+        }
+
+        setIsSendingMagicLink(false);
+    };
 
     return (
         <div className="fixed inset-0 z-50 bg-brand-bg md:bg-black/20 md:flex md:items-center md:justify-center overflow-hidden">
@@ -415,6 +445,61 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                             >
                                 登入 Google 帳號快速綁定
                             </button>
+
+                            <div className="flex w-full items-center gap-3">
+                                <div className="h-px flex-1 bg-brand-black/10" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">或使用 Magic Link</span>
+                                <div className="h-px flex-1 bg-brand-black/10" />
+                            </div>
+
+                            <form onSubmit={handleMagicLinkSubmit} className="w-full space-y-3 text-left">
+                                <label className="block">
+                                    <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/45">
+                                        Email
+                                    </span>
+                                    <div className="flex items-center gap-2 rounded-xl border-2 border-brand-black bg-white px-3 py-3 shadow-[2px_2px_0px_black]">
+                                        <Mail size={16} className="text-brand-black/40" />
+                                        <input
+                                            type="email"
+                                            value={magicEmail}
+                                            onChange={(event) => setMagicEmail(event.target.value)}
+                                            placeholder="name@example.com"
+                                            autoComplete="email"
+                                            className="w-full bg-transparent text-sm font-semibold text-brand-black outline-none placeholder:text-brand-black/30"
+                                        />
+                                    </div>
+                                </label>
+
+                                <button
+                                    type="submit"
+                                    disabled={isSendingMagicLink || !magicEmail.trim()}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-black bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-brand-black shadow-[2px_2px_0px_black] transition-all disabled:cursor-not-allowed disabled:opacity-50 active:translate-y-[2px] active:shadow-none"
+                                >
+                                    {isSendingMagicLink ? (
+                                        <>
+                                            <LoaderCircle size={14} className="animate-spin" />
+                                            發送中
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mail size={14} />
+                                            寄送 Magic Link
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+
+                            {magicLinkState.tone && (
+                                <div
+                                    className={`w-full rounded-2xl border px-3 py-2 text-left text-xs font-bold leading-relaxed ${
+                                        magicLinkState.tone === 'success'
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                            : 'border-red-200 bg-red-50 text-red-700'
+                                    }`}
+                                >
+                                    {magicLinkState.message}
+                                </div>
+                            )}
                             </div>
                         </KiwimuPanel>
                     )}
