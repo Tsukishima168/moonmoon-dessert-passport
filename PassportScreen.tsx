@@ -45,6 +45,7 @@ import { getUserPointsByIdentity } from './src/api/points';
 
 interface PassportScreenProps {
     onClose: () => void;
+    passportCoverNumber: string;
 }
 
 const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
@@ -103,7 +104,7 @@ const GPS_STATUS_LABEL: Record<GpsDebugStatus, string> = {
     error: '定位錯誤',
 };
 
-const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
+const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverNumber }) => {
     const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('journey');
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
     const [showCheckinModal, setShowCheckinModal] = useState(false);
@@ -307,6 +308,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const gpsNavigationUrl = gpsDebug
         ? `https://maps.google.com/?q=${gpsDebug.targetLat},${gpsDebug.targetLng}`
         : null;
+    const passportHolder =
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        profile?.displayName ||
+        '月島旅人';
+    const passportMode = user || profile ? '已啟用' : '訪客模式';
 
     return (
         <div className="fixed inset-0 z-50 bg-brand-bg md:bg-black/20 md:flex md:items-center md:justify-center overflow-hidden">
@@ -329,7 +336,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                         </div>
 
                         <p className="mb-1 text-[10px] font-black uppercase tracking-[0.28em] text-white/45">
-                            Passport No. 001
+                            Passport No. {passportCoverNumber}
                         </p>
 
                         <h1 className="text-xl font-black text-white tracking-tight mb-1">
@@ -339,6 +346,21 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                         <p className="mb-4 text-[11px] font-bold text-white/60">
                             把你在月島的任務、集章與足跡都收進這裡。
                         </p>
+
+                        <div className="mb-4 grid w-full max-w-[280px] grid-cols-3 gap-2">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">持有人</p>
+                                <p className="mt-1 truncate text-[11px] font-black text-white">{passportHolder}</p>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">模式</p>
+                                <p className="mt-1 text-[11px] font-black text-white">{passportMode}</p>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">編號</p>
+                                <p className="mt-1 text-[11px] font-black text-white">#{passportCoverNumber}</p>
+                            </div>
+                        </div>
 
                         <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-4">
                             <ShieldCheck size={12} className="text-brand-lime" />
@@ -356,6 +378,15 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                 {/* ─── Content Tabs ─── */}
                 <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
+                    <div className="mb-5 rounded-[1.75rem] border border-brand-black/10 bg-white px-4 py-3 shadow-[3px_3px_0px_black]">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">
+                            Passport Summary
+                        </p>
+                        <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
+                            從這裡查看任務進度、集章里程碑、會員福利與你的月島宇宙足跡。
+                        </p>
+                    </div>
+
                     {/* Tab Navigation */}
                     <KiwimuTabs
                         tabs={PASSPORT_TABS}

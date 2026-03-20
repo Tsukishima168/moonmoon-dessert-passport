@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
 import { Sparkles, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
 import { Screen } from './types';
-import { LINKS, BRANDING } from './constants';
+import { BRANDING } from './constants';
 import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
@@ -19,43 +19,42 @@ import {
   trackEvent,
   trackDessertView,
   trackButtonClick,
-  trackOutboundNavigation,
   trackTimeSpent,
   trackEntranceSource,
   buildUtmUrl,
   trackUtmLanding
 } from './analytics';
 
+const getOrCreatePassportCoverNumber = () => {
+  if (typeof window === 'undefined') {
+    return '001';
+  }
+
+  const existing = window.localStorage.getItem('moonmoon_passport_cover_no');
+  if (existing) {
+    return existing;
+  }
+
+  const generated = String(Math.floor(Math.random() * 900) + 100);
+  window.localStorage.setItem('moonmoon_passport_cover_no', generated);
+  return generated;
+};
+
 // -- Header --
-const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void; onHomeClick: () => void }) => {
-  const [stampCount, setStampCount] = useState(0);
+const Header = ({
+  currentScreen,
+  passportCoverNumber,
+  onHomeClick,
+}: {
+  currentScreen: Screen;
+  passportCoverNumber: string;
+  onHomeClick: () => void;
+}) => {
   const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
 
-  // P0 優化：改用事件驅動而非每秒輪詢，移除 setInterval
-  useEffect(() => {
-    // 初始化 stamp count
-    setStampCount(getUnlockedStampCount());
-
-    // 監聽自訂事件：當印章解鎖時更新
-    const handleStampUnlocked = () => {
-      setStampCount(getUnlockedStampCount());
-    };
-
-    // 也監聽 localStorage 變化（跨窗口同步）
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.includes('stamp') || e.key?.includes('passport')) {
-        setStampCount(getUnlockedStampCount());
-      }
-    };
-
-    document.addEventListener('stamp-unlocked', handleStampUnlocked);
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      document.removeEventListener('stamp-unlocked', handleStampUnlocked);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  if (currentScreen !== 'landing') {
+    return null;
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
@@ -72,26 +71,10 @@ const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void;
       </div>
 
       <div className="pointer-events-auto flex items-center gap-2">
-        <button
-          onClick={() => {
-            trackButtonClick('open_passport', 'header');
-            onPassportClick();
-          }}
-          className="relative"
-          aria-label="打開護照收集印章"
-        >
-          <Button variant="outline" size="sm" className="bg-white shadow-[2px_2px_0px_black] flex items-center justify-center gap-1.5 px-3">
-            <BookOpen size={18} />
-            <span className="text-xs font-bold">護照</span>
-          </Button>
-          {stampCount > 0 && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-brand-lime border-2 border-white rounded-full flex items-center justify-center text-xs font-bold text-brand-black">
-              {stampCount}
-            </div>
-          )}
-        </button>
+        <div className="hidden sm:flex items-center rounded-full border border-brand-black bg-white/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-brand-black/55 shadow-[2px_2px_0px_black]">
+          Passport No. {passportCoverNumber}
+        </div>
 
-        {/* Auth 狀態列 */}
         {!/Line\//i.test(navigator.userAgent) && (
           <>
             {supabaseUser ? (
@@ -118,39 +101,7 @@ const Header = ({ onPassportClick, onHomeClick }: { onPassportClick: () => void;
 // -- Screens --
 
 // 建議書：開場問題（隨機輪播）
-const OPENING_QUESTIONS = [
-  '你最近一次真心感到被理解，是什麼時候？',
-  '你覺得自己值得擁有什麼樣的生活？',
-  '你有多久沒有好好照顧自己了？',
-];
-
-const LandingScreen: React.FC<{ onOpenPassport: () => void }> = ({ onOpenPassport }) => {
-  const [showSubtext, setShowSubtext] = useState(false);
-  const [passportCoverNumber] = useState(() => {
-    if (typeof window === 'undefined') {
-      return '001';
-    }
-
-    const existing = window.localStorage.getItem('moonmoon_passport_cover_no');
-    if (existing) {
-      return existing;
-    }
-
-    const generated = String(Math.floor(Math.random() * 900) + 100);
-    window.localStorage.setItem('moonmoon_passport_cover_no', generated);
-    return generated;
-  });
-
-  const openingQuestion = useMemo(
-    () => OPENING_QUESTIONS[Math.floor(Math.random() * OPENING_QUESTIONS.length)],
-    []
-  );
-
-  useEffect(() => {
-    const t = setTimeout(() => setShowSubtext(true), 1500);
-    return () => clearTimeout(t);
-  }, []);
-
+const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber: string }> = ({ onOpenPassport, passportCoverNumber }) => {
   useEffect(() => {
     const startTime = Date.now();
     return () => {
@@ -166,6 +117,9 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void }> = ({ onOpenPasspor
       <div className="h-full w-full max-w-[1400px] mx-auto flex flex-col relative">
         <div className="flex-none pt-28 md:pt-32 px-4 z-10 relative flex flex-col items-center">
           <div className="text-center space-y-5 max-w-xl mx-auto">
+            <p className="text-[11px] font-black uppercase tracking-[0.26em] text-brand-black/45">
+              Kiwimu Moon Moon Passport
+            </p>
             <p className="text-[11px] font-black uppercase tracking-[0.32em] text-brand-black/40">
               Passport No. {passportCoverNumber}
             </p>
@@ -173,8 +127,9 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void }> = ({ onOpenPasspor
               PASSPORT
             </h1>
             <p className="text-sm md:text-base font-semibold text-brand-black/70 leading-relaxed">
-              這是屬於你的月島護照。<br />
-              從這裡查看任務、集章、會員福利與宇宙足跡。
+              把你在月島的任務、集章、積分與會員福利，
+              <br />
+              都收進這本屬於你的護照。
             </p>
           </div>
         </div>
@@ -198,12 +153,25 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void }> = ({ onOpenPasspor
         <div className="flex-1 w-full relative flex items-end justify-center pb-8 md:pb-12 z-30">
           <div className="relative w-full max-w-[360px] px-4 pointer-events-auto">
             <div className="bg-white/88 backdrop-blur-xl border-2 border-brand-black p-5 md:p-6 rounded-[2.5rem] shadow-[6px_6px_0px_black] text-center">
-              <p className="font-sans font-medium text-brand-black mb-3 text-sm leading-relaxed">
-                Kiwimu 會一直在這裡陪你。<br />
-                把你在月島的每一次到訪，都收進這本護照。
-              </p>
-              <p className={`text-xs text-brand-black/70 mb-6 transition-opacity duration-500 ${showSubtext ? 'opacity-100' : 'opacity-0'}`}>
-                {openingQuestion}
+              <div className="mb-5 rounded-[1.75rem] border border-brand-black/15 bg-brand-black/[0.03] p-4 text-left">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">持有人</p>
+                    <p className="mt-1 text-sm font-bold text-brand-black">月島旅人</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">用途</p>
+                    <p className="mt-1 text-sm font-bold text-brand-black">集章積分</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">狀態</p>
+                    <p className="mt-1 text-sm font-bold text-brand-black">等待開啟</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mb-6 text-xs font-semibold leading-relaxed text-brand-black/70">
+                第一次開啟後，就能同步你的任務進度、印章與會員足跡。
               </p>
 
               <div className="flex flex-col gap-3">
@@ -220,15 +188,9 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void }> = ({ onOpenPasspor
                   <BookOpen className="mr-2 w-5 h-5" />
                   打開我的護照
                 </Button>
-                <a
-                  href={LINKS.LINE_OA}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => trackOutboundNavigation(LINKS.LINE_OA, 'landing_line_oa')}
-                  className="text-[11px] font-bold uppercase tracking-[0.24em] text-brand-black/45 hover:text-brand-black transition-colors"
-                >
-                  前往 Line 官方帳號
-                </a>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-black/40">
+                  Open to view stamps, points and member rewards
+                </p>
               </div>
             </div>
           </div>
@@ -246,6 +208,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
+  const [passportCoverNumber] = useState(getOrCreatePassportCoverNumber);
 
   // Initial Loading Simulation
   useEffect(() => {
@@ -562,7 +525,7 @@ function App() {
 
       {/* Google Login is now inside <Header /> */}
 
-      <Header onPassportClick={openPassport} onHomeClick={goHome} />
+      <Header currentScreen={screen} passportCoverNumber={passportCoverNumber} onHomeClick={goHome} />
 
       {appNotice && (
         <div className="fixed top-24 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
@@ -595,8 +558,8 @@ function App() {
       )}
 
       <main>
-        {screen === 'landing' && <LandingScreen onOpenPassport={openPassport} />}
-        {screen === 'passport' && <PassportScreen onClose={closePassport} />}
+        {screen === 'landing' && <LandingScreen onOpenPassport={openPassport} passportCoverNumber={passportCoverNumber} />}
+        {screen === 'passport' && <PassportScreen onClose={closePassport} passportCoverNumber={passportCoverNumber} />}
       </main>
 
 
