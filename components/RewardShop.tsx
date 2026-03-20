@@ -14,15 +14,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     X,
     Coins,
-    Gift,
-    Sparkles,
     CircleAlert,
-    Coffee,
-    CupSoda,
-    CakeSlice,
-    ShoppingBag,
-    Sticker as StickerIcon,
-    type LucideIcon,
 } from 'lucide-react';
 import { getPassportPointsBalance, redeemItem } from '../passportUtils';
 import { REDEEMABLE_ITEMS } from '../constants';
@@ -30,6 +22,10 @@ import { RedeemableItem } from '../types';
 import { adjustPointsByIdentity } from '../src/api/points';
 import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 import { useLiff } from '../src/contexts/LiffContext';
+import { KiwimuRewardBalanceCard } from './kiwimu/KiwimuRewardBalanceCard';
+import { KiwimuRewardCard } from './kiwimu/KiwimuRewardCard';
+import { KiwimuRewardConfirmDialog } from './kiwimu/KiwimuRewardConfirmDialog';
+import { KiwimuRewardSuccessDialog } from './kiwimu/KiwimuRewardSuccessDialog';
 
 // ─── 型別 ──────────────────────────────────────────────────
 
@@ -44,126 +40,6 @@ interface RewardCardProps {
     onRedeem: (reward: RedeemableItem) => void;
 }
 
-// ─── 商品卡片 ──────────────────────────────────────────────
-
-const REWARD_ICON_MAP: Record<string, { Icon: LucideIcon; accent: string; bg: string }> = {
-    tea_buckwheat: { Icon: CupSoda, accent: '#0f766e', bg: '#d1fae5' },
-    coffee_iced: { Icon: Coffee, accent: '#7c2d12', bg: '#ffedd5' },
-    coffee_sicily: { Icon: Coffee, accent: '#9a3412', bg: '#ffedd5' },
-    latte_matcha: { Icon: CupSoda, accent: '#166534', bg: '#dcfce7' },
-    second_half: { Icon: CupSoda, accent: '#1d4ed8', bg: '#dbeafe' },
-    pudding_classic: { Icon: CakeSlice, accent: '#b45309', bg: '#fef3c7' },
-    chiffon_slice: { Icon: CakeSlice, accent: '#c2410c', bg: '#ffedd5' },
-    seasonal_fruit: { Icon: Sparkles, accent: '#be185d', bg: '#fce7f3' },
-    sticker_set: { Icon: StickerIcon, accent: '#6d28d9', bg: '#ede9fe' },
-    cooler_bag: { Icon: ShoppingBag, accent: '#1f2937', bg: '#e5e7eb' },
-};
-
-const RewardCard: React.FC<RewardCardProps> = ({ reward, userPoints, onRedeem }) => {
-    const canAfford = userPoints >= reward.pointsCost;
-    const categoryLabel = reward.category === 'drink'
-        ? '飲品'
-        : reward.category === 'dessert'
-            ? '甜點'
-            : '周邊';
-    const iconMeta = REWARD_ICON_MAP[reward.id] ?? { Icon: Gift, accent: '#92400e', bg: '#fef3c7' };
-    const RewardIcon = iconMeta.Icon;
-
-    return (
-        <div
-            style={{
-                background: canAfford
-                    ? 'linear-gradient(135deg, #fff9f0 0%, #fff3e0 100%)'
-                    : '#f5f5f5',
-                border: `2px solid ${canAfford ? '#f0c070' : '#e0e0e0'}`,
-                borderRadius: 16,
-                padding: '20px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 10,
-                opacity: canAfford ? 1 : 0.65,
-                position: 'relative',
-                transition: 'all 0.2s ease',
-            }}
-        >
-            {/* 標籤 */}
-            <span
-                style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    fontSize: 10,
-                    padding: '2px 8px',
-                    borderRadius: 99,
-                    background: reward.category === 'drink' ? '#e3f2fd' : reward.category === 'dessert' ? '#fff3e0' : '#ede7f6',
-                    color: reward.category === 'drink' ? '#1565c0' : reward.category === 'dessert' ? '#e65100' : '#6a1b9a',
-                    fontWeight: 600,
-                }}
-            >
-                {categoryLabel}
-            </span>
-
-            {/* 主體 */}
-            <div
-                style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: iconMeta.bg,
-                    color: iconMeta.accent,
-                    border: `1px solid ${canAfford ? iconMeta.accent : '#d1d5db'}`,
-                }}
-            >
-                <RewardIcon size={34} strokeWidth={2.2} />
-            </div>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#3d2c00' }}>
-                {reward.name}
-            </h3>
-            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, textAlign: 'center', color: '#8d6e63', minHeight: 36 }}>
-                {reward.description}
-            </p>
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: canAfford ? '#e65100' : '#9e9e9e',
-                }}
-            >
-                <Coins size={18} />
-                <span>{reward.pointsCost} 積分</span>
-            </div>
-
-            <button
-                onClick={() => onRedeem(reward)}
-                disabled={!canAfford}
-                style={{
-                    width: '100%',
-                    padding: '10px 0',
-                    borderRadius: 10,
-                    border: 'none',
-                    background: canAfford
-                        ? 'linear-gradient(90deg, #ff8f00, #ffa000)'
-                        : '#bdbdbd',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    cursor: canAfford ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.15s ease',
-                }}
-            >
-                {canAfford ? '立即兌換' : `還需 ${reward.pointsCost - userPoints} 積分`}
-            </button>
-        </div>
-    );
-};
-
 // ─── 確認彈窗 ────────────────────────────────────────────
 
 interface ConfirmDialogProps {
@@ -172,76 +48,6 @@ interface ConfirmDialogProps {
     onCancel: () => void;
 }
 
-const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ reward, onConfirm, onCancel }) => (
-    <div
-        style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: 20,
-        }}
-    >
-        <div
-            style={{
-                background: '#fff',
-                borderRadius: 20,
-                padding: 28,
-                maxWidth: 320,
-                width: '100%',
-                textAlign: 'center',
-            }}
-        >
-            <div
-                style={{
-                    width: 56,
-                    height: 56,
-                    margin: '0 auto 8px',
-                    borderRadius: 18,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#fff7ed',
-                    color: '#ea580c',
-                }}
-            >
-                <Gift size={28} />
-            </div>
-            <h3 style={{ margin: '0 0 8px', color: '#3d2c00' }}>確認兌換？</h3>
-            <p style={{ margin: '0 0 24px', color: '#666', fontSize: 14 }}>
-                <strong>{reward.name}</strong>
-                <br />
-                本次將扣除 <strong>{reward.pointsCost} 點</strong>，請確認你要兌換這項福利。
-            </p>
-            <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                    onClick={onCancel}
-                    style={{
-                        flex: 1, padding: '12px 0', borderRadius: 10,
-                        border: '2px solid #eee', background: '#fff',
-                        color: '#666', fontWeight: 600, cursor: 'pointer',
-                    }}
-                >
-                    取消
-                </button>
-                <button
-                    onClick={onConfirm}
-                    style={{
-                        flex: 1, padding: '12px 0', borderRadius: 10,
-                        border: 'none',
-                        background: 'linear-gradient(90deg, #ff8f00, #ffa000)',
-                        color: '#fff', fontWeight: 700, cursor: 'pointer',
-                    }}
-                >
-                    確認兌換
-                </button>
-            </div>
-        </div>
-    </div>
-);
 
 // ─── 兌換成功彈窗 ─────────────────────────────────────────
 
@@ -250,79 +56,6 @@ interface SuccessDialogProps {
     onClose: () => void;
 }
 
-const SuccessDialog: React.FC<SuccessDialogProps> = ({ reward, onClose }) => (
-    <div
-        style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: 20,
-        }}
-    >
-        <div
-            style={{
-                background: 'linear-gradient(135deg, #fff9f0, #fff3e0)',
-                border: '2px solid #f0c070',
-                borderRadius: 20,
-                padding: 32,
-                maxWidth: 320,
-                width: '100%',
-                textAlign: 'center',
-            }}
-        >
-            <div
-                style={{
-                    width: 68,
-                    height: 68,
-                    margin: '0 auto 12px',
-                    borderRadius: 22,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(255,255,255,0.85)',
-                    color: '#f59e0b',
-                }}
-            >
-                <Sparkles size={34} />
-            </div>
-            <h2 style={{ margin: '0 0 8px', color: '#3d2c00' }}>兌換成功！</h2>
-            <p style={{ color: '#5d4037', margin: '0 0 16px', fontSize: 15 }}>
-                <strong>{reward.name}</strong><br />已成功兌換
-            </p>
-
-            <div
-                style={{
-                    background: reward.category === 'merch' ? '#ede7f6' : '#fff',
-                    border: '1px solid #f0c070',
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 20,
-                    fontSize: 13,
-                    color: '#5d4037',
-                }}
-            >
-                <strong>兌換提醒</strong><br />
-                請在店員面前出示此畫面，由店員掃描或確認後完成核銷。
-            </div>
-
-            <button
-                onClick={onClose}
-                style={{
-                    width: '100%', padding: '12px 0', borderRadius: 10,
-                    border: 'none',
-                    background: 'linear-gradient(90deg, #ff8f00, #ffa000)',
-                    color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer',
-                }}
-            >
-                完成
-            </button>
-        </div>
-    </div>
-);
 
 // ─── 主元件 ────────────────────────────────────────────────
 
@@ -394,8 +127,9 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
         <>
             {/* 確認彈窗 */}
             {pendingReward && (
-                <ConfirmDialog
-                    reward={pendingReward}
+                <KiwimuRewardConfirmDialog
+                    rewardName={pendingReward.name}
+                    pointsCost={pendingReward.pointsCost}
                     onConfirm={handleConfirm}
                     onCancel={() => setPendingReward(null)}
                 />
@@ -403,8 +137,9 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
 
             {/* 成功彈窗 */}
             {successReward && (
-                <SuccessDialog
-                    reward={successReward}
+                <KiwimuRewardSuccessDialog
+                    rewardName={successReward.name}
+                    category={successReward.category}
                     onClose={() => setSuccessReward(null)}
                 />
             )}
@@ -471,39 +206,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 )}
 
                 {/* 積分餘額卡 */}
-                <div
-                    style={{
-                        background: 'linear-gradient(135deg, #ff8f00, #ffa000)',
-                        borderRadius: 16,
-                        padding: '16px 20px',
-                        marginBottom: 20,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                    }}
-                >
-                    <div>
-                        <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>我的積分餘額</p>
-                        <div style={{ margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
-                            <Coins size={24} />
-                            <p style={{ margin: 0, fontSize: 32, fontWeight: 800 }}>{userPoints}</p>
-                        </div>
-                    </div>
-                    <div
-                        style={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 18,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(255,255,255,0.16)',
-                            color: '#fff',
-                        }}
-                    >
-                        <ShoppingBag size={28} />
-                    </div>
-                </div>
+                <KiwimuRewardBalanceCard points={userPoints} />
 
                 {/* 篩選器 */}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -534,7 +237,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 {/* 商品列表 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     {filteredRewards.map(reward => (
-                        <RewardCard
+                        <KiwimuRewardCard
                             key={reward.id}
                             reward={reward}
                             userPoints={userPoints}
