@@ -31,6 +31,10 @@ import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
+import { KiwimuMetricCard } from './components/kiwimu/KiwimuMetricCard';
+import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
+import { KiwimuSectionIntro } from './components/kiwimu/KiwimuSectionIntro';
+import { KiwimuTabs } from './components/kiwimu/KiwimuTabs';
 import { useLiff } from './src/contexts/LiffContext';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 import { trackEvent } from './analytics';
@@ -47,6 +51,11 @@ const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
     shop: '會員福利',
     hub: '宇宙足跡',
 };
+
+const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[
+    'journey' | 'rewards' | 'shop' | 'hub',
+    string
+]>).map(([key, label]) => ({ key, label }));
 
 type GpsDebugStatus =
     | 'success'
@@ -328,15 +337,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             </span>
                         </div>
 
-                        <div className="flex gap-3 w-full max-w-[240px]">
-                            <div className="flex-1 bg-white/5 rounded-xl p-2.5 border border-white/10 flex flex-col items-center">
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Stamps</span>
-                                <span className="text-lg font-black text-white">{unlockedCount}</span>
-                            </div>
-                            <div className="flex-1 bg-white/5 rounded-xl p-2.5 border border-white/10 flex flex-col items-center">
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Points</span>
-                                <span className="text-lg font-black text-brand-lime">{points}P</span>
-                            </div>
+                        <div className="flex w-full max-w-[240px] gap-3">
+                            <KiwimuMetricCard label="Stamps" value={unlockedCount} />
+                            <KiwimuMetricCard label="Points" value={`${points}P`} accent="lime" />
                         </div>
                     </div>
                 </div>
@@ -344,20 +347,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                 {/* ─── Content Tabs ─── */}
                 <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
                     {/* Tab Navigation */}
-                    <div className="flex p-1 bg-brand-gray/10 rounded-2xl border-2 border-brand-black mb-8">
-                        {(['journey', 'rewards', 'shop', 'hub'] as const).map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === tab
-                                    ? 'bg-brand-lime text-brand-black shadow-[2px_2px_0px_black]'
-                                    : 'text-gray-400 hover:text-brand-black'
-                                    }`}
-                            >
-                                {TAB_LABELS[tab]}
-                            </button>
-                        ))}
-                    </div>
+                    <KiwimuTabs
+                        tabs={PASSPORT_TABS}
+                        activeTab={activeTab}
+                        onChange={setActiveTab}
+                    />
 
                     {locationError && (
                         <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl animate-shake flex items-start gap-3">
@@ -367,7 +361,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     )}
 
                     {!user && (
-                        <div className="mb-6 p-4 bg-white border-2 border-brand-black shadow-[4px_4px_0px_black] rounded-2xl flex flex-col items-center text-center gap-3">
+                        <KiwimuPanel className="mb-6" padded={false}>
+                            <div className="flex flex-col items-center gap-3 p-4 text-center">
                             <ShieldCheck size={24} className="text-brand-lime-dark" />
                             <div>
                                 <h3 className="text-sm font-black text-brand-black uppercase">保存你的探險紀錄</h3>
@@ -379,7 +374,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             >
                                 登入 Google 帳號快速綁定
                             </button>
-                        </div>
+                            </div>
+                        </KiwimuPanel>
                     )}
 
                     {activeTab === 'journey' && (
@@ -393,8 +389,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             />
 
                             {gpsDebug && (
-                                <section className="rounded-2xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black] overflow-hidden">
-                                    <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black px-4 py-3 bg-brand-gray/10">
+                                <KiwimuPanel
+                                    padded={false}
+                                    header={
+                                        <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black bg-brand-gray/10 px-4 py-3">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">定位記錄</p>
                                             <h3 className="text-sm font-black text-brand-black">{gpsDebug.stampName}</h3>
@@ -402,7 +400,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${GPS_STATUS_STYLE[gpsDebug.status]}`}>
                                             {GPS_STATUS_LABEL[gpsDebug.status]}
                                         </span>
-                                    </div>
+                                        </div>
+                                    }
+                                >
 
                                     <div className="space-y-3 p-4">
                                         <p className="text-xs font-medium leading-relaxed text-gray-600">{gpsDebug.message}</p>
@@ -432,7 +432,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                             </div>
                                         )}
                                     </div>
-                                </section>
+                                </KiwimuPanel>
                             )}
 
                             {/* ─── Stamp Journey ─── */}
@@ -448,12 +448,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'rewards' && (
                         <div className="space-y-4">
-                            <div className="rounded-2xl border border-brand-black/10 bg-white p-4">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Stamp Milestones</p>
-                                <p className="mt-2 text-xs font-medium leading-relaxed text-gray-500">
+                            <KiwimuSectionIntro eyebrow="Stamp Milestones">
+                                <p>
                                     這裡是「集章里程碑獎勵」。完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。
                                 </p>
-                            </div>
+                            </KiwimuSectionIntro>
                             {REWARD_TIERS.map((reward) => {
                                 const isUnlocked = unlockedCount >= reward.requiredStamps;
                                 const isRedeemed = redeemedRewards.includes(reward.id);
