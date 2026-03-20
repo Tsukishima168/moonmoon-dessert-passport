@@ -40,7 +40,7 @@ export const KiwimuRewardTierCard: React.FC<KiwimuRewardTierCardProps> = ({
             {title}
           </h3>
           <p className="text-[10px] font-bold text-gray-400">
-            {requiredStamps} STAMPS REQUIRED
+            需要 {requiredStamps} 枚印章
           </p>
         </div>
 
@@ -49,7 +49,7 @@ export const KiwimuRewardTierCard: React.FC<KiwimuRewardTierCardProps> = ({
             onClick={onRedeem}
             className="rounded-lg border border-brand-black bg-brand-black px-3 py-1.5 text-[10px] font-black uppercase text-white transition-all active:translate-y-0.5"
           >
-            Redeem
+            兌換
           </button>
         ) : null}
 

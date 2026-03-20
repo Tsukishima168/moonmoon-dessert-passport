@@ -328,20 +328,28 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             <Trophy size={32} className="text-brand-black" />
                         </div>
 
-                        <h1 className="text-xl font-black text-white uppercase tracking-tighter mb-1">
-                            MoonMoon Adventurer
+                        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.28em] text-white/45">
+                            Passport No. 001
+                        </p>
+
+                        <h1 className="text-xl font-black text-white tracking-tight mb-1">
+                            Kiwimu 月島護照
                         </h1>
+
+                        <p className="mb-4 text-[11px] font-bold text-white/60">
+                            把你在月島的任務、集章與足跡都收進這裡。
+                        </p>
 
                         <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-4">
                             <ShieldCheck size={12} className="text-brand-lime" />
                             <span className="text-[9px] font-black text-brand-lime uppercase tracking-widest">
-                                Level {userLevel}
+                                護照等級 Lv.{userLevel}
                             </span>
                         </div>
 
                         <div className="flex w-full max-w-[240px] gap-3">
-                            <KiwimuMetricCard label="Stamps" value={unlockedCount} />
-                            <KiwimuMetricCard label="Points" value={`${points}P`} accent="lime" />
+                            <KiwimuMetricCard label="印章" value={unlockedCount} />
+                            <KiwimuMetricCard label="積分" value={`${points}P`} accent="lime" />
                         </div>
                     </div>
                 </div>

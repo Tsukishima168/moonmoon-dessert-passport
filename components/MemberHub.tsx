@@ -101,7 +101,7 @@ const MemberHub: React.FC = () => {
                 </div>
                 <div className="bg-brand-lime px-2 py-0.5 rounded-full border border-brand-black">
                     <span className="text-[10px] font-black text-brand-black uppercase">
-                        {visitedSites.length === MOONMOON_SITES.length ? 'Mastered' : `${visitedSites.length}/${MOONMOON_SITES.length}`}
+                        {visitedSites.length === MOONMOON_SITES.length ? '已完成' : `${visitedSites.length}/${MOONMOON_SITES.length}`}
                     </span>
                 </div>
             </div>
@@ -165,7 +165,7 @@ const MemberHub: React.FC = () => {
                     <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
                         <Sparkles size={16} className="text-brand-lime-dark" />
                         <p className="text-[10px] font-bold text-brand-lime-dark uppercase">
-                            You've explored the entire Moon ecosystem!
+                            你已走完整個月島宇宙。
                         </p>
                     </div>
                 )}
