@@ -19,7 +19,9 @@ export const supabase = supabaseUrl && supabaseAnonKey
     ? createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
             persistSession: true,
-            detectSessionInUrl: true,
+            // OAuth callback is handled exclusively by SupabaseAuthContext.
+            // This shared data client should only read the settled session.
+            detectSessionInUrl: false,
             ...(cookieStorage ? { storage: cookieStorage } : {}),
         }
     })

@@ -61,18 +61,101 @@ export function getOAuthRedirectUrl() {
   return configured || window.location.origin;
 }
 
-const REDIRECT_KEY = 'auth_redirect_to';
+const ACTIVE_REDIRECT_KEY = 'auth_redirect_to';
+const PENDING_REDIRECT_KEY = 'pending_auth_redirect_to';
+
+function normalizeRedirectUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const { hostname, protocol } = parsed;
+
+    const isAllowedHost =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      IPV4_HOST_PATTERN.test(hostname) ||
+      canShareKiwimuCookies(hostname);
+
+    if (!isAllowedHost || (protocol !== 'http:' && protocol !== 'https:')) {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
 
 /** 儲存登入後要跳轉的網址（給跨站 SSO 用） */
 export function saveRedirectTo(url: string) {
-  try { sessionStorage.setItem(REDIRECT_KEY, url); } catch { /* ignore */ }
+  const normalized = normalizeRedirectUrl(url);
+  if (!normalized) {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(PENDING_REDIRECT_KEY, normalized);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 將本次待跳轉目標提升為 OAuth 完成後要使用的目標 */
+export function activateRedirectTo(): string | null {
+  try {
+    const pending = sessionStorage.getItem(PENDING_REDIRECT_KEY);
+    sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+
+    if (!pending) {
+      sessionStorage.removeItem(ACTIVE_REDIRECT_KEY);
+      return null;
+    }
+
+    sessionStorage.setItem(ACTIVE_REDIRECT_KEY, pending);
+    return pending;
+  } catch {
+    return null;
+  }
+}
+
+/** 已登入狀態下，直接吃掉 pending redirect */
+export function getAndClearPendingRedirectTo(): string | null {
+  try {
+    const url = sessionStorage.getItem(PENDING_REDIRECT_KEY);
+    if (url) {
+      sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+    }
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingRedirectTo() {
+  try {
+    sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 /** 取出並清除暫存的跳轉網址 */
 export function getAndClearRedirectTo(): string | null {
   try {
-    const url = sessionStorage.getItem(REDIRECT_KEY);
-    if (url) sessionStorage.removeItem(REDIRECT_KEY);
+    const url = sessionStorage.getItem(ACTIVE_REDIRECT_KEY);
+    if (url) {
+      sessionStorage.removeItem(ACTIVE_REDIRECT_KEY);
+    }
     return url;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
+}
+
+export function clearRedirectState() {
+  try {
+    sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+    sessionStorage.removeItem(ACTIVE_REDIRECT_KEY);
+  } catch {
+    /* ignore */
+  }
 }

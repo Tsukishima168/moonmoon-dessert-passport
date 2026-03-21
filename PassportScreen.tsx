@@ -9,6 +9,8 @@ import {
     Lock,
     CheckCircle2,
     Gift,
+    Mail,
+    LoaderCircle,
 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS } from './constants';
 import { Stamp } from './types';
@@ -26,27 +28,49 @@ import {
 } from './passportUtils';
 import BadgeJourney from './components/BadgeJourney';
 import MemberHub from './components/MemberHub';
+import ProfileCenter from './components/ProfileCenter';
 import RewardShop from './components/RewardShop';
 import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
+import { KiwimuAchievementModal } from './components/kiwimu/KiwimuAchievementModal';
+import { KiwimuMetricCard } from './components/kiwimu/KiwimuMetricCard';
+import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
+import { KiwimuRewardTierCard } from './components/kiwimu/KiwimuRewardTierCard';
+import { KiwimuSectionIntro } from './components/kiwimu/KiwimuSectionIntro';
+import { KiwimuTabs } from './components/kiwimu/KiwimuTabs';
 import { useLiff } from './src/contexts/LiffContext';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 import { trackEvent } from './analytics';
+import {
+    loadProfileCenterDraft,
+    saveProfileCenterDraftToProfile,
+} from './src/api/profileCenter';
 import { getUserPointsByIdentity } from './src/api/points';
+import {
+    ProfileCenterDraft,
+    ProfileCenterSyncStatus,
+    saveProfileCenterDraft,
+} from './src/lib/profileCenter';
 
 
 interface PassportScreenProps {
     onClose: () => void;
+    passportCoverNumber: string;
 }
 
 const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
     journey: '任務',
     rewards: '集章獎勵',
     shop: '會員福利',
-    hub: '宇宙足跡',
+    hub: '會員中心',
 };
+
+const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[
+    'journey' | 'rewards' | 'shop' | 'hub',
+    string
+]>).map(([key, label]) => ({ key, label }));
 
 type GpsDebugStatus =
     | 'success'
@@ -92,7 +116,7 @@ const GPS_STATUS_LABEL: Record<GpsDebugStatus, string> = {
     error: '定位錯誤',
 };
 
-const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
+const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverNumber }) => {
     const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('journey');
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
     const [showCheckinModal, setShowCheckinModal] = useState(false);
@@ -104,8 +128,30 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
 
     const { isLoggedIn, profile } = useLiff();
-    const { user, signInWithGoogle } = useSupabaseAuth();
+    const { user, signInWithGoogle, signInWithMagicLink } = useSupabaseAuth();
     const [points, setPoints] = useState(0);
+    const [magicEmail, setMagicEmail] = useState('');
+    const [magicLinkState, setMagicLinkState] = useState<{
+        tone: 'success' | 'error' | null;
+        message: string;
+    }>({ tone: null, message: '' });
+    const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
+    const [hubProfileSnapshot, setHubProfileSnapshot] = useState<{
+        mbtiType: string | null;
+        visitedSiteCount: number;
+    }>({ mbtiType: null, visitedSiteCount: getVisitedSites().length });
+    const [profileCenterDraft, setProfileCenterDraft] = useState<ProfileCenterDraft>({
+        displayName: '月島旅人',
+        isMbtiPublic: false,
+        isFootprintPublic: false,
+        favoriteCharacterId: 'kiwimu',
+        passportTitleId: 'locked',
+    });
+    const [isProfileCenterHydrated, setIsProfileCenterHydrated] = useState(false);
+    const [profileCenterSyncStatus, setProfileCenterSyncStatus] = useState<ProfileCenterSyncStatus>({
+        tone: 'idle',
+        message: '尚未檢查 shared profiles 同步狀態。',
+    });
 
     const refreshPoints = React.useCallback(async () => {
         const state = getPassportState();
@@ -130,6 +176,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
+        const storedMbti = localStorage.getItem('user_mbti_result');
+        setHubProfileSnapshot({
+            mbtiType: storedMbti ? storedMbti.toUpperCase() : null,
+            visitedSiteCount: getVisitedSites().length,
+        });
         void refreshPoints();
 
         // LIFF-4: Listen for cross-site points from Gacha
@@ -166,6 +217,63 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
             document.removeEventListener('passport-points-updated', handlePointsUpdated);
         };
     }, [isLoggedIn, profile, refreshPoints, user]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        const hydrateProfileCenter = async () => {
+            const authDisplayName =
+                user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                null;
+            const liffDisplayName = profile?.displayName || null;
+
+            const result = await loadProfileCenterDraft({
+                authUserId: user?.id || null,
+                lineUserId: profile?.userId || null,
+                authDisplayName,
+                liffDisplayName,
+            });
+
+            if (!isActive) return;
+            setProfileCenterDraft(result.draft);
+            setProfileCenterSyncStatus(result.syncStatus);
+            setIsProfileCenterHydrated(true);
+        };
+
+        setIsProfileCenterHydrated(false);
+        void hydrateProfileCenter();
+
+        return () => {
+            isActive = false;
+        };
+    }, [profile?.displayName, profile?.userId, user?.id, user?.user_metadata?.full_name, user?.user_metadata?.name]);
+
+    useEffect(() => {
+        if (!isProfileCenterHydrated) return;
+        saveProfileCenterDraft(profileCenterDraft);
+
+        if (!user?.id) return;
+
+        setProfileCenterSyncStatus({
+            tone: 'syncing',
+            message: '正在寫回 shared profiles...',
+        });
+
+        const timer = window.setTimeout(() => {
+            void saveProfileCenterDraftToProfile({
+                authUserId: user.id,
+                lineUserId: profile?.userId || null,
+                draft: profileCenterDraft,
+            }).then((result) => {
+                setProfileCenterSyncStatus(result.syncStatus);
+            });
+        }, 500);
+
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [isProfileCenterHydrated, profile?.userId, profileCenterDraft, user?.id]);
 
     const handleStampUnlocked = (newAchievementIds: string[]) => {
         setUnlockedCount(getUnlockedStampCount());
@@ -296,6 +404,35 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
     const gpsNavigationUrl = gpsDebug
         ? `https://maps.google.com/?q=${gpsDebug.targetLat},${gpsDebug.targetLng}`
         : null;
+    const fallbackPassportHolder =
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        profile?.displayName ||
+        '月島旅人';
+    const passportHolder = profileCenterDraft.displayName.trim() || fallbackPassportHolder;
+    const passportMode = user || profile ? '已啟用' : '訪客模式';
+    const handleMagicLinkSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (isSendingMagicLink) {
+            return;
+        }
+
+        setIsSendingMagicLink(true);
+        setMagicLinkState({ tone: null, message: '' });
+
+        const result = await signInWithMagicLink(magicEmail);
+
+        setMagicLinkState({
+            tone: result.ok ? 'success' : 'error',
+            message: result.message || (result.ok ? '登入連結已寄出。' : 'Magic Link 發送失敗。'),
+        });
+
+        if (result.ok) {
+            setMagicEmail('');
+        }
+
+        setIsSendingMagicLink(false);
+    };
 
     return (
         <div className="fixed inset-0 z-50 bg-brand-bg md:bg-black/20 md:flex md:items-center md:justify-center overflow-hidden">
@@ -317,47 +454,64 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             <Trophy size={32} className="text-brand-black" />
                         </div>
 
-                        <h1 className="text-xl font-black text-white uppercase tracking-tighter mb-1">
-                            MoonMoon Adventurer
+                        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.28em] text-white/45">
+                            Passport No. {passportCoverNumber}
+                        </p>
+
+                        <h1 className="text-xl font-black text-white tracking-tight mb-1">
+                            Kiwimu 月島護照
                         </h1>
+
+                        <p className="mb-4 text-[11px] font-bold text-white/60">
+                            把你在月島的任務、集章與足跡都收進這裡。
+                        </p>
+
+                        <div className="mb-4 grid w-full max-w-[280px] grid-cols-3 gap-2">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">持有人</p>
+                                <p className="mt-1 truncate text-[11px] font-black text-white">{passportHolder}</p>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">模式</p>
+                                <p className="mt-1 text-[11px] font-black text-white">{passportMode}</p>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">編號</p>
+                                <p className="mt-1 text-[11px] font-black text-white">#{passportCoverNumber}</p>
+                            </div>
+                        </div>
 
                         <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-4">
                             <ShieldCheck size={12} className="text-brand-lime" />
                             <span className="text-[9px] font-black text-brand-lime uppercase tracking-widest">
-                                Level {userLevel}
+                                護照等級 Lv.{userLevel}
                             </span>
                         </div>
 
-                        <div className="flex gap-3 w-full max-w-[240px]">
-                            <div className="flex-1 bg-white/5 rounded-xl p-2.5 border border-white/10 flex flex-col items-center">
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Stamps</span>
-                                <span className="text-lg font-black text-white">{unlockedCount}</span>
-                            </div>
-                            <div className="flex-1 bg-white/5 rounded-xl p-2.5 border border-white/10 flex flex-col items-center">
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Points</span>
-                                <span className="text-lg font-black text-brand-lime">{points}P</span>
-                            </div>
+                        <div className="flex w-full max-w-[240px] gap-3">
+                            <KiwimuMetricCard label="印章" value={unlockedCount} />
+                            <KiwimuMetricCard label="積分" value={`${points}P`} accent="lime" />
                         </div>
                     </div>
                 </div>
 
                 {/* ─── Content Tabs ─── */}
                 <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
-                    {/* Tab Navigation */}
-                    <div className="flex p-1 bg-brand-gray/10 rounded-2xl border-2 border-brand-black mb-8">
-                        {(['journey', 'rewards', 'shop', 'hub'] as const).map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === tab
-                                    ? 'bg-brand-lime text-brand-black shadow-[2px_2px_0px_black]'
-                                    : 'text-gray-400 hover:text-brand-black'
-                                    }`}
-                            >
-                                {TAB_LABELS[tab]}
-                            </button>
-                        ))}
+                    <div className="mb-5 rounded-[1.75rem] border border-brand-black/10 bg-white px-4 py-3 shadow-[3px_3px_0px_black]">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">
+                            Passport Summary
+                        </p>
+                        <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
+                            從這裡查看任務進度、會員資料、集章里程碑與月島足跡。
+                        </p>
                     </div>
+
+                    {/* Tab Navigation */}
+                    <KiwimuTabs
+                        tabs={PASSPORT_TABS}
+                        activeTab={activeTab}
+                        onChange={setActiveTab}
+                    />
 
                     {locationError && (
                         <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl animate-shake flex items-start gap-3">
@@ -367,7 +521,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                     )}
 
                     {!user && (
-                        <div className="mb-6 p-4 bg-white border-2 border-brand-black shadow-[4px_4px_0px_black] rounded-2xl flex flex-col items-center text-center gap-3">
+                        <KiwimuPanel className="mb-6" padded={false}>
+                            <div className="flex flex-col items-center gap-3 p-4 text-center">
                             <ShieldCheck size={24} className="text-brand-lime-dark" />
                             <div>
                                 <h3 className="text-sm font-black text-brand-black uppercase">保存你的探險紀錄</h3>
@@ -379,7 +534,63 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             >
                                 登入 Google 帳號快速綁定
                             </button>
-                        </div>
+
+                            <div className="flex w-full items-center gap-3">
+                                <div className="h-px flex-1 bg-brand-black/10" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">或使用 Magic Link</span>
+                                <div className="h-px flex-1 bg-brand-black/10" />
+                            </div>
+
+                            <form onSubmit={handleMagicLinkSubmit} className="w-full space-y-3 text-left">
+                                <label className="block">
+                                    <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/45">
+                                        Email
+                                    </span>
+                                    <div className="flex items-center gap-2 rounded-xl border-2 border-brand-black bg-white px-3 py-3 shadow-[2px_2px_0px_black]">
+                                        <Mail size={16} className="text-brand-black/40" />
+                                        <input
+                                            type="email"
+                                            value={magicEmail}
+                                            onChange={(event) => setMagicEmail(event.target.value)}
+                                            placeholder="name@example.com"
+                                            autoComplete="email"
+                                            className="w-full bg-transparent text-sm font-semibold text-brand-black outline-none placeholder:text-brand-black/30"
+                                        />
+                                    </div>
+                                </label>
+
+                                <button
+                                    type="submit"
+                                    disabled={isSendingMagicLink || !magicEmail.trim()}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-black bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-brand-black shadow-[2px_2px_0px_black] transition-all disabled:cursor-not-allowed disabled:opacity-50 active:translate-y-[2px] active:shadow-none"
+                                >
+                                    {isSendingMagicLink ? (
+                                        <>
+                                            <LoaderCircle size={14} className="animate-spin" />
+                                            發送中
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mail size={14} />
+                                            寄送 Magic Link
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+
+                            {magicLinkState.tone && (
+                                <div
+                                    className={`w-full rounded-2xl border px-3 py-2 text-left text-xs font-bold leading-relaxed ${
+                                        magicLinkState.tone === 'success'
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                            : 'border-red-200 bg-red-50 text-red-700'
+                                    }`}
+                                >
+                                    {magicLinkState.message}
+                                </div>
+                            )}
+                            </div>
+                        </KiwimuPanel>
                     )}
 
                     {activeTab === 'journey' && (
@@ -393,8 +604,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                             />
 
                             {gpsDebug && (
-                                <section className="rounded-2xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black] overflow-hidden">
-                                    <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black px-4 py-3 bg-brand-gray/10">
+                                <KiwimuPanel
+                                    padded={false}
+                                    header={
+                                        <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black bg-brand-gray/10 px-4 py-3">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">定位記錄</p>
                                             <h3 className="text-sm font-black text-brand-black">{gpsDebug.stampName}</h3>
@@ -402,7 +615,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${GPS_STATUS_STYLE[gpsDebug.status]}`}>
                                             {GPS_STATUS_LABEL[gpsDebug.status]}
                                         </span>
-                                    </div>
+                                        </div>
+                                    }
+                                >
 
                                     <div className="space-y-3 p-4">
                                         <p className="text-xs font-medium leading-relaxed text-gray-600">{gpsDebug.message}</p>
@@ -432,7 +647,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
                                             </div>
                                         )}
                                     </div>
-                                </section>
+                                </KiwimuPanel>
                             )}
 
                             {/* ─── Stamp Journey ─── */}
@@ -448,51 +663,53 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                     {activeTab === 'rewards' && (
                         <div className="space-y-4">
-                            <div className="rounded-2xl border border-brand-black/10 bg-white p-4">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Stamp Milestones</p>
-                                <p className="mt-2 text-xs font-medium leading-relaxed text-gray-500">
+                            <KiwimuSectionIntro eyebrow="Stamp Milestones">
+                                <p>
                                     這裡是「集章里程碑獎勵」。完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。
                                 </p>
-                            </div>
+                            </KiwimuSectionIntro>
                             {REWARD_TIERS.map((reward) => {
                                 const isUnlocked = unlockedCount >= reward.requiredStamps;
                                 const isRedeemed = redeemedRewards.includes(reward.id);
                                 return (
-                                    <div
+                                    <KiwimuRewardTierCard
                                         key={reward.id}
-                                        className={`p-4 rounded-2xl border-2 border-brand-black shadow-[4px_4px_0px_black] transition-all ${isUnlocked ? 'bg-white' : 'bg-gray-50 opacity-60'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-xl border-2 border-brand-black flex items-center justify-center shadow-[2px_2px_0px_black] ${isUnlocked && !isRedeemed ? 'bg-brand-lime' : 'bg-white'
-                                                }`}>
-                                                {isRedeemed ? <CheckCircle2 size={24} className="text-brand-lime-dark" /> : <Gift size={24} className="text-brand-black" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-xs font-black text-brand-black truncate uppercase">{reward.title}</h3>
-                                                <p className="text-[10px] text-gray-400 font-bold">{reward.requiredStamps} STAMPS REQUIRED</p>
-                                            </div>
-                                            {isUnlocked && !isRedeemed && (
-                                                <button
-                                                    onClick={() => {
-                                                        markRewardRedeemed(reward.id);
-                                                        setRedeemedRewards([...redeemedRewards, reward.id]);
-                                                        trackEvent('reward_redeemed', { reward_id: reward.id });
-                                                    }}
-                                                    className="px-3 py-1.5 bg-brand-black text-white rounded-lg text-[10px] font-black uppercase border border-brand-black active:translate-y-0.5 transition-all"
-                                                >
-                                                    Redeem
-                                                </button>
-                                            )}
-                                            {!isUnlocked && <Lock size={16} className="text-gray-300" />}
-                                        </div>
-                                    </div>
+                                        title={reward.title}
+                                        requiredStamps={reward.requiredStamps}
+                                        isUnlocked={isUnlocked}
+                                        isRedeemed={isRedeemed}
+                                        onRedeem={
+                                            isUnlocked && !isRedeemed
+                                                ? () => {
+                                                      markRewardRedeemed(reward.id);
+                                                      setRedeemedRewards([...redeemedRewards, reward.id]);
+                                                      trackEvent('reward_redeemed', { reward_id: reward.id });
+                                                  }
+                                                : undefined
+                                        }
+                                    />
                                 );
                             })}
                         </div>
                     )}
 
-                    {activeTab === 'hub' && <MemberHub />}
+                    {activeTab === 'hub' && (
+                        <div className="space-y-4">
+                            <ProfileCenter
+                                draft={profileCenterDraft}
+                                mbtiType={hubProfileSnapshot.mbtiType}
+                                visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
+                                hasIdentity={Boolean(user || profile)}
+                                syncStatus={profileCenterSyncStatus}
+                                onChange={setProfileCenterDraft}
+                            />
+                            <MemberHub
+                                onProfileSnapshotChange={({ mbtiType, visitedSiteCount }) => {
+                                    setHubProfileSnapshot({ mbtiType, visitedSiteCount });
+                                }}
+                            />
+                        </div>
+                    )}
 
                     {activeTab === 'shop' && (
                         <div className="space-y-6">
@@ -538,36 +755,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose }) => {
 
                 {/* ─── Achievement Modal ─── */}
                 {showAchievementModal && (
-                    <div className="fixed inset-0 z-[100] bg-brand-black/90 flex items-center justify-center p-8 backdrop-blur-sm">
-                        <div className="bg-white border-4 border-brand-lime rounded-[40px] p-8 w-full max-w-sm text-center relative shadow-[0_0_50px_rgba(212,255,0,0.4)] animate-scale-up">
-                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-brand-lime rounded-full border-4 border-brand-black flex items-center justify-center animate-bounce shadow-xl">
-                                <Star size={48} className="text-brand-black" />
-                            </div>
-
-                            <h2 className="mt-8 text-2xl font-black text-brand-black uppercase tracking-tighter">
-                                New Legend!
-                            </h2>
-                            <p className="text-[10px] font-black text-brand-lime-dark tracking-[0.3em] uppercase mb-6">
-                                Achievement Unlocked
-                            </p>
-
-                            <div className="bg-gray-100 p-4 rounded-3xl mb-8 border-2 border-brand-black/5">
-                                <h3 className="text-lg font-black text-brand-black mb-1">
-                                    {ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.name}
-                                </h3>
-                                <p className="text-xs font-medium text-gray-500">
-                                    {ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.description}
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={() => setShowAchievementModal(null)}
-                                className="w-full py-4 bg-brand-black text-white rounded-[24px] font-black uppercase tracking-widest border-2 border-brand-black shadow-[4px_4px_0px_brand-lime] active:translate-y-1 transition-all"
-                            >
-                                Continue Journey
-                            </button>
-                        </div>
-                    </div>
+                    <KiwimuAchievementModal
+                        title={ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.name ?? ''}
+                        description={ACHIEVEMENTS.find(a => a.id === showAchievementModal)?.description ?? ''}
+                        onClose={() => setShowAchievementModal(null)}
+                    />
                 )}
             </div>
         </div>
