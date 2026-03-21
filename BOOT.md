@@ -18,7 +18,7 @@
   - 預設版型改為 `gallery`
   - 以 `?landing_variant=hero|gallery|totem` 切換截圖比較
   - CTA 改為輕量膠囊按鈕，避免搶走 Kiwimu 視線
-  - 不再依賴被裁切的 `Enter-05_nrt403.webp` 當首頁主角，改用乾淨的 inline Kiwimu 向量稿，確保角色完整可見
+  - 首頁主角已切回 Cloudinary `Enter-05_nrt403.webp`，改成 `object-contain` 的背景層呈現，避免容器再二次裁切
 - `components/RewardShop.tsx`
   - 將混用 inline style 的主區塊整理成 Tailwind class
 - `components/ShopOrderHistory.tsx`
@@ -37,7 +37,7 @@
 ### 目前建議
 
 - 若主理人今天要先上線，保留預設 `gallery`
-- 若要回到真實角色素材，需先換掉目前已被源圖裁切的 Cloudinary `Enter-05_nrt403.webp`；單靠 CSS 無法恢復被裁掉的右側鼻子
+- 若主理人要真正的完整全身版，仍需替換目前 Cloudinary 原圖；現在已取消容器裁切，但源圖本身右側構圖仍偏緊
 
 ### 接手注意
 

@@ -41,67 +41,12 @@ const getOrCreatePassportCoverNumber = () => {
 
 type LandingVariantKey = 'hero' | 'gallery' | 'totem';
 
-const KiwimuMascotArt: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    viewBox="0 0 620 620"
-    className={className}
-    role="img"
-    aria-label="Kiwimu mascot illustration"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <ellipse cx="268" cy="574" rx="188" ry="18" fill="#111111" opacity="0.12" />
-    <path
-      d="M153 477C164 437 196 413 226 419C217 453 214 490 214 530H157C143 530 138 514 153 477Z"
-      fill="#111111"
-    />
-    <path
-      d="M249 484C262 444 299 419 333 426C321 460 316 496 315 530H255C240 530 236 515 249 484Z"
-      fill="#111111"
-    />
-    <path
-      d="M263 54C355 54 427 132 427 267C427 414 335 507 224 507C122 507 47 430 47 311C47 190 132 54 263 54Z"
-      fill="white"
-      stroke="#111111"
-      strokeWidth="12"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M104 232C77 217 57 183 59 147C61 109 86 82 120 79C151 76 181 97 207 134C227 162 240 197 243 227C187 217 143 220 104 232Z"
-      fill="white"
-      stroke="#111111"
-      strokeWidth="12"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M95 289C122 287 148 300 171 327"
-      stroke="#111111"
-      strokeWidth="12"
-      strokeLinecap="round"
-    />
-    <path
-      d="M364 165C377 183 383 205 382 228"
-      stroke="#111111"
-      strokeWidth="12"
-      strokeLinecap="round"
-    />
-    <ellipse cx="292" cy="208" rx="24" ry="34" fill="#111111" />
-    <ellipse cx="352" cy="218" rx="14" ry="24" fill="#111111" />
-    <path
-      d="M346 238C349 207 373 186 398 186H471C489 186 504 199 504 215C504 231 489 244 471 244H404C384 244 367 241 346 238Z"
-      fill="#111111"
-    />
-  </svg>
-);
-
 const LANDING_VARIANT_STYLES: Record<
   LandingVariantKey,
   {
     stageClassName: string;
     frameClassName: string;
-    mascotClassName: string;
+    imageClassName: string;
     ctaWrapClassName: string;
     ctaButtonClassName: string;
     ctaLabelClassName: string;
@@ -111,7 +56,7 @@ const LANDING_VARIANT_STYLES: Record<
   hero: {
     stageClassName: 'flex-1 relative flex items-center justify-center px-4 pb-3 md:px-8 md:pb-6 z-0 pointer-events-none overflow-visible',
     frameClassName: 'w-full flex items-center justify-center',
-    mascotClassName: 'w-auto max-w-full h-[min(68dvh,calc(100dvh-12rem))] md:h-[min(72dvh,calc(100dvh-13rem))] animate-fade-in',
+    imageClassName: 'w-auto max-w-full h-[min(64dvh,calc(100dvh-12rem))] md:h-[min(70dvh,calc(100dvh-13rem))] object-contain opacity-90 animate-fade-in',
     ctaWrapClassName: 'flex-none pb-8 md:pb-10 z-10 flex flex-col items-center gap-2 pointer-events-auto',
     ctaButtonClassName: 'group inline-flex items-center gap-2 rounded-full border border-brand-black/15 bg-white/82 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_8px_24px_rgba(17,17,17,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/30 hover:bg-white',
     ctaLabelClassName: 'text-[10px] font-bold tracking-[0.16em] text-brand-black/32',
@@ -120,7 +65,7 @@ const LANDING_VARIANT_STYLES: Record<
   gallery: {
     stageClassName: 'flex-1 relative flex items-end justify-center px-5 pb-1 md:px-10 md:pb-3 z-0 pointer-events-none overflow-visible',
     frameClassName: 'w-full flex items-end justify-center rounded-[2.25rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.92)_0%,_rgba(250,250,248,0)_72%)]',
-    mascotClassName: 'w-auto max-w-full h-[min(70dvh,calc(100dvh-11rem))] md:h-[min(74dvh,calc(100dvh-12rem))] animate-fade-in',
+    imageClassName: 'w-auto max-w-full h-[min(66dvh,calc(100dvh-11rem))] md:h-[min(72dvh,calc(100dvh-12rem))] object-contain opacity-80 animate-fade-in',
     ctaWrapClassName: 'flex-none pb-7 md:pb-10 z-10 flex flex-col items-center gap-2 pointer-events-auto',
     ctaButtonClassName: 'group inline-flex items-center gap-2 rounded-full border border-brand-black/12 bg-[#FAFAF8]/92 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_10px_28px_rgba(17,17,17,0.08)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/28',
     ctaLabelClassName: 'text-[10px] font-bold tracking-[0.16em] text-brand-black/28',
@@ -129,7 +74,7 @@ const LANDING_VARIANT_STYLES: Record<
   totem: {
     stageClassName: 'flex-1 relative flex items-center justify-center px-6 pb-4 md:px-12 md:pb-8 z-0 pointer-events-none overflow-visible',
     frameClassName: 'w-full flex items-center justify-center rounded-[999px] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0)_52%)]',
-    mascotClassName: 'w-auto max-w-full h-[min(64dvh,calc(100dvh-12.5rem))] md:h-[min(70dvh,calc(100dvh-13rem))] animate-fade-in',
+    imageClassName: 'w-auto max-w-full h-[min(60dvh,calc(100dvh-12.5rem))] md:h-[min(68dvh,calc(100dvh-13rem))] object-contain opacity-80 animate-fade-in',
     ctaWrapClassName: 'flex-none pb-8 md:pb-11 z-10 flex flex-col items-center gap-2 pointer-events-auto',
     ctaButtonClassName: 'group inline-flex items-center gap-2 rounded-full border border-brand-black/14 bg-white/78 px-3.5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[0_8px_24px_rgba(17,17,17,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/28 hover:bg-white/90',
     ctaLabelClassName: 'text-[10px] font-bold tracking-[0.16em] text-brand-black/30',
@@ -224,6 +169,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
 
   const landingVariant = getLandingVariant();
   const landingStyle = LANDING_VARIANT_STYLES[landingVariant];
+  const illustration = BRANDING.LANDING_ILLUSTRATION;
 
   return (
     <div className="h-[100dvh] w-full flex flex-col relative overflow-hidden bg-[#FAFAF8]">
@@ -244,7 +190,13 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
         {/* ─── Center: Illustration takes the stage ─── */}
         <div className={landingStyle.stageClassName}>
           <div className={landingStyle.frameClassName}>
-            <KiwimuMascotArt className={landingStyle.mascotClassName} />
+            <img
+              src={illustration}
+              alt="Kiwimu illustration background"
+              className={landingStyle.imageClassName}
+              loading="eager"
+              fetchPriority="high"
+            />
           </div>
         </div>
 
