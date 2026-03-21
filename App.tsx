@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
-import { Sparkles, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
+import { Sparkles, BookOpen, ArrowUpRight, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
 import { Screen } from './types';
 import { BRANDING } from './constants';
-import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
 import {
@@ -38,6 +37,119 @@ const getOrCreatePassportCoverNumber = () => {
   const generated = String(Math.floor(Math.random() * 900) + 100);
   window.localStorage.setItem('moonmoon_passport_cover_no', generated);
   return generated;
+};
+
+type LandingVariantKey = 'hero' | 'gallery' | 'totem';
+
+const KiwimuMascotArt: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 620 620"
+    className={className}
+    role="img"
+    aria-label="Kiwimu mascot illustration"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <ellipse cx="268" cy="574" rx="188" ry="18" fill="#111111" opacity="0.12" />
+    <path
+      d="M153 477C164 437 196 413 226 419C217 453 214 490 214 530H157C143 530 138 514 153 477Z"
+      fill="#111111"
+    />
+    <path
+      d="M249 484C262 444 299 419 333 426C321 460 316 496 315 530H255C240 530 236 515 249 484Z"
+      fill="#111111"
+    />
+    <path
+      d="M263 54C355 54 427 132 427 267C427 414 335 507 224 507C122 507 47 430 47 311C47 190 132 54 263 54Z"
+      fill="white"
+      stroke="#111111"
+      strokeWidth="12"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M104 232C77 217 57 183 59 147C61 109 86 82 120 79C151 76 181 97 207 134C227 162 240 197 243 227C187 217 143 220 104 232Z"
+      fill="white"
+      stroke="#111111"
+      strokeWidth="12"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M95 289C122 287 148 300 171 327"
+      stroke="#111111"
+      strokeWidth="12"
+      strokeLinecap="round"
+    />
+    <path
+      d="M364 165C377 183 383 205 382 228"
+      stroke="#111111"
+      strokeWidth="12"
+      strokeLinecap="round"
+    />
+    <ellipse cx="292" cy="208" rx="24" ry="34" fill="#111111" />
+    <ellipse cx="352" cy="218" rx="14" ry="24" fill="#111111" />
+    <path
+      d="M346 238C349 207 373 186 398 186H471C489 186 504 199 504 215C504 231 489 244 471 244H404C384 244 367 241 346 238Z"
+      fill="#111111"
+    />
+  </svg>
+);
+
+const LANDING_VARIANT_STYLES: Record<
+  LandingVariantKey,
+  {
+    stageClassName: string;
+    frameClassName: string;
+    mascotClassName: string;
+    ctaWrapClassName: string;
+    ctaButtonClassName: string;
+    ctaLabelClassName: string;
+    eyebrow: string;
+  }
+> = {
+  hero: {
+    stageClassName: 'flex-1 relative flex items-center justify-center px-4 pb-3 md:px-8 md:pb-6 z-0 pointer-events-none overflow-visible',
+    frameClassName: 'w-full flex items-center justify-center',
+    mascotClassName: 'w-auto max-w-full h-[min(68dvh,calc(100dvh-12rem))] md:h-[min(72dvh,calc(100dvh-13rem))] animate-fade-in',
+    ctaWrapClassName: 'flex-none pb-8 md:pb-10 z-10 flex flex-col items-center gap-2 pointer-events-auto',
+    ctaButtonClassName: 'group inline-flex items-center gap-2 rounded-full border border-brand-black/15 bg-white/82 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_8px_24px_rgba(17,17,17,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/30 hover:bg-white',
+    ctaLabelClassName: 'text-[10px] font-bold tracking-[0.16em] text-brand-black/32',
+    eyebrow: '角色先出場，護照輕輕打開',
+  },
+  gallery: {
+    stageClassName: 'flex-1 relative flex items-end justify-center px-5 pb-1 md:px-10 md:pb-3 z-0 pointer-events-none overflow-visible',
+    frameClassName: 'w-full flex items-end justify-center rounded-[2.25rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.92)_0%,_rgba(250,250,248,0)_72%)]',
+    mascotClassName: 'w-auto max-w-full h-[min(70dvh,calc(100dvh-11rem))] md:h-[min(74dvh,calc(100dvh-12rem))] animate-fade-in',
+    ctaWrapClassName: 'flex-none pb-7 md:pb-10 z-10 flex flex-col items-center gap-2 pointer-events-auto',
+    ctaButtonClassName: 'group inline-flex items-center gap-2 rounded-full border border-brand-black/12 bg-[#FAFAF8]/92 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_10px_28px_rgba(17,17,17,0.08)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/28',
+    ctaLabelClassName: 'text-[10px] font-bold tracking-[0.16em] text-brand-black/28',
+    eyebrow: '像海報一樣，把視線留給 Kiwimu',
+  },
+  totem: {
+    stageClassName: 'flex-1 relative flex items-center justify-center px-6 pb-4 md:px-12 md:pb-8 z-0 pointer-events-none overflow-visible',
+    frameClassName: 'w-full flex items-center justify-center rounded-[999px] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0)_52%)]',
+    mascotClassName: 'w-auto max-w-full h-[min(64dvh,calc(100dvh-12.5rem))] md:h-[min(70dvh,calc(100dvh-13rem))] animate-fade-in',
+    ctaWrapClassName: 'flex-none pb-8 md:pb-11 z-10 flex flex-col items-center gap-2 pointer-events-auto',
+    ctaButtonClassName: 'group inline-flex items-center gap-2 rounded-full border border-brand-black/14 bg-white/78 px-3.5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[0_8px_24px_rgba(17,17,17,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/28 hover:bg-white/90',
+    ctaLabelClassName: 'text-[10px] font-bold tracking-[0.16em] text-brand-black/30',
+    eyebrow: '入口退後一點，主角完整站穩',
+  },
+};
+
+const getLandingVariant = (): LandingVariantKey => {
+  if (typeof window === 'undefined') {
+    return 'gallery';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const requestedVariant = params.get('landing_variant');
+
+  if (requestedVariant === 'gallery' || requestedVariant === 'totem' || requestedVariant === 'hero') {
+    return requestedVariant;
+  }
+
+  return 'gallery';
 };
 
 // -- Header --
@@ -110,90 +222,49 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
     };
   }, []);
 
-  const illustration = BRANDING.LANDING_ILLUSTRATION;
+  const landingVariant = getLandingVariant();
+  const landingStyle = LANDING_VARIANT_STYLES[landingVariant];
 
   return (
     <div className="h-[100dvh] w-full flex flex-col relative overflow-hidden bg-[#FAFAF8]">
       <div className="h-full w-full max-w-[1400px] mx-auto flex flex-col relative">
-        <div className="flex-none pt-28 md:pt-32 px-4 z-10 relative flex flex-col items-center">
-          <div className="text-center space-y-5 max-w-xl mx-auto">
-            <p className="text-[11px] font-black uppercase tracking-[0.26em] text-brand-black/45">
-              Kiwimu Moon Moon Passport
-            </p>
-            <p className="text-[11px] font-black uppercase tracking-[0.32em] text-brand-black/40">
-              Passport No. {passportCoverNumber}
-            </p>
-            <h1 className="text-7xl sm:text-8xl md:text-9xl font-serif font-black text-brand-black leading-none tracking-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
-              PASSPORT
-            </h1>
-            <p className="text-sm md:text-base font-semibold text-brand-black/70 leading-relaxed">
-              把你在月島的任務、集章、積分與會員福利，
-              <br />
-              都收進這本屬於你的護照。
-            </p>
+        {/* ─── Top: Compact title ─── */}
+        <div className="flex-none pt-24 md:pt-28 px-4 z-10 relative flex flex-col items-center">
+          <p className="text-[11px] font-black uppercase tracking-[0.26em] text-brand-black/45">
+            Kiwimu Moon Moon Passport
+          </p>
+          <p className="mt-2 text-[11px] font-black uppercase tracking-[0.32em] text-brand-black/40">
+            No. {passportCoverNumber}
+          </p>
+          <p className="mt-4 text-[10px] font-bold tracking-[0.18em] text-brand-black/28">
+            {landingStyle.eyebrow}
+          </p>
+        </div>
+
+        {/* ─── Center: Illustration takes the stage ─── */}
+        <div className={landingStyle.stageClassName}>
+          <div className={landingStyle.frameClassName}>
+            <KiwimuMascotArt className={landingStyle.mascotClassName} />
           </div>
         </div>
 
-        <div className="absolute bottom-0 md:-bottom-10 lg:-bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] lg:max-w-[900px] flex justify-center z-0 animate-fade-in pointer-events-none">
-          {illustration ? (
-            <img
-              src={illustration}
-              alt="Mascot"
-              className="w-full h-auto object-contain drop-shadow-2xl max-h-[50vh] md:max-h-[60vh]"
-              loading="eager"
-              fetchpriority="high"
-            />
-          ) : (
-            <div className="w-full h-[50vh] flex items-center justify-center text-gray-300 font-bold text-4xl opacity-20 rotate-12">
-              MOON MOON
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 w-full relative flex items-end justify-center pb-8 md:pb-12 z-30">
-          <div className="relative w-full max-w-[360px] px-4 pointer-events-auto">
-            <div className="bg-white/88 backdrop-blur-xl border-2 border-brand-black p-5 md:p-6 rounded-[2.5rem] shadow-[6px_6px_0px_black] text-center">
-              <div className="mb-5 rounded-[1.75rem] border border-brand-black/15 bg-brand-black/[0.03] p-4 text-left">
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">持有人</p>
-                    <p className="mt-1 text-sm font-bold text-brand-black">月島旅人</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">用途</p>
-                    <p className="mt-1 text-sm font-bold text-brand-black">集章積分</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">狀態</p>
-                    <p className="mt-1 text-sm font-bold text-brand-black">等待開啟</p>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mb-6 text-xs font-semibold leading-relaxed text-brand-black/70">
-                第一次開啟後，就能同步你的任務進度、印章與會員足跡。
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={() => {
-                    trackButtonClick('open_passport', 'landing_cover');
-                    onOpenPassport();
-                  }}
-                  variant="black"
-                  size="lg"
-                  fullWidth
-                  className="rounded-full shadow-lg text-base h-14 group hover:scale-[1.02] transition-all duration-300"
-                >
-                  <BookOpen className="mr-2 w-5 h-5" />
-                  打開我的護照
-                </Button>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-black/40">
-                  Open to view stamps, points and member rewards
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* ─── Bottom: Floating CTA (compact, not blocking illustration) ─── */}
+        <div className={landingStyle.ctaWrapClassName}>
+          <button
+            onClick={() => {
+              trackButtonClick('open_passport', 'landing_cover');
+              onOpenPassport();
+            }}
+            className={landingStyle.ctaButtonClassName}
+            aria-label="打開我的護照"
+          >
+            <BookOpen className="h-4 w-4 text-brand-black" />
+            <span>Open Passport</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-brand-black/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </button>
+          <p className={landingStyle.ctaLabelClassName}>
+            集章 · 積分 · 會員福利
+          </p>
         </div>
       </div>
     </div>
@@ -442,7 +513,7 @@ function App() {
           const result = await consumeRewardClaim(claimCodeParam, rewardParam);
 
           if (!result.ok) {
-            const errorReason = (result as any).reason;
+            const errorReason = 'reason' in result ? (result as { reason: string }).reason : 'unknown';
             console.error('Reward claim failed:', errorReason);
             trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam, stamp_id: rewardTarget.stampId });
 
