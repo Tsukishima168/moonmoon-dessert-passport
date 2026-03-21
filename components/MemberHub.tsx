@@ -31,7 +31,15 @@ const MBTI_DESSERT_LABEL: Record<string, string> = {
     ISTP: '海鹽可可餅', ISFP: '玫瑰荔枝凍', ESTP: '焦糖爆米花塔', ESFP: '繽紛馬卡龍',
 };
 
-const MemberHub: React.FC = () => {
+interface MemberHubProps {
+    onProfileSnapshotChange?: (snapshot: {
+        mbtiType: string | null;
+        visitedSiteCount: number;
+        stampCount: number;
+    }) => void;
+}
+
+const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
     const [visitedSites, setVisitedSites] = useState<string[]>([]);
     const [mbtiType, setMbtiType] = useState<string | null>(null);
     const [stampCount, setStampCount] = useState(0);
@@ -73,6 +81,14 @@ const MemberHub: React.FC = () => {
         });
     }, []);
 
+    useEffect(() => {
+        onProfileSnapshotChange?.({
+            mbtiType,
+            visitedSiteCount: visitedSites.length,
+            stampCount,
+        });
+    }, [mbtiType, onProfileSnapshotChange, stampCount, visitedSites.length]);
+
     const handleSiteClick = (siteId: string, url: string) => {
         // If user clicks a site from the passport, we track and potentially mark
         // Although visit is usually confirmed when they come BACK from that site
@@ -97,7 +113,7 @@ const MemberHub: React.FC = () => {
             <div className="bg-brand-black px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">
                     <Trophy size={16} className="text-brand-lime" />
-                    <h2 className="text-sm font-bold tracking-tight uppercase">月島足跡探險</h2>
+                    <h2 className="text-sm font-bold tracking-tight uppercase">月島足跡</h2>
                 </div>
                 <div className="bg-brand-lime px-2 py-0.5 rounded-full border border-brand-black">
                     <span className="text-[10px] font-black text-brand-black uppercase">
@@ -165,7 +181,7 @@ const MemberHub: React.FC = () => {
                     <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
                         <Sparkles size={16} className="text-brand-lime-dark" />
                         <p className="text-[10px] font-bold text-brand-lime-dark uppercase">
-                            你已走完整個月島宇宙。
+                            你已走完整個月島足跡。
                         </p>
                     </div>
                 )}

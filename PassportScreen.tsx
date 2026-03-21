@@ -28,6 +28,7 @@ import {
 } from './passportUtils';
 import BadgeJourney from './components/BadgeJourney';
 import MemberHub from './components/MemberHub';
+import ProfileCenter from './components/ProfileCenter';
 import RewardShop from './components/RewardShop';
 import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
@@ -42,7 +43,16 @@ import { KiwimuTabs } from './components/kiwimu/KiwimuTabs';
 import { useLiff } from './src/contexts/LiffContext';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 import { trackEvent } from './analytics';
+import {
+    loadProfileCenterDraft,
+    saveProfileCenterDraftToProfile,
+} from './src/api/profileCenter';
 import { getUserPointsByIdentity } from './src/api/points';
+import {
+    ProfileCenterDraft,
+    ProfileCenterSyncStatus,
+    saveProfileCenterDraft,
+} from './src/lib/profileCenter';
 
 
 interface PassportScreenProps {
@@ -54,7 +64,7 @@ const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
     journey: '任務',
     rewards: '集章獎勵',
     shop: '會員福利',
-    hub: '宇宙足跡',
+    hub: '會員中心',
 };
 
 const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[
@@ -126,6 +136,22 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
         message: string;
     }>({ tone: null, message: '' });
     const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
+    const [hubProfileSnapshot, setHubProfileSnapshot] = useState<{
+        mbtiType: string | null;
+        visitedSiteCount: number;
+    }>({ mbtiType: null, visitedSiteCount: getVisitedSites().length });
+    const [profileCenterDraft, setProfileCenterDraft] = useState<ProfileCenterDraft>({
+        displayName: '月島旅人',
+        isMbtiPublic: false,
+        isFootprintPublic: false,
+        favoriteCharacterId: 'kiwimu',
+        passportTitleId: 'locked',
+    });
+    const [isProfileCenterHydrated, setIsProfileCenterHydrated] = useState(false);
+    const [profileCenterSyncStatus, setProfileCenterSyncStatus] = useState<ProfileCenterSyncStatus>({
+        tone: 'idle',
+        message: '尚未檢查 shared profiles 同步狀態。',
+    });
 
     const refreshPoints = React.useCallback(async () => {
         const state = getPassportState();
@@ -150,6 +176,11 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
+        const storedMbti = localStorage.getItem('user_mbti_result');
+        setHubProfileSnapshot({
+            mbtiType: storedMbti ? storedMbti.toUpperCase() : null,
+            visitedSiteCount: getVisitedSites().length,
+        });
         void refreshPoints();
 
         // LIFF-4: Listen for cross-site points from Gacha
@@ -186,6 +217,63 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
             document.removeEventListener('passport-points-updated', handlePointsUpdated);
         };
     }, [isLoggedIn, profile, refreshPoints, user]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        const hydrateProfileCenter = async () => {
+            const authDisplayName =
+                user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                null;
+            const liffDisplayName = profile?.displayName || null;
+
+            const result = await loadProfileCenterDraft({
+                authUserId: user?.id || null,
+                lineUserId: profile?.userId || null,
+                authDisplayName,
+                liffDisplayName,
+            });
+
+            if (!isActive) return;
+            setProfileCenterDraft(result.draft);
+            setProfileCenterSyncStatus(result.syncStatus);
+            setIsProfileCenterHydrated(true);
+        };
+
+        setIsProfileCenterHydrated(false);
+        void hydrateProfileCenter();
+
+        return () => {
+            isActive = false;
+        };
+    }, [profile?.displayName, profile?.userId, user?.id, user?.user_metadata?.full_name, user?.user_metadata?.name]);
+
+    useEffect(() => {
+        if (!isProfileCenterHydrated) return;
+        saveProfileCenterDraft(profileCenterDraft);
+
+        if (!user?.id) return;
+
+        setProfileCenterSyncStatus({
+            tone: 'syncing',
+            message: '正在寫回 shared profiles...',
+        });
+
+        const timer = window.setTimeout(() => {
+            void saveProfileCenterDraftToProfile({
+                authUserId: user.id,
+                lineUserId: profile?.userId || null,
+                draft: profileCenterDraft,
+            }).then((result) => {
+                setProfileCenterSyncStatus(result.syncStatus);
+            });
+        }, 500);
+
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [isProfileCenterHydrated, profile?.userId, profileCenterDraft, user?.id]);
 
     const handleStampUnlocked = (newAchievementIds: string[]) => {
         setUnlockedCount(getUnlockedStampCount());
@@ -316,11 +404,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
     const gpsNavigationUrl = gpsDebug
         ? `https://maps.google.com/?q=${gpsDebug.targetLat},${gpsDebug.targetLng}`
         : null;
-    const passportHolder =
+    const fallbackPassportHolder =
         user?.user_metadata?.full_name ||
         user?.user_metadata?.name ||
         profile?.displayName ||
         '月島旅人';
+    const passportHolder = profileCenterDraft.displayName.trim() || fallbackPassportHolder;
     const passportMode = user || profile ? '已啟用' : '訪客模式';
     const handleMagicLinkSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -413,7 +502,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                             Passport Summary
                         </p>
                         <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
-                            從這裡查看任務進度、集章里程碑、會員福利與你的月島宇宙足跡。
+                            從這裡查看任務進度、會員資料、集章里程碑與月島足跡。
                         </p>
                     </div>
 
@@ -604,7 +693,23 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                         </div>
                     )}
 
-                    {activeTab === 'hub' && <MemberHub />}
+                    {activeTab === 'hub' && (
+                        <div className="space-y-4">
+                            <ProfileCenter
+                                draft={profileCenterDraft}
+                                mbtiType={hubProfileSnapshot.mbtiType}
+                                visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
+                                hasIdentity={Boolean(user || profile)}
+                                syncStatus={profileCenterSyncStatus}
+                                onChange={setProfileCenterDraft}
+                            />
+                            <MemberHub
+                                onProfileSnapshotChange={({ mbtiType, visitedSiteCount }) => {
+                                    setHubProfileSnapshot({ mbtiType, visitedSiteCount });
+                                }}
+                            />
+                        </div>
+                    )}
 
                     {activeTab === 'shop' && (
                         <div className="space-y-6">
