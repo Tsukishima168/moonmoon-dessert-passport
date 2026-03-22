@@ -8,43 +8,18 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { setDeviceId } from '../../passportUtils';
+import { supabase } from '../lib/supabase';
 import {
   activateRedirectTo,
   clearRedirectState,
   clearPendingRedirectTo,
-  createCookieStorage,
   getAndClearPendingRedirectTo,
   getAndClearRedirectTo,
   getOAuthRedirectUrl,
   saveRedirectTo,
 } from '../lib/authStorage';
-
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_MOON_ISLAND_SUPABASE_URL) as string;
-const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_MOON_ISLAND_SUPABASE_ANON_KEY) as string;
-
-// ── Auth Client（cookie storage，單例）───────────────────────────────────────
-
-let _authClient: SupabaseClient | null = null;
-
-function getAuthClient(): SupabaseClient | null {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
-  if (_authClient) return _authClient;
-
-  const cookieStorage = createCookieStorage();
-
-  _authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-      ...(cookieStorage ? { storage: cookieStorage } : {}),
-    },
-  });
-
-  return _authClient;
-}
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -78,7 +53,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       clearPendingRedirectTo();
     }
 
-    const client = getAuthClient();
+    const client = supabase;
     if (!client) {
       setLoading(false);
       return;
@@ -138,7 +113,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   const signInWithGoogle = async () => {
-    const client = getAuthClient();
+    const client = supabase;
     if (!client) {
       setError('Supabase Auth 尚未設定完成，Google 登入目前不可用。');
       return;
@@ -170,7 +145,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const signInWithMagicLink = async (email: string) => {
-    const client = getAuthClient();
+    const client = supabase;
     if (!client) {
       const message = 'Supabase Auth 尚未設定完成，Magic Link 登入目前不可用。';
       setError(message);
@@ -206,7 +181,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const handleSignOut = async () => {
-    const client = getAuthClient();
+    const client = supabase;
     if (!client) return;
     await client.auth.signOut();
     setUser(null);
