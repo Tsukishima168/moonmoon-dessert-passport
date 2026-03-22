@@ -1,6 +1,6 @@
 # GA4 / OMO 連結放置位置一覽
 
-所有對外的測驗連結請依下表使用對應 UTM，即可在 GA4 依**放置位置**分析來源與人數。  
+所有對外的護照入口連結請依下表使用對應 UTM，即可在 GA4 依**放置位置**分析來源與人數。  
 以下連結已填入正式網址 **https://moonmoon-dessert-passport.vercel.app**，可直接複製使用。
 
 ---
@@ -9,7 +9,7 @@
 
 | 放置位置 | utm_source | utm_medium | 完整連結 | 分析用途 |
 |----------|-------------|------------|----------|----------|
-| **門口大門 QR** | `door` | `qr` | https://moonmoon-dessert-passport.vercel.app/?utm_source=door&utm_medium=qr | 從大門進入的測驗人數 |
+| **門口大門 QR** | `door` | `qr` | https://moonmoon-dessert-passport.vercel.app/?utm_source=door&utm_medium=qr | 從大門進入的人數 |
 | **櫃檯／結帳區 QR** | `counter` | `qr` | https://moonmoon-dessert-passport.vercel.app/?utm_source=counter&utm_medium=qr | 結帳時掃描人數 |
 | **桌牌／桌上 QR** | `table` | `qr` | https://moonmoon-dessert-passport.vercel.app/?utm_source=table&utm_medium=qr | 座位區觸及人數 |
 | **店內海報／立牌** | `poster` | `qr` | https://moonmoon-dessert-passport.vercel.app/?utm_source=poster&utm_medium=qr | 海報轉換人數 |
@@ -69,6 +69,7 @@ https://moonmoon-dessert-passport.vercel.app/?utm_source=door&utm_medium=qr&utm_
 
 - **所有來源**：報表 → **互動** → **事件** → 選 `entrance_scan` → 次要維度選 **`entrance_source`**（或 `entrance_medium`），即可依放置位置切分人數。
 - **單一來源**：探索 → 篩選 `entrance_scan` 且 `entrance_source` = 上表的 `utm_source`（如 `door`、`line`、`ig`）。
+- **護照互動**：可另外看 `passport_opened`、`stamp_unlocked` 等事件，搭配 UTM 分析來源後續互動。
 - **流量總覽**：報表 → **獲取** → **流量開發**；GA4 會依 UTM 帶入「來源／媒介／活動」，與上表對應即可。
 
 ---

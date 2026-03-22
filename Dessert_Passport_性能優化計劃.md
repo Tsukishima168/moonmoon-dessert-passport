@@ -1,3 +1,5 @@
+> 歷史規劃文件：本文含舊版 quiz / result 優化方向，僅供參考，不代表目前 production 結構。
+
 ---
 type: optimization
 layer: 專案

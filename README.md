@@ -1,162 +1,104 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # 月島甜點護照 | MoonMoon Dessert Passport
 
----
+MoonMoon Dessert Passport 是 Kiwimu 生態中的會員護照站點，提供護照首頁、會員中心、印章旅程、點數商店，以及公開護照 / 邀請 / 布丁兌換等流程。
 
-## 冷啟動快照 · 2026-03-10
+## 目前產品範圍
 
-### 當前狀態
-- GA4 埋點：已部署
-- Resend：已串接（noreply@kiwimu.com）
-- SOC 三層：完成
-- LINE Pay：架構待建，等 Channel ID
+- `/`：Passport landing，進入會員護照主介面
+- `/passport/:id`：公開護照頁，顯示邀請進度與可否兌換
+- `/join/:passportId`：接受邀請頁，提交 IG 帳號
+- `/redeem`：店員端布丁兌換頁
 
-### 分支狀態
-- main：production
-- feat/mbti-v2：進行中
-- feat/admin-polish：進行中
+備註：
+- 專案仍會承接 MBTI 站帶來的 `mbti_type`、claim code、跨站點數同步，但它本身不是 MBTI 測驗前端。
+- 部分歷史文件仍保留早期 quiz 規劃；以本 README、`DEPLOYMENT.md`、`LAUNCH_CHECKLIST.md`、`HANDOVER_GUIDE.md` 為準。
 
-### 環境變數清單
-- GEMINI_API_KEY
-- VITE_GA4_ID
-An interactive quiz application to help users discover their perfect dessert and personality sticker from MoonMoon Dessert.
+## 核心功能
 
-View your app in AI Studio: https://ai.studio/apps/drive/1EY88RN2I_BA_Bnovrs2PVeMKqjEUYOPF
+- Passport landing 與護照主介面切換
+- Supabase Auth Google OAuth / Magic Link
+- LIFF profile 讀取與 fallback
+- 集章、點數、獎勵兌換
+- 公開護照、邀請加入、店員核銷流程
+- GA4 UTM 與入口追蹤
 
-## 🚀 Run Locally
+## 本機開發
 
-**Prerequisites:** Node.js
+前置需求：
+- Node.js 20 以上建議
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+安裝與啟動：
 
-2. **Set environment variables:**
-   - Copy `.env.local.example` to `.env.local` (if exists)
-   - Set your `GEMINI_API_KEY` in `.env.local`
+```bash
+npm install
+npm run dev
+```
 
-3. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+Vite 開發伺服器預設跑在 `http://localhost:3000`。
 
-4. **Open your browser:**
-   - Visit `http://localhost:5173`
+## 環境變數
 
-## 📦 Build for Production
+必要或常用：
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_GA4_ID`
+- `VITE_LIFF_ID`
+- `VITE_SUPABASE_AUTH_REDIRECT_URL`
+
+相容別名：
+
+- `VITE_MOON_ISLAND_SUPABASE_URL`
+- `VITE_MOON_ISLAND_SUPABASE_ANON_KEY`
+
+說明：
+- 若未提供 Supabase env，網站仍可啟動，但登入、雲端點數、claim RPC 會降級或不可用。
+- 若未提供 `VITE_LIFF_ID`，LIFF 相關功能會略過，UI 仍可正常渲染。
+
+## 建置
 
 ```bash
 npm run build
-npm run preview  # Preview production build locally
+npm run preview
 ```
 
-## 🌐 Deploy to Vercel
+## 部署
 
-### Method 1: Using Vercel Dashboard (Recommended)
+Vercel 設定請看 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
-1. **Push your code to GitHub:**
-   - Create a new repository on GitHub
-   - Push your code to the repository
+## 目前追蹤事件
 
-2. **Import to Vercel:**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "Add New Project"
-   - Import your GitHub repository
-   - Vercel will auto-detect the Vite framework settings
+常見 GA4 事件包含：
 
-3. **Configure environment variables:**
-   - In Vercel dashboard, go to Settings → Environment Variables
-   - Add `GEMINI_API_KEY` with your API key value
+- `utm_landing`
+- `entrance_scan`
+- `button_click`
+- `passport_opened`
+- `passport_closed`
+- `stamp_unlocked`
+- `stamp_claim`
+- `passport_checkin`
+- `reward_redeemed`
+- `points_sync_received`
 
-4. **Deploy:**
-   - Click "Deploy"
-   - Your site will be live in minutes!
+## 技術棧
 
-### Method 2: Using Vercel CLI
+- React 19
+- TypeScript
+- Vite 6
+- React Router
+- Tailwind CSS
+- Supabase
+- LIFF
+- GA4
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+## 重要檔案
 
-# Deploy
-vercel
-
-# Deploy to production
-vercel --prod
-```
-
-## 📊 Google Analytics 4 (GA4) Setup
-
-This app includes GA4 tracking for user interactions.
-
-### Setup Instructions:
-
-1. **Create GA4 Property:**
-   - Go to [Google Analytics](https://analytics.google.com/)
-   - Create a new GA4 property
-   - Get your Measurement ID (format: `G-XXXXXXXXXX`)
-
-2. **Update the tracking code:**
-   - Open `index.html`
-   - Replace `GA_MEASUREMENT_ID` with your actual Measurement ID (2 occurrences)
-
-3. **Tracked Events:**
-   - `quiz_started` - When user starts the quiz
-   - `quiz_completed` - When user completes all questions
-   - `result_viewed` - When user views their result
-   - `dessert_view` - When a dessert is shown in results
-   - `line_cta_clicked` - When LINE CTA is clicked
-   - `quiz_restarted` - When user retries the quiz
-
-4. **Verify tracking:**
-   - After deploying, visit your site
-   - Open GA4 Real-time reports
-   - Perform actions and verify events appear
-
-## 🛠 Tech Stack
-
-- **Framework:** React + TypeScript
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS (via CDN)
-- **Icons:** Lucide React
-- **Hosting:** Vercel
-- **Analytics:** Google Analytics 4
-
-## 📁 Project Structure
-
-```
-moonmoon-dessert-passport/
-├── App.tsx              # Main application component
-├── analytics.ts         # GA4 tracking utilities
-├── constants.tsx        # Quiz questions, desserts, stickers
-├── types.ts            # TypeScript type definitions
-├── index.html          # HTML template with GA4 script
-├── index.tsx           # React entry point
-├── vercel.json         # Vercel deployment configuration
-└── components/         # Reusable UI components
-```
-
-## 🔗 Links
-
-- **LINE Official Account:** Get stickers and discounts
-- **MBTI Test:** Deeper personality insights
-- **Google Maps:** Visit the store
-
-## 📝 License
-
-This project was created with Google AI Studio.
-
----
-
-## Phase 1 Gate (Current)
-**Goal: Validate traffic funnel**
-
-### Metrics
-- MBTI completions: 1000
-- Orders: 200
-- AOV: NT
-- Monthly revenue: NTk
+- `index.tsx`：入口與 route 掛載
+- `App.tsx`：landing 與主護照容器
+- `PassportScreen.tsx`：會員護照主介面
+- `src/api/passportSystem.ts`：公開護照 / 邀請 / 兌換 API
+- `src/api/points.ts`：點數讀寫與 RPC
+- `src/contexts/SupabaseAuthContext.tsx`：Google / Magic Link 登入
+- `src/contexts/LiffContext.tsx`：LINE LIFF 整合
+- `supabase/migrations/`：資料庫 migration

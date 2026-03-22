@@ -1,5 +1,5 @@
 {
   "name": "MoonMoon Dessert Passport",
-  "description": "A streamlined landing page for MoonMoon Patisserie offering a 30-second dessert recommendation, MBTI deep dive, and LINE membership integration.",
+  "description": "A passport-style membership hub for MoonMoon Dessert with stamps, points, profile sync, invitations, and redemption flows.",
   "requestFramePermissions": []
 }
