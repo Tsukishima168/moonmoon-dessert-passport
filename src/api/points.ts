@@ -2,8 +2,10 @@ import { supabase } from '../lib/supabase';
 
 export interface PointLog {
     id: string;
-    amount: number;
-    reason: string;
+    points: number;
+    action: string;
+    description: string | null;
+    source: string | null;
     created_at: string;
 }
 
@@ -83,7 +85,7 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
         }
 
         const { data, error } = await supabase
-            .from('point_logs')
+            .from('point_transactions')
             .select('*')
             .eq('user_id', targetUuid)
             .order('created_at', { ascending: false });

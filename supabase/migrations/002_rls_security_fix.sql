@@ -2,7 +2,7 @@
 -- 002 — RLS Security Fix
 -- 2026-03-22
 -- 修正：所有 USING(true) 改為 auth.uid() 限定
--- 執行方式：貼到 Supabase SQL Editor 執行
+-- 實際執行：透過 Supabase MCP apply_migration
 -- ============================================
 
 -- ────────────────────────────────────────────
@@ -15,6 +15,8 @@ DROP POLICY IF EXISTS "invitation_select_public" ON invitations;
 DROP POLICY IF EXISTS "invitation_insert_public" ON invitations;
 DROP POLICY IF EXISTS "redemption_select_public" ON redemptions;
 DROP POLICY IF EXISTS "redemption_insert_public" ON redemptions;
+DROP POLICY IF EXISTS "allow_insert_transactions" ON point_transactions;
+DROP POLICY IF EXISTS "allow_select_transactions" ON point_transactions;
 
 -- ────────────────────────────────────────────
 -- 2. passports — 只能存取自己的護照
@@ -71,15 +73,15 @@ CREATE POLICY "redemption_insert_own" ON redemptions
   );
 
 -- ────────────────────────────────────────────
--- 5. point_logs — 啟用 RLS + auth.uid() 限定
+-- 5. point_transactions — 啟用 RLS + auth.uid() 限定
 -- ────────────────────────────────────────────
 
-ALTER TABLE point_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE point_transactions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "point_logs_select_own" ON point_logs
+CREATE POLICY "point_transactions_select_own" ON point_transactions
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "point_logs_insert_own" ON point_logs
+CREATE POLICY "point_transactions_insert_own" ON point_transactions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- ────────────────────────────────────────────
@@ -105,6 +107,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ────────────────────────────────────────────
 -- 7. RPC: adjust_points — 原子操作加減點數
 --    解決 read-then-write race condition
+--    寫入 point_transactions（非 point_logs）
 -- ────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION adjust_points(
@@ -131,24 +134,10 @@ BEGIN
     RETURN json_build_object('ok', false, 'error', 'Profile not found');
   END IF;
 
-  -- 寫入 point_logs
-  INSERT INTO point_logs (user_id, amount, reason)
-  VALUES (v_profile_id, p_amount, p_reason);
+  -- 寫入 point_transactions
+  INSERT INTO point_transactions (user_id, points, action, description, source)
+  VALUES (v_profile_id, p_amount, p_reason, p_reason, 'passport');
 
   RETURN json_build_object('ok', true, 'balance', v_new_points);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- ============================================
--- 驗證查詢（執行完後跑這些確認）
--- ============================================
-
--- 確認舊 policy 已移除、新 policy 已建立
--- SELECT schemaname, tablename, policyname, permissive, cmd, qual
--- FROM pg_policies
--- WHERE schemaname = 'public'
---   AND tablename IN ('passports', 'invitations', 'redemptions', 'point_logs');
-
--- 確認 point_logs RLS 已啟用
--- SELECT tablename, rowsecurity FROM pg_tables
--- WHERE schemaname = 'public' AND tablename = 'point_logs';
