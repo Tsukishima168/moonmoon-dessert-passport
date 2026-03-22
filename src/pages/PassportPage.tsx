@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getPassportById, type Passport } from '../api/passportSystem'
+import { getPassportPublic, type PassportPublic } from '../api/passportSystem'
 import PageHeader from '../components/PageHeader'
 
 export default function PassportPage() {
   const { id } = useParams<{ id: string }>()
-  const [passport, setPassport] = useState<Passport | null>(null)
+  const [passport, setPassport] = useState<PassportPublic | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!id) { setError('無效的護照連結'); setLoading(false); return }
-    getPassportById(id).then(({ data, error }) => {
+    getPassportPublic(id).then(({ data, error }) => {
       if (error || !data) setError('找不到護照')
       else setPassport(data)
       setLoading(false)

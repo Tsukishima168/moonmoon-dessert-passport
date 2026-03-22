@@ -1,60 +1,36 @@
 import React, { useState } from 'react'
-import { getPassportByNumber, redeemPudding, type Passport } from '../api/passportSystem'
+import { redeemPuddingStaff } from '../api/passportSystem'
 import PageHeader from '../components/PageHeader'
 
-const REDEEM_PASSWORD = 'MOONMOON2025'
-
 export default function RedeemPage() {
-  const [authed, setAuthed] = useState(false)
   const [pwInput, setPwInput] = useState('')
-  const [pwError, setPwError] = useState(false)
-
   const [passportNum, setPassportNum] = useState('')
-  const [passport, setPassport] = useState<Passport | null>(null)
-  const [looking, setLooking] = useState(false)
-  const [lookupError, setLookupError] = useState<string | null>(null)
-
   const [redeeming, setRedeeming] = useState(false)
   const [redeemSuccess, setRedeemSuccess] = useState(false)
   const [redeemError, setRedeemError] = useState<string | null>(null)
 
-  function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (pwInput === REDEEM_PASSWORD) {
-      setAuthed(true)
-    } else {
-      setPwError(true)
-      setPwInput('')
-    }
-  }
-
-  async function handleLookup(e: React.FormEvent) {
+  async function handleRedeem(e: React.FormEvent) {
     e.preventDefault()
     const num = parseInt(passportNum, 10)
-    if (!num || num < 1 || num > 100) { setLookupError('請輸入 1–100 的護照編號'); return }
-    setLooking(true)
-    setLookupError(null)
-    setPassport(null)
-    setRedeemSuccess(false)
+    if (!num || num < 1 || num > 100) { setRedeemError('請輸入 1–100 的護照編號'); return }
+    if (!pwInput.trim()) { setRedeemError('請輸入店員密碼'); return }
 
-    const { data, error } = await getPassportByNumber(num)
-    if (error || !data) setLookupError('找不到此護照編號')
-    else setPassport(data)
-    setLooking(false)
-  }
-
-  async function handleRedeem() {
-    if (!passport) return
     setRedeeming(true)
     setRedeemError(null)
 
-    const { error } = await redeemPudding({
-      passport_id: passport.id,
-      verified_by: 'staff',
+    const { error } = await redeemPuddingStaff({
+      passport_number: num,
+      staff_password: pwInput,
     })
 
     if (error) {
-      setRedeemError('寫入失敗，請再試')
+      const msgMap: Record<string, string> = {
+        'Invalid password': '密碼錯誤',
+        'Passport not found': '找不到此護照編號',
+        'Invite slots not full': '邀請尚未集滿',
+        'Already redeemed': '已兌換，無法重複使用',
+      }
+      setRedeemError(msgMap[error.message] ?? '寫入失敗，請再試')
       setRedeeming(false)
     } else {
       setRedeemSuccess(true)
@@ -62,42 +38,6 @@ export default function RedeemPage() {
     }
   }
 
-  const eligible = passport
-    ? passport.invite_slots_used >= passport.invite_slots_total && !passport.pudding_claimed
-    : false
-
-  // Step 1: Password
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-brand-bg font-sans flex items-center justify-center">
-        <PageHeader />
-        <div className="max-w-sm mx-auto px-5 w-full">
-          <p className="text-brand-black/40 text-xs tracking-widest uppercase mb-2">月島端驗證</p>
-          <h1 className="font-serif text-3xl text-brand-black mb-8">兌換驗證</h1>
-          <form onSubmit={handlePasswordSubmit}>
-            <input
-              type="password"
-              value={pwInput}
-              onChange={e => { setPwInput(e.target.value); setPwError(false) }}
-              placeholder="店員密碼"
-              className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-none placeholder:text-brand-black/30 mb-3"
-              autoComplete="current-password"
-              required
-            />
-            {pwError && <p className="text-red-400 text-xs mb-3 px-1">密碼錯誤</p>}
-            <button
-              type="submit"
-              className="w-full bg-brand-black text-brand-bg border border-brand-black rounded-full py-4 text-sm font-medium shadow-[2px_2px_0px_black]"
-            >
-              進入
-            </button>
-          </form>
-        </div>
-      </div>
-    )
-  }
-
-  // Step 2: Lookup + redeem
   return (
     <div className="min-h-screen bg-brand-bg font-sans">
       <PageHeader />
@@ -108,15 +48,23 @@ export default function RedeemPage() {
           <h1 className="font-serif text-3xl text-brand-black mt-2">護照兌換</h1>
         </div>
 
-        {/* Lookup */}
-        <form onSubmit={handleLookup} className="mb-6">
+        <form onSubmit={handleRedeem} className="space-y-3 mb-6">
+          <input
+            type="password"
+            value={pwInput}
+            onChange={e => { setPwInput(e.target.value); setRedeemError(null) }}
+            placeholder="店員密碼"
+            className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-none placeholder:text-brand-black/30"
+            autoComplete="current-password"
+            required
+          />
           <div className="flex gap-2">
             <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1">
               <span className="text-brand-bg/50 text-sm">#</span>
               <input
                 type="number"
                 value={passportNum}
-                onChange={e => setPassportNum(e.target.value)}
+                onChange={e => { setPassportNum(e.target.value); setRedeemError(null) }}
                 placeholder="001"
                 min={1}
                 max={100}
@@ -126,64 +74,19 @@ export default function RedeemPage() {
             </div>
             <button
               type="submit"
-              disabled={looking}
-              className="bg-brand-black text-brand-bg rounded-2xl px-6 text-sm disabled:opacity-40"
+              disabled={redeeming || redeemSuccess}
+              className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40"
             >
-              查詢
+              {redeeming ? '確認中...' : '確認兌換'}
             </button>
           </div>
-          {lookupError && <p className="text-red-400 text-xs mt-2 px-1">{lookupError}</p>}
+          {redeemError && <p className="text-red-400 text-xs px-1">{redeemError}</p>}
         </form>
 
-        {/* Passport info */}
-        {passport && (
-          <div className="bg-brand-black rounded-2xl p-6 mb-4">
-            <p className="text-brand-bg/40 text-xs tracking-widest uppercase mb-4">護照資訊</p>
-
-            <div className="space-y-2 mb-6">
-              <div className="flex justify-between text-sm">
-                <span className="text-brand-bg/50">編號</span>
-                <span className="text-brand-bg font-medium">#{String(passport.passport_number).padStart(3, '0')}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-brand-bg/50">持有人</span>
-                <span className="text-brand-bg">{passport.holder_name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-brand-bg/50">邀請進度</span>
-                <span className="text-brand-bg">{passport.invite_slots_used} / {passport.invite_slots_total}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-brand-bg/50">布丁兌換</span>
-                <span className={`font-medium ${passport.pudding_claimed ? 'text-brand-bg/40' : eligible ? 'text-brand-lime' : 'text-brand-bg/40'}`}>
-                  {passport.pudding_claimed ? '已兌換，無法重複使用' : eligible ? '可兌換' : '未達成'}
-                </span>
-              </div>
-            </div>
-
-            {eligible && !redeemSuccess && (
-              <>
-                {redeemError && <p className="text-red-400 text-xs mb-3">{redeemError}</p>}
-                <button
-                  onClick={handleRedeem}
-                  disabled={redeeming}
-                  className="w-full bg-brand-lime text-brand-black rounded-full py-3 text-sm font-medium disabled:opacity-40"
-                >
-                  {redeeming ? '確認中...' : '確認兌換布丁'}
-                </button>
-              </>
-            )}
-
-            {redeemSuccess && (
-              <div className="text-center py-2">
-                <p className="text-brand-lime font-medium">✓ 兌換完成</p>
-                <p className="text-brand-bg/40 text-xs mt-1">已寫入兌換紀錄</p>
-              </div>
-            )}
-
-            {!eligible && !redeemSuccess && (
-              <p className="text-brand-bg/40 text-sm text-center">此護照尚未達到兌換條件</p>
-            )}
+        {redeemSuccess && (
+          <div className="bg-brand-lime rounded-2xl p-6 text-center">
+            <p className="text-brand-black font-medium">✓ 兌換完成</p>
+            <p className="text-brand-black/50 text-xs mt-1">護照 #{passportNum.padStart(3, '0')} 已寫入兌換紀錄</p>
           </div>
         )}
 

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getPassportById, createInvitation, type Passport } from '../api/passportSystem'
+import { getPassportPublic, createInvitationPublic, type PassportPublic } from '../api/passportSystem'
 import PageHeader from '../components/PageHeader'
 
 export default function JoinPage() {
   const { passportId } = useParams<{ passportId: string }>()
-  const [passport, setPassport] = useState<Passport | null>(null)
+  const [passport, setPassport] = useState<PassportPublic | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [igHandle, setIgHandle] = useState('')
@@ -14,7 +14,7 @@ export default function JoinPage() {
 
   useEffect(() => {
     if (!passportId) { setError('無效的邀請連結'); setLoading(false); return }
-    getPassportById(passportId).then(({ data, error }) => {
+    getPassportPublic(passportId).then(({ data, error }) => {
       if (error || !data) { setError('找不到這張護照'); setLoading(false); return }
       if (data.status !== 'active') { setError('此護照已暫停使用'); setLoading(false); return }
       if (data.invite_slots_used >= data.invite_slots_total) { setError('此護照的邀請名額已滿'); setLoading(false); return }
@@ -28,7 +28,7 @@ export default function JoinPage() {
     const handle = igHandle.replace(/^@/, '').trim()
     if (!handle || !passportId) return
     setSubmitting(true)
-    const { error } = await createInvitation({ from_passport_id: passportId, invitee_contact: handle, invitee_contact_type: 'ig' })
+    const { error } = await createInvitationPublic({ passport_id: passportId, contact: handle, contact_type: 'ig' })
     if (error) {
       setError('送出失敗，請稍後再試')
       setSubmitting(false)

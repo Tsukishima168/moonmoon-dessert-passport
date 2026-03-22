@@ -15,72 +15,69 @@ export interface Passport {
   user_id: string | null
 }
 
-export async function getPassportById(id: string): Promise<{ data: Passport | null; error: Error | null }> {
-  if (!supabase) return { data: null, error: new Error('Supabase not configured') }
-  const { data, error } = await supabase
-    .from('passports')
-    .select('*')
-    .eq('id', id)
-    .single()
-  return { data: data as Passport | null, error: error as Error | null }
+// ── Public Passport（只含公開欄位，不含 contact / user_id）──
+export interface PassportPublic {
+  id: string
+  passport_number: number
+  holder_name: string
+  status: 'active' | 'suspended'
+  invite_slots_total: number
+  invite_slots_used: number
+  pudding_claimed: boolean
 }
 
-export async function getPassportByNumber(num: number): Promise<{ data: Passport | null; error: Error | null }> {
-  if (!supabase) return { data: null, error: new Error('Supabase not configured') }
-  const { data, error } = await supabase
-    .from('passports')
-    .select('*')
-    .eq('passport_number', num)
-    .single()
-  return { data: data as Passport | null, error: error as Error | null }
+interface RpcResult {
+  ok: boolean
+  error?: string
+  data?: PassportPublic
+  invitation_id?: string
+  passport_number?: number
+  holder_name?: string
 }
 
-export async function createInvitation(params: {
-  from_passport_id: string
-  invitee_contact: string
-  invitee_contact_type: 'line' | 'ig'
-}): Promise<{ data: unknown; error: Error | null }> {
+// ── RPC: get_passport_public ──
+export async function getPassportPublic(id: string): Promise<{ data: PassportPublic | null; error: Error | null }> {
   if (!supabase) return { data: null, error: new Error('Supabase not configured') }
-  const { data, error } = await supabase
-    .from('invitations')
-    .insert({
-      from_passport_id: params.from_passport_id,
-      invitee_contact: params.invitee_contact,
-      invitee_contact_type: params.invitee_contact_type,
-      status: 'approved',
-      auto_approved_reason: 'trusted_referral',
-      approved_at: new Date().toISOString(),
-    })
-    .select()
-    .single()
-  return { data, error: error as Error | null }
+  const { data, error } = await supabase.rpc('get_passport_public', { p_id: id })
+  if (error) return { data: null, error: error as Error }
+  const result = data as RpcResult
+  if (!result.ok) return { data: null, error: new Error(result.error ?? 'Unknown error') }
+  return { data: result.data ?? null, error: null }
 }
 
-export async function redeemPudding(params: {
+// ── RPC: create_invitation_public ──
+export async function createInvitationPublic(params: {
   passport_id: string
-  verified_by: string
-}): Promise<{ data: unknown; error: Error | null }> {
+  contact: string
+  contact_type: 'line' | 'ig'
+}): Promise<{ data: { invitation_id: string } | null; error: Error | null }> {
   if (!supabase) return { data: null, error: new Error('Supabase not configured') }
+  const { data, error } = await supabase.rpc('create_invitation_public', {
+    p_passport_id: params.passport_id,
+    p_contact: params.contact,
+    p_contact_type: params.contact_type,
+  })
+  if (error) return { data: null, error: error as Error }
+  const result = data as RpcResult
+  if (!result.ok) return { data: null, error: new Error(result.error ?? 'Unknown error') }
+  return { data: { invitation_id: result.invitation_id! }, error: null }
+}
 
-  // 1. INSERT redemption record
-  const { error: insertError } = await supabase
-    .from('redemptions')
-    .insert({
-      passport_id: params.passport_id,
-      reward_type: 'pudding',
-      verified_by: params.verified_by,
-      source: 'passport',
-    })
-
-  if (insertError) return { data: null, error: insertError as Error }
-
-  // 2. UPDATE passport pudding_claimed = true
-  const { data, error: updateError } = await supabase
-    .from('passports')
-    .update({ pudding_claimed: true })
-    .eq('id', params.passport_id)
-    .select()
-    .single()
-
-  return { data, error: updateError as Error | null }
+// ── RPC: redeem_pudding_staff ──
+export async function redeemPuddingStaff(params: {
+  passport_number: number
+  staff_password: string
+}): Promise<{ data: { passport_number: number; holder_name: string } | null; error: Error | null }> {
+  if (!supabase) return { data: null, error: new Error('Supabase not configured') }
+  const { data, error } = await supabase.rpc('redeem_pudding_staff', {
+    p_passport_number: params.passport_number,
+    p_staff_password: params.staff_password,
+  })
+  if (error) return { data: null, error: error as Error }
+  const result = data as RpcResult
+  if (!result.ok) return { data: null, error: new Error(result.error ?? 'Unknown error') }
+  return {
+    data: { passport_number: result.passport_number!, holder_name: result.holder_name! },
+    error: null,
+  }
 }
