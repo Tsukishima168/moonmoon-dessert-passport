@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
-import { Sparkles, BookOpen, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
+import { Sparkles, BookOpen, ArrowUpRight, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
 import { Screen } from './types';
 import { BRANDING } from './constants';
-import { Button } from './components/Button';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
 import {
@@ -113,87 +112,53 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
   const illustration = BRANDING.LANDING_ILLUSTRATION;
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col relative overflow-hidden bg-[#FAFAF8]">
-      <div className="h-full w-full max-w-[1400px] mx-auto flex flex-col relative">
-        <div className="flex-none pt-28 md:pt-32 px-4 z-10 relative flex flex-col items-center">
-          <div className="text-center space-y-5 max-w-xl mx-auto">
-            <p className="text-[11px] font-black uppercase tracking-[0.26em] text-brand-black/45">
-              Kiwimu Moon Moon Passport
-            </p>
-            <p className="text-[11px] font-black uppercase tracking-[0.32em] text-brand-black/40">
-              Passport No. {passportCoverNumber}
-            </p>
-            <h1 className="text-7xl sm:text-8xl md:text-9xl font-serif font-black text-brand-black leading-none tracking-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
-              PASSPORT
-            </h1>
-            <p className="text-sm md:text-base font-semibold text-brand-black/70 leading-relaxed">
-              把你在月島的任務、集章、積分與會員福利，
-              <br />
-              都收進這本屬於你的護照。
-            </p>
-          </div>
+    <div className="relative h-[100dvh] overflow-hidden bg-[#F7F5EF] text-brand-black">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(255,255,255,0.96)_0%,rgba(247,245,239,0.84)_42%,rgba(247,245,239,1)_78%)]" />
+      <div className="absolute inset-x-0 top-0 h-[28vh] bg-[linear-gradient(180deg,rgba(255,255,255,0.74)_0%,rgba(255,255,255,0)_100%)]" />
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col px-5 pb-8 pt-24 md:px-8 md:pb-10 md:pt-28">
+        <div className="max-w-[240px] md:max-w-[420px] animate-fade-in">
+          <p className="text-[10px] font-black uppercase tracking-[0.34em] text-brand-black/35 md:text-[11px]">
+            Kiwimu
+          </p>
+          <h1 className="mt-3 text-[2.5rem] font-black leading-[0.94] tracking-[-0.06em] text-brand-black md:text-[4.8rem]">
+            Moon Moon Passport
+          </h1>
+          <p className="mt-3 max-w-[14rem] text-sm font-medium leading-relaxed text-brand-black/62 md:mt-4 md:max-w-[18rem] md:text-base">
+            你的 MBTI、集章紀錄與積分，都住在這本護照裡。
+          </p>
+          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-brand-black/28 md:text-[11px]">
+            No. {passportCoverNumber}
+          </p>
         </div>
 
-        <div className="absolute bottom-0 md:-bottom-10 lg:-bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] md:max-w-[700px] lg:max-w-[900px] flex justify-center z-0 animate-fade-in pointer-events-none">
-          {illustration ? (
+        <div className="relative flex-1">
+          <div className="absolute inset-x-[-10%] bottom-16 top-8 flex items-center justify-center md:inset-x-0 md:bottom-10 md:top-0">
             <img
               src={illustration}
-              alt="Mascot"
-              className="w-full h-auto object-contain drop-shadow-2xl max-h-[50vh] md:max-h-[60vh]"
+              alt="Kiwimu illustration background"
+              className="h-full max-h-[72vh] w-full object-contain object-center opacity-[0.82] drop-shadow-[0_28px_48px_rgba(17,17,17,0.08)] animate-fade-in"
               loading="eager"
-              fetchpriority="high"
+              fetchPriority="high"
             />
-          ) : (
-            <div className="w-full h-[50vh] flex items-center justify-center text-gray-300 font-bold text-4xl opacity-20 rotate-12">
-              MOON MOON
-            </div>
-          )}
+          </div>
         </div>
 
-        <div className="flex-1 w-full relative flex items-end justify-center pb-8 md:pb-12 z-30">
-          <div className="relative w-full max-w-[360px] px-4 pointer-events-auto">
-            <div className="bg-white/88 backdrop-blur-xl border-2 border-brand-black p-5 md:p-6 rounded-[2.5rem] shadow-[6px_6px_0px_black] text-center">
-              <div className="mb-5 rounded-[1.75rem] border border-brand-black/15 bg-brand-black/[0.03] p-4 text-left">
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">持有人</p>
-                    <p className="mt-1 text-sm font-bold text-brand-black">月島旅人</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">用途</p>
-                    <p className="mt-1 text-sm font-bold text-brand-black">集章積分</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">狀態</p>
-                    <p className="mt-1 text-sm font-bold text-brand-black">等待開啟</p>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mb-6 text-xs font-semibold leading-relaxed text-brand-black/70">
-                第一次開啟後，就能同步你的任務進度、印章與會員足跡。
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={() => {
-                    trackButtonClick('open_passport', 'landing_cover');
-                    onOpenPassport();
-                  }}
-                  variant="black"
-                  size="lg"
-                  fullWidth
-                  className="rounded-full shadow-lg text-base h-14 group hover:scale-[1.02] transition-all duration-300"
-                >
-                  <BookOpen className="mr-2 w-5 h-5" />
-                  打開我的護照
-                </Button>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-black/40">
-                  Open to view stamps, points and member rewards
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-col items-center gap-2 self-center pointer-events-auto md:self-start">
+          <button
+            onClick={() => {
+              trackButtonClick('open_passport', 'landing_cover');
+              onOpenPassport();
+            }}
+            className="group inline-flex items-center gap-2 rounded-full border border-brand-black/12 bg-white/84 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_10px_28px_rgba(17,17,17,0.08)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/26 hover:bg-white"
+            aria-label="打開我的護照"
+          >
+            <BookOpen className="h-4 w-4 text-brand-black" />
+            <span>打開我的護照</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-brand-black/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </button>
+          <p className="text-[10px] font-bold tracking-[0.16em] text-brand-black/30">
+            身份 · 印章 · 積分
+          </p>
         </div>
       </div>
     </div>
@@ -442,7 +407,7 @@ function App() {
           const result = await consumeRewardClaim(claimCodeParam, rewardParam);
 
           if (!result.ok) {
-            const errorReason = (result as any).reason;
+            const errorReason = 'reason' in result ? (result as { reason: string }).reason : 'unknown';
             console.error('Reward claim failed:', errorReason);
             trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam, stamp_id: rewardTarget.stampId });
 

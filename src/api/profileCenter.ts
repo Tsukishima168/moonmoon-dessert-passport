@@ -162,40 +162,19 @@ export async function saveProfileCenterDraftToProfile(
     };
   }
 
-  let resolved = await fetchProfileRow({
+  const resolved = await fetchProfileRow({
     authUserId: params.authUserId,
     lineUserId: params.lineUserId,
   });
-
   if (!resolved) {
-    // 首次使用：嘗試以 authUserId 建立 profiles row
-    const displayName = params.draft.displayName.trim();
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id: params.authUserId,
-        ...(params.lineUserId ? { line_user_id: params.lineUserId } : {}),
-        ...(displayName ? { full_name: displayName } : {}),
-        is_mbti_public: params.draft.isMbtiPublic,
-        is_footprint_public: params.draft.isFootprintPublic,
-        favorite_character_id: params.draft.favoriteCharacterId,
-        passport_title_id: params.draft.passportTitleId,
-      });
-
-    if (insertError) {
-      console.error('[profileCenter] Failed to insert new profile row:', insertError);
-      return {
-        syncStatus: {
-          tone: 'error',
-          message: `建立 shared profiles 失敗：${insertError.message}`,
-        },
-      };
-    }
-
+    console.warn('[profileCenter] No shared profile row found for save.', {
+      authUserId: params.authUserId,
+      lineUserId: params.lineUserId || null,
+    });
     return {
       syncStatus: {
-        tone: 'success',
-        message: '首次建立 shared profiles 完成，重新整理後可讀回設定。',
+        tone: 'warning',
+        message: '找不到 shared profiles 對應列，這次只存到本機草稿。',
       },
     };
   }

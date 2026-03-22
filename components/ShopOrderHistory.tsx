@@ -97,7 +97,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
   }, [userId]);
 
   const handleOpenShop = () => {
-    const outboundUrl = new URL(LINKS.NAVIGATION);
+    const outboundUrl = new URL('https://shop.kiwimu.com');
     outboundUrl.pathname = '/menu';
     outboundUrl.searchParams.set('from', 'passport');
     window.open(outboundUrl.toString(), '_blank');

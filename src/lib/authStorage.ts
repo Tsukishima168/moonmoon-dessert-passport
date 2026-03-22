@@ -58,7 +58,10 @@ export function createCookieStorage() {
 
 export function getOAuthRedirectUrl() {
   const configured = import.meta.env.VITE_SUPABASE_AUTH_REDIRECT_URL as string | undefined;
-  return configured || window.location.origin;
+  if (configured) return configured;
+  // Ensure trailing slash so Supabase wildcard patterns (/**) match correctly
+  const origin = window.location.origin;
+  return origin.endsWith('/') ? origin : `${origin}/`;
 }
 
 const ACTIVE_REDIRECT_KEY = 'auth_redirect_to';

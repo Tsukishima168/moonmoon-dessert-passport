@@ -10,7 +10,7 @@ export interface LiffContextType {
         pictureUrl?: string;
         statusMessage?: string;
     } | null;
-    error: any;
+    error: unknown;
     login: () => void;
     logout: () => void;
 }
@@ -21,7 +21,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [liffObject, setLiffObject] = useState<typeof liff | null>(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [profile, setProfile] = useState<LiffContextType['profile']>(null);
-    const [error, setError] = useState<any>(null);
+    const [error, setError] = useState<unknown>(null);
     const [liffReady, setLiffReady] = useState(false);  // P0 優化：標記 LIFF 是否就緒（非阻塞）
 
     // Get LIFF ID from environment variable

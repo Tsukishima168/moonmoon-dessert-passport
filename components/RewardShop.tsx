@@ -13,7 +13,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     X,
-    Coins,
     CircleAlert,
 } from 'lucide-react';
 import { getPassportPointsBalance, redeemItem } from '../passportUtils';
@@ -145,22 +144,17 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
             )}
 
             {/* 主要介面 */}
-            <div style={{ padding: '16px 16px 32px', maxWidth: 480, margin: '0 auto' }}>
+            <div className="px-4 pb-8 max-w-[480px] mx-auto">
                 {/* 標題列 */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div className="flex items-center justify-between mb-5">
                     <div>
-                        <h2 style={{ margin: 0, fontSize: 22, color: '#3d2c00' }}>會員福利</h2>
-                        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9e7b3a' }}>使用積分兌換甜點與專屬福利</p>
+                        <h2 className="text-xl font-black text-brand-black">會員福利</h2>
+                        <p className="mt-1 text-[13px] text-brand-black/60 font-medium">使用積分兌換甜點與專屬福利</p>
                     </div>
                     {onClose && (
                         <button
                             onClick={onClose}
-                            style={{
-                                width: 36, height: 36, borderRadius: 18,
-                                border: 'none', background: '#f5f5f5',
-                                cursor: 'pointer', color: '#666',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}
+                            className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors"
                         >
                             <X size={18} />
                         </button>
@@ -168,36 +162,15 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 </div>
 
                 {errorMessage && (
-                    <div
-                        style={{
-                            marginBottom: 16,
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 10,
-                            borderRadius: 16,
-                            border: '1px solid #fecaca',
-                            background: '#fef2f2',
-                            color: '#b91c1c',
-                            padding: '12px 14px',
-                        }}
-                    >
-                        <CircleAlert size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-                        <div style={{ flex: 1, fontSize: 13, lineHeight: 1.5, fontWeight: 600 }}>
+                    <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 text-red-700 px-3.5 py-3">
+                        <CircleAlert size={18} className="shrink-0 mt-0.5" />
+                        <div className="flex-1 text-[13px] leading-relaxed font-semibold">
                             {errorMessage}
                         </div>
                         <button
                             type="button"
                             onClick={() => setErrorMessage(null)}
-                            style={{
-                                border: 'none',
-                                background: 'transparent',
-                                color: '#b91c1c',
-                                cursor: 'pointer',
-                                padding: 0,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
+                            className="text-red-700 p-0 bg-transparent border-none cursor-pointer flex items-center justify-center"
                             aria-label="關閉錯誤訊息"
                         >
                             <X size={16} />
@@ -209,19 +182,16 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 <KiwimuRewardBalanceCard points={userPoints} />
 
                 {/* 篩選器 */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                <div className="flex gap-2 mb-5">
                     {(['all', 'drink', 'dessert', 'merch'] as const).map(type => (
                         <button
                             key={type}
                             onClick={() => setFilter(type)}
-                            style={{
-                                flex: 1, padding: '8px 0', borderRadius: 10,
-                                border: `2px solid ${filter === type ? '#ffa000' : '#e0e0e0'}`,
-                                background: filter === type ? '#fff9f0' : '#fff',
-                                color: filter === type ? '#e65100' : '#9e9e9e',
-                                fontWeight: filter === type ? 700 : 500,
-                                fontSize: 13, cursor: 'pointer', transition: 'all 0.15s',
-                            }}
+                            className={`flex-1 py-2 rounded-xl border-2 text-[13px] cursor-pointer transition-all ${
+                                filter === type
+                                    ? 'border-brand-black bg-brand-lime font-bold text-brand-black'
+                                    : 'border-gray-200 bg-white font-medium text-gray-400 hover:border-gray-300'
+                            }`}
                         >
                             {type === 'all'
                                 ? '全部'
@@ -235,7 +205,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 </div>
 
                 {/* 商品列表 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="grid grid-cols-2 gap-3">
                     {filteredRewards.map(reward => (
                         <KiwimuRewardCard
                             key={reward.id}
@@ -247,12 +217,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 </div>
 
                 {/* 說明文字 */}
-                <p
-                    style={{
-                        marginTop: 24, textAlign: 'center', fontSize: 12,
-                        color: '#bdbdbd', lineHeight: 1.6,
-                    }}
-                >
+                <p className="mt-6 text-center text-xs text-gray-400 leading-relaxed">
                     積分可透過每日簽到、完成任務與消費累積。<br />
                     兌換時請出示此畫面給店員確認。
                 </p>
