@@ -8,7 +8,7 @@ import {
     Sparkles,
     BookOpen,
 } from 'lucide-react';
-import { MOONMOON_SITES } from '../constants';
+import { MOONMOON_SITES, DESSERTS } from '../constants';
 import { useLiff } from '../src/contexts/LiffContext';
 import { getVisitedSites, markSiteVisited, getPassportState } from '../passportUtils';
 import { trackEvent, trackOutboundNavigation } from '../analytics';
@@ -23,13 +23,9 @@ const IconMap: Record<string, any> = {
     Dices
 };
 
-// MBTI 類型對應甜點標籤（用於顯示，不做商業邏輯）
-const MBTI_DESSERT_LABEL: Record<string, string> = {
-    INTJ: '黑巧克力塔', INTP: '伯爵奶酪', ENTJ: '焦糖布丁', ENTP: '檸檬塔',
-    INFJ: '抹茶生乳酪', INFP: '草莓千層', ENFJ: '焦糖蘋果派', ENFP: '蜂蜜可麗露',
-    ISTJ: '經典烤布丁', ISFJ: '提拉米蘇', ESTJ: '拿破崙酥', ESFJ: '草莓蛋糕捲',
-    ISTP: '海鹽可可餅', ISFP: '玫瑰荔枝凍', ESTP: '焦糖爆米花塔', ESFP: '繽紛馬卡龍',
-};
+// 從 DESSERTS 動態查找甜點名稱，確保與 constants.tsx 同步
+const getMbtiDessertLabel = (mbtiType: string): string =>
+    DESSERTS.find(d => d.mbti === mbtiType)?.name ?? mbtiType;
 
 interface MemberHubProps {
     onProfileSnapshotChange?: (snapshot: {
@@ -140,7 +136,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                                 icon={<BrainCircuit size={16} className="text-brand-black" />}
                                 eyebrow="靈魂甜點"
                                 title={mbtiType}
-                                subtitle={MBTI_DESSERT_LABEL[mbtiType]}
+                                subtitle={getMbtiDessertLabel(mbtiType)}
                             />
                         )}
                         {stampCount > 0 && (

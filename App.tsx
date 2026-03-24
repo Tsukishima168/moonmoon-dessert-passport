@@ -270,16 +270,14 @@ function App() {
         try {
           localStorage.setItem('moonmoon_passport', JSON.stringify({
             unlockedStamps: [
+              'shop_checkin',
               'quiz_completed',
               'ig_followed',
               'line_joined',
+              'order_with_staff',
               'secret_qr_1',
               'secret_qr_2',
-              'social_share',
-              'order_with_staff',
-              'mbti_completed',
               'google_review',
-              'referral_share'
             ],
             redeemedRewards: [],
             createdAt: Date.now(),
@@ -328,7 +326,7 @@ function App() {
         const upperType = mbtiType.toUpperCase();
 
         if (validTypes.includes(upperType)) {
-          unlockStamp('mbti_completed');
+          unlockStamp('quiz_completed');
 
           // Save result
           try {
@@ -341,11 +339,11 @@ function App() {
           }
 
           trackEvent('stamp_unlocked', {
-            stamp_id: 'mbti_completed',
+            stamp_id: 'quiz_completed',
             method: 'auto_unlock_url',
             mbti_result: upperType
           });
-          trackUserEvent('stamp_earned', { stamp_id: 'mbti_completed', method: 'mbti', mbti_type: upperType });
+          trackUserEvent('stamp_earned', { stamp_id: 'quiz_completed', method: 'mbti', mbti_type: upperType });
 
           stampUnlocked = true;
         }
@@ -359,8 +357,8 @@ function App() {
           trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
           stampUnlocked = true;
         } else if (stampParam === 'mbti_complete' || stampParam === 'mbti') {
-          unlockStamp('mbti_completed');
-          trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'url' });
+          unlockStamp('quiz_completed');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'url' });
           stampUnlocked = true;
         } else if (stampParam === 'secret1') {
           unlockStamp('secret_qr_1');
@@ -381,8 +379,8 @@ function App() {
       if (claimParam) {
         const result = await consumeMbtiClaim(claimParam);
         if (result.ok) {
-          unlockStamp('mbti_completed');
-          trackEvent('stamp_auto_unlocked', { stamp_id: 'mbti_completed', source: 'mbti_claim' });
+          unlockStamp('quiz_completed');
+          trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'mbti_claim' });
           trackEvent('stamp_claim', { status: 'success', source: 'mbti_claim' });
           stampUnlocked = true;
         } else if ('reason' in result) {
