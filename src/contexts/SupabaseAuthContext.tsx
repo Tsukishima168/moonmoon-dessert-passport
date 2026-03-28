@@ -53,40 +53,56 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       clearPendingRedirectTo();
     }
 
+    const authFlowError =
+      params.get('error_description') ||
+      params.get('error');
+    if (authFlowError) {
+      setError(authFlowError);
+    }
+
     const client = supabase;
     if (!client) {
       setLoading(false);
       return;
     }
 
-    // 初始取得 session
-    client.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
+    const handleSignedInUser = (currentUser: User | null) => {
+      setUser(currentUser);
       setLoading(false);
 
-      if (user) {
-        const pendingRedirect = getAndClearPendingRedirectTo();
-        if (pendingRedirect) {
-          window.location.href = pendingRedirect;
-          return;
-        }
-
-        // 已登入 + 有待跳轉網址 → 直接過去
-        const redirectTo = getAndClearRedirectTo();
-        if (redirectTo) {
-          window.location.href = redirectTo;
-          return;
-        }
-        if (window.location.pathname === '/auth/callback') {
-          window.history.replaceState({}, '', '/');
-        }
+      if (!currentUser) {
+        return;
       }
+
+      const pendingRedirect = getAndClearPendingRedirectTo();
+      if (pendingRedirect) {
+        window.location.href = pendingRedirect;
+        return;
+      }
+
+      const redirectTo = getAndClearRedirectTo();
+      if (redirectTo) {
+        window.location.href = redirectTo;
+        return;
+      }
+
+      if (window.location.pathname === '/auth/callback') {
+        window.history.replaceState({}, '', '/');
+      }
+    };
+
+    // 初始取得 session
+    client.auth.getSession().then(({ data: { session }, error: sessionError }) => {
+      if (sessionError) {
+        setError(sessionError.message);
+      }
+      handleSignedInUser(session?.user ?? null);
     });
 
     // 監聽 auth 狀態變化
     const { data: { subscription } } = client.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
-      setUser(currentUser);
+      handleSignedInUser(currentUser);
 
       if (currentUser) {
         // Always ensure the deviceId points to the logged in user
@@ -96,16 +112,6 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         // 記錄活躍時間（fire-and-forget）
         client.rpc('update_last_seen', { p_site: 'passport' }).then(() => {});
-
-        // 登入完成 → 若有跨站跳轉目標，過去
-        const redirectTo = getAndClearRedirectTo();
-        if (redirectTo) {
-          window.location.href = redirectTo;
-          return;
-        }
-        if (window.location.pathname === '/auth/callback') {
-          window.history.replaceState({}, '', '/');
-        }
       }
     });
 
