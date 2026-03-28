@@ -334,7 +334,7 @@ export const DESSERTS: DessertRecommendation[] = [
     id: 'INFP', mbti: 'INFP', name: '北海道十勝戚風蛋糕', series: '戚風', style: '經典',
     hook: '輕盈柔軟的著陸點，在銳利的世界裡提供一場溫柔的安放。',
     drink_stable: '博士茶', drink_sensitive: '花草茶', replacement: '檸檬蘋果戚風;莓果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/CHIFFON_LEMON_ppn6t3.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923719/dessert/menu_item_8e59b833-853a-4164-b747-6382c4bd7658.webp'
   },
   {
     id: 'ENFJ', mbti: 'ENFJ', name: '檸檬蘋果戚風蛋糕', series: '戚風', style: '亮色',
@@ -382,13 +382,13 @@ export const DESSERTS: DessertRecommendation[] = [
     id: 'ISFP', mbti: 'ISFP', name: '抹茶提拉米蘇', series: '提拉米蘇', style: '深色',
     hook: '細膩美感的微苦回甘，用最溫柔的方式對抗世界的喧囂。',
     drink_stable: '日本柚子美式', drink_sensitive: '花草茶', replacement: '經典提拉米蘇;奶酒提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/TIRAMISU_CLASSIC_puzwyg.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923727/dessert/menu_item_212f556e-502a-4e5a-90bb-e77e7b92f7ba.webp'
   },
   {
     id: 'ESTP', mbti: 'ESTP', name: '巧克力布朗尼千層', series: '千層', style: '深色',
     hook: '極致感官的爆發體驗，追求速度與最直白的生命熱情。',
     drink_stable: '西西里美式', drink_sensitive: '焙茶拿鐵', replacement: '經典十勝原味千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/MILLE_CREPE_CLASSIC_ofjcvq.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923691/dessert/menu_item_d323bd72-12ff-4bbb-9533-16fac4d08bba.webp'
   },
   {
     id: 'ESFP', mbti: 'ESFP', name: '綜合水果戚風蛋糕', series: '戚風', style: '果香',
