@@ -16,6 +16,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('[Supabase] Missing env vars. Points will be localStorage-only until env is set.');
 }
 
+// Share auth state across *.kiwimu.com while keeping large session payloads readable.
 const cookieStorage = createCookieStorage();
 
 export const supabase: SupabaseClient | null = supabaseUrl && supabaseAnonKey
