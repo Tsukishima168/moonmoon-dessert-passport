@@ -13,6 +13,17 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-supabase-line': ['@supabase/supabase-js', '@line/liff'],
+            'vendor-icons': ['lucide-react'],
+          },
+        },
+      },
+    },
     plugins: [
       react(),
       ...(!disablePwa ? [VitePWA({
