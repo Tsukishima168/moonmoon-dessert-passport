@@ -7,9 +7,9 @@
 <!-- SYNC:BEGIN -->
 sync_id: moonmoon_dessert_passport
 project_name: moonmoon-dessert-passport
-repo_path: /Users/pensoair/Desktop/網路開發專案/moonmoon-dessert-passport
+repo_path: /Users/pensoair/Desktop/Web-Projects/sites/passport-kiwimu-com
 obsidian_card: /Users/pensoair/Library/Mobile Documents/iCloud~md~obsidian/Documents/Penso-OS/08_專案工坊/Subdomain_passport.kiwimu.com/Dessert_Passport_專案.md
-progress_file: /Users/pensoair/Desktop/網路開發專案/moonmoon-dessert-passport/PROJECT_PROGRESS.md
+progress_file: /Users/pensoair/Desktop/Web-Projects/sites/passport-kiwimu-com/PROJECT_PROGRESS.md
 source_of_truth: obsidian
 last_synced: 2026-03-03T19:14:01+08:00
 sync_status: synced
