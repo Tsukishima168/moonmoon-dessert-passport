@@ -38,7 +38,7 @@ Vercel 建議值：
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_GA4_ID`
 - `VITE_LIFF_ID`
-- `VITE_SUPABASE_AUTH_REDIRECT_URL`
+- `VITE_SUPABASE_AUTH_REDIRECT_URL`（可選，未提供時 fallback 到目前網域 `/`）
 
 若你使用 moon island 共用 env 名稱，也可改填：
 
@@ -47,7 +47,9 @@ Vercel 建議值：
 
 說明：
 - 缺少 Supabase env 時，頁面仍可載入，但登入、點數同步、claim RPC 與部分雲端資料會不可用。
+- `VITE_SUPABASE_AUTH_REDIRECT_URL` 不是硬性必填；真正需要核對的是 Supabase Auth 的 Redirect URLs 是否包含正式網域與 callback 用法。
 - 缺少 LIFF ID 時，LINE profile 自動帶入不會啟動。
+- 除了本 repo 的 migration，正式環境還需具備 shared backend RPC，例如 `update_last_seen`、`insert_user_event`、`upsert_point_transaction`。
 
 ## 4. GA4 設定
 
@@ -86,13 +88,14 @@ Vercel 建議值：
 
 ### 登入跳轉錯誤
 
-- 檢查 `VITE_SUPABASE_AUTH_REDIRECT_URL`
-- 檢查 Supabase Auth 的 Redirect URLs 是否包含正式網域
+- 先檢查 Supabase Auth 的 Redirect URLs 是否包含正式網域
+- 若要固定 callback 來源，再檢查 `VITE_SUPABASE_AUTH_REDIRECT_URL`
 
 ### 頁面正常但資料沒有同步
 
 - 檢查 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 - 檢查 Supabase RLS 與 RPC 是否已部署到正式環境
+- 檢查 shared backend RPC `update_last_seen`、`insert_user_event`、`upsert_point_transaction` 是否存在
 
 ### LIFF 沒有帶入使用者
 

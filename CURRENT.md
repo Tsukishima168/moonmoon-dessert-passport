@@ -1,14 +1,19 @@
 # CURRENT.md — passport.kiwimu.com
 
-## Snapshot · 2026-04-01
+## Snapshot · 2026-04-08
 
-Status: `可驗證交付候選`
+Status: `本機可驗證，production auth 待真人關閉`
 
 已完成驗證：
 - `npm run build` 通過
 - `npm run preview -- --host 127.0.0.1 --port 3102` 可啟動
 - `curl -I http://127.0.0.1:3102/` → `200 OK`
 - `curl -I http://127.0.0.1:3102/redeem` → `200 OK`
+- `curl -I -L https://passport.kiwimu.com/` → `200 OK`
+- `curl -I -L https://passport.kiwimu.com/redeem` → `200 OK`
+- `curl -I -L https://passport.kiwimu.com/passport/test-id` → `200 OK`
+- public RPC `get_passport_public` 已讀回有效護照資料
+- public RPC `redeem_pudding_staff` 已驗證錯誤分支可正確回 `Invalid password`
 - 已補 `manualChunks`，主 bundle 從單一 `676.81 kB` 拆為：
   - `index` `312.36 kB`
   - `vendor-supabase-line` `294.08 kB`
@@ -17,15 +22,17 @@ Status: `可驗證交付候選`
 
 ## 目前 Blockers
 
-1. `Google OAuth` / `Magic Link` / `LIFF` redirect 仍需真人在實際網域與真實憑證下驗證。
-2. `/passport/:id`、`/join/:passportId`、`/redeem` 需要真實資料與店員端流程驗證。
-3. 與 `shop.kiwimu.com` 的 shared profile / points 同步仍需跨站真人 smoke。
-4. worktree 內有既存變動：`PROJECT_PROGRESS.md` 已修改，這次未處理。
+1. `Google OAuth` / `Magic Link` 仍需真人在正式網域驗證 callback 與 session 保持；程式會 fallback 到 `https://passport.kiwimu.com/`，但 Supabase Auth Redirect URLs 白名單仍要確認。
+2. 已確認 Vercel production env 目前只有 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_GA4_ID`；缺少 `VITE_SUPABASE_AUTH_REDIRECT_URL` 與 `VITE_LIFF_ID`。
+3. production 目前未帶 `VITE_LIFF_ID`；LIFF 在 live 站是關閉狀態，不是 auth 主 blocker，但 LINE 內流程目前不能宣稱已通。
+4. `/passport/:id`、`/join/:passportId`、`/redeem` 成功路徑仍需真實資料與店員端流程驗證。
+5. 與 `shop.kiwimu.com` 的 shared profile / points 同步仍需跨站真人 smoke；點數同步要求真實 Supabase session。
 
 ## 最小交付清單
 
 - 本機 build/preview/smoke 可重現：已完成
-- landing 與 redeem 基本路由可回應：已完成
+- landing / passport / join / redeem 基本路由可回應：已完成
+- live public route 與 public RPC 基本可達：已完成
 - auth 進入與 callback 回跳驗證：待完成
 - public passport / join / redeem 真人路徑驗證：待完成
 - cross-site profile / points sync 驗證：待完成
@@ -33,10 +40,11 @@ Status: `可驗證交付候選`
 
 ## 今晚可以直接做的項目
 
-- 若有測試 `passportId`，本機 smoke `/passport/:id` 與 `/join/:passportId`
+- 到 Supabase Dashboard 確認 Redirect URLs 至少包含 `https://passport.kiwimu.com/`
+- 在 Vercel 明確補上 `VITE_SUPABASE_AUTH_REDIRECT_URL=https://passport.kiwimu.com/`
+- 若要打開 LINE 流程，再補 `VITE_LIFF_ID`
 - 用測試帳號做一次 `Google OAuth` 或 `Magic Link` 回跳驗證
 - 用 staff 測試資料做一次 redeem flow 與 Supabase 寫入驗證
-- 補一份 route 截圖與 QA 紀錄，方便交付
 
 ## 需要真人參與的驗證項目
 
@@ -44,4 +52,3 @@ Status: `可驗證交付候選`
 - `Google OAuth` / `Magic Link` 在實際網域的 callback
 - 真實會員邀請加入流程
 - 店員端實際核銷流程
-
