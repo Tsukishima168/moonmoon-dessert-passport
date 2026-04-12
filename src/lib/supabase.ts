@@ -24,7 +24,7 @@ export const supabase: SupabaseClient | null = supabaseUrl && supabaseAnonKey
         auth: {
             persistSession: true,
             detectSessionInUrl: true,
-            flowType: 'pkce',
+            flowType: 'implicit',
             ...(cookieStorage ? { storage: cookieStorage } : {}),
         }
     })
