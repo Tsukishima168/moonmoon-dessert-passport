@@ -296,7 +296,7 @@ function App() {
         const unlockMap: Record<string, string> = {
           'secret_spot': 'secret_qr_1',
           'observer': 'secret_qr_2',
-          'dessert_connect': 'social_share',
+          'dessert_connect': 'ig_followed',
           'first_visit': 'order_with_staff'
         };
 
