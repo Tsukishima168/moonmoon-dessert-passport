@@ -15,6 +15,7 @@ import {
   activateRedirectTo,
   clearRedirectState,
   clearPendingRedirectTo,
+  ensureRedirectTo,
   getAndClearPendingRedirectTo,
   getAndClearRedirectTo,
   getOAuthRedirectUrl,
@@ -27,8 +28,8 @@ interface SupabaseAuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  signInWithGoogle: () => Promise<void>;
-  signInWithMagicLink: (email: string) => Promise<{ ok: boolean; message?: string }>;
+  signInWithGoogle: (returnTo?: string) => Promise<void>;
+  signInWithMagicLink: (email: string, returnTo?: string) => Promise<{ ok: boolean; message?: string }>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -118,7 +119,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (returnTo?: string) => {
     const client = supabase;
     if (!client) {
       setError('Supabase Auth 尚未設定完成，Google 登入目前不可用。');
@@ -126,6 +127,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     setError(null);
+    ensureRedirectTo(returnTo || window.location.href);
     activateRedirectTo();
 
     const { error: signInError } = await client.auth.signInWithOAuth({
@@ -150,7 +152,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  const signInWithMagicLink = async (email: string) => {
+  const signInWithMagicLink = async (email: string, returnTo?: string) => {
     const client = supabase;
     if (!client) {
       const message = 'Supabase Auth 尚未設定完成，Magic Link 登入目前不可用。';
@@ -164,6 +166,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     setError(null);
+    ensureRedirectTo(returnTo || window.location.href);
     activateRedirectTo();
 
     const { error: otpError } = await client.auth.signInWithOtp({

@@ -1,4 +1,5 @@
 export type Screen = 'landing' | 'passport';
+export type PassportTab = 'hub' | 'journey' | 'rewards' | 'shop';
 
 export interface Option {
   id: string;

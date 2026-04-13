@@ -184,6 +184,24 @@ export function saveRedirectTo(url: string) {
   }
 }
 
+export function ensureRedirectTo(url: string) {
+  const normalized = normalizeRedirectUrl(url);
+  if (!normalized) {
+    return;
+  }
+
+  try {
+    const existing = sessionStorage.getItem(PENDING_REDIRECT_KEY);
+    if (existing) {
+      return;
+    }
+
+    sessionStorage.setItem(PENDING_REDIRECT_KEY, normalized);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** 將本次待跳轉目標提升為 OAuth 完成後要使用的目標 */
 export function activateRedirectTo(): string | null {
   try {

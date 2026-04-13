@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, MOONMOON_SITES } from './constants';
 import { Stamp } from './types';
+import { PassportTab } from './types';
 import {
     getPassportState,
     unlockStamp,
@@ -59,19 +60,18 @@ import {
 interface PassportScreenProps {
     onClose: () => void;
     passportCoverNumber: string;
+    initialTab?: PassportTab;
+    onTabChange?: (tab: PassportTab) => void;
 }
 
-const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
+const TAB_LABELS: Record<PassportTab, string> = {
     hub: '護照首頁',
     journey: '任務',
     rewards: '集章獎勵',
     shop: '會員福利',
 };
 
-const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[
-    'journey' | 'rewards' | 'shop' | 'hub',
-    string
-]>).map(([key, label]) => ({ key, label }));
+const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[PassportTab, string]>).map(([key, label]) => ({ key, label }));
 
 type GpsDebugStatus =
     | 'success'
@@ -117,8 +117,13 @@ const GPS_STATUS_LABEL: Record<GpsDebugStatus, string> = {
     error: '定位錯誤',
 };
 
-const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverNumber }) => {
-    const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('hub');
+const PassportScreen: React.FC<PassportScreenProps> = ({
+    onClose,
+    passportCoverNumber,
+    initialTab = 'hub',
+    onTabChange,
+}) => {
+    const [activeTab, setActiveTab] = useState<PassportTab>(initialTab);
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
     const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
@@ -249,6 +254,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
             isActive = false;
         };
     }, [profile?.displayName, profile?.userId, user?.id, user?.user_metadata?.full_name, user?.user_metadata?.name]);
+
+    useEffect(() => {
+        onTabChange?.(activeTab);
+    }, [activeTab, onTabChange]);
 
     useEffect(() => {
         if (!isProfileCenterHydrated) return;
@@ -427,7 +436,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
         setIsSendingMagicLink(true);
         setMagicLinkState({ tone: null, message: '' });
 
-        const result = await signInWithMagicLink(magicEmail);
+        const result = await signInWithMagicLink(magicEmail, window.location.href);
 
         setMagicLinkState({
             tone: result.ok ? 'success' : 'error',

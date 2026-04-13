@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSupabaseAuth } from './src/contexts/SupabaseAuthContext';
 
 import { Sparkles, BookOpen, ArrowUpRight, LogIn, LogOut, CircleAlert, X } from 'lucide-react';
-import { Screen } from './types';
+import { PassportTab, Screen } from './types';
 import { BRANDING } from './constants';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
@@ -37,6 +37,27 @@ const getOrCreatePassportCoverNumber = () => {
   const generated = String(Math.floor(Math.random() * 900) + 100);
   window.localStorage.setItem('moonmoon_passport_cover_no', generated);
   return generated;
+};
+
+const PASSPORT_TABS: PassportTab[] = ['hub', 'journey', 'rewards', 'shop'];
+
+const getInitialScreen = (): Screen => {
+  if (typeof window === 'undefined') {
+    return 'landing';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get('screen') === 'passport' ? 'passport' : 'landing';
+};
+
+const getInitialPassportTab = (): PassportTab => {
+  if (typeof window === 'undefined') {
+    return 'hub';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  return PASSPORT_TABS.includes(tab as PassportTab) ? (tab as PassportTab) : 'hub';
 };
 
 // -- Header --
@@ -169,7 +190,8 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
 
 function App() {
   const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut, error: authError, clearError: clearAuthError } = useSupabaseAuth();
-  const [screen, setScreen] = useState<Screen>('landing');
+  const [screen, setScreen] = useState<Screen>(getInitialScreen);
+  const [passportTab, setPassportTab] = useState<PassportTab>(getInitialPassportTab);
   const [loading, setLoading] = useState(true);
   const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
@@ -206,6 +228,22 @@ function App() {
     });
   }, [authError]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (screen === 'passport') {
+      params.set('screen', 'passport');
+      params.set('tab', passportTab);
+    } else {
+      params.delete('screen');
+      params.delete('tab');
+    }
+
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`;
+    window.history.replaceState({}, '', nextUrl);
+  }, [passportTab, screen]);
+
   // Handle cross-site points sync from Gacha redirect URL
   useEffect(() => {
     const result = handleIncomingPointsSync();
@@ -225,6 +263,7 @@ function App() {
     }));
 
     // Open passport directly so users can immediately see updated points
+    setPassportTab('hub');
     setScreen('passport');
   }, []);
 
@@ -459,6 +498,7 @@ function App() {
 
         // Open passport to show the unlocked stamp
         prevScreenRef.current = screen;
+        setPassportTab('hub');
         setScreen('passport');
       }
 
@@ -471,6 +511,7 @@ function App() {
     if (screen !== 'passport') {
       prevScreenRef.current = screen;
     }
+    setPassportTab('hub');
     setScreen('passport');
     trackEvent('passport_opened', { from_screen: screen });
   };
@@ -522,7 +563,14 @@ function App() {
 
       <main>
         {screen === 'landing' && <LandingScreen onOpenPassport={openPassport} passportCoverNumber={passportCoverNumber} />}
-        {screen === 'passport' && <PassportScreen onClose={closePassport} passportCoverNumber={passportCoverNumber} />}
+        {screen === 'passport' && (
+          <PassportScreen
+            onClose={closePassport}
+            passportCoverNumber={passportCoverNumber}
+            initialTab={passportTab}
+            onTabChange={setPassportTab}
+          />
+        )}
       </main>
 
 
