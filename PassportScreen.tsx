@@ -61,10 +61,10 @@ interface PassportScreenProps {
 }
 
 const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
+    hub: '會員首頁',
     journey: '任務',
     rewards: '集章獎勵',
     shop: '會員福利',
-    hub: '會員中心',
 };
 
 const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[
@@ -117,7 +117,7 @@ const GPS_STATUS_LABEL: Record<GpsDebugStatus, string> = {
 };
 
 const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverNumber }) => {
-    const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('journey');
+    const [activeTab, setActiveTab] = useState<'journey' | 'rewards' | 'shop' | 'hub'>('hub');
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
     const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
@@ -463,7 +463,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                         </h1>
 
                         <p className="mb-4 text-[11px] font-bold text-white/60">
-                            把你在月島的任務、集章與足跡都收進這裡。
+                            把你在月島的會員資料、任務、訂單、集章與足跡都收進這裡。
                         </p>
 
                         <div className="mb-4 grid w-full max-w-[280px] grid-cols-3 gap-2">
@@ -499,10 +499,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                 <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
                     <div className="mb-5 rounded-[1.75rem] border border-brand-black/10 bg-white px-4 py-3 shadow-[3px_3px_0px_black]">
                         <p className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">
-                            Passport Summary
+                            Member Home
                         </p>
                         <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
-                            從這裡查看任務進度、會員資料、集章里程碑與月島足跡。
+                            先從會員首頁看你的資料、足跡與下一步，再決定要前往任務、獎勵或會員福利。
                         </p>
                     </div>
 
