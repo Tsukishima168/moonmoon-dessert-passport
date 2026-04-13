@@ -1,12 +1,12 @@
-# Passport Member Center Roadmap
+# Passport Home Roadmap
 
 ## Product Role
 
-`passport.kiwimu.com` is the primary member center in the KIWIMU ecosystem.
+`passport.kiwimu.com` is the primary passport home in the KIWIMU ecosystem.
 
 Site boundaries:
 
-- `passport.kiwimu.com`: member home, profile, tasks, points, rewards, order visibility, cross-site routing
+- `passport.kiwimu.com`: passport home, profile, tasks, points, rewards, order visibility, cross-site routing
 - `map.kiwimu.com`: brand guide and discovery surface
 - `shop.kiwimu.com`: transaction and ordering flow
 - `kiwimu.com`: MBTI and story identity source
@@ -14,7 +14,7 @@ Site boundaries:
 
 ## Current Reality
 
-Passport already has the right data and modules to become the member center:
+Passport already has the right data and modules to become the passport home:
 
 - shared auth and redirect handling
 - profile center editing
@@ -24,13 +24,13 @@ Passport already has the right data and modules to become the member center:
 - shop order history
 
 What is still wrong today is the information architecture.
-It still opens like a passport-themed task app, not like the main member home.
+It still opens like a passport-themed task app, not like the main passport home.
 
 ## Principles
 
-1. Keep the passport metaphor, but make the first view feel like a member home.
+1. Keep the passport metaphor, but make the first view feel like a passport home.
 2. Use existing modules first before inventing new backend scope.
-3. Keep site roles clean: member center in passport, discovery in map, transaction in shop.
+3. Keep site roles clean: passport home in passport, discovery in map, transaction in shop.
 4. Do not expand backend identity logic until the UX priority is correct.
 
 ## Phases
@@ -42,12 +42,12 @@ Status: shipped in this PR
 Scope:
 
 - make the member-center view the default first view after opening the passport
-- reorder tabs so the member home comes before tasks, rewards, and shop
-- update landing and summary copy so Passport clearly reads as the member center
+- reorder tabs so the passport home comes before tasks, rewards, and shop
+- update landing and summary copy so Passport clearly reads as the passport home
 
 Acceptance criteria:
 
-- opening the passport lands on the member home first
+- opening the passport lands on the passport home first
 - users immediately see Passport as the center of profile, tasks, orders, and points
 - passport metaphor remains intact
 
@@ -57,14 +57,17 @@ Status: next
 
 Scope:
 
-- redesign the member-home tab as a true dashboard using existing modules
-- surface profile snapshot, today action, points, checkin, and latest order at the top
-- turn journey / rewards / shop into secondary deeper views
+- redesign the passport-home tab into a real dashboard shell using existing modules
+- surface profile snapshot, today action, points balance, checkin state, and latest order at the top
+- keep journey / rewards / shop as secondary deeper views instead of competing with the dashboard
+- make the dashboard the fast answer to "who am I, what should I do next, and where should I go"
 
 Acceptance criteria:
 
-- member home answers who am I, what should I do next, and where should I go
+- passport home answers who am I, what should I do next, and where should I go
 - users do not need to bounce between tabs to understand their current state
+- the top of the page already tells users their current status and next action
+- deeper tabs feel like expansion paths, not alternate home screens
 
 ### Phase 3
 
@@ -94,7 +97,7 @@ Scope:
 
 Acceptance criteria:
 
-- Passport is measurably the primary member center
+- Passport is measurably the primary passport home
 - the team can track what routes users take after opening Passport
 
 ## This PR
@@ -102,9 +105,9 @@ Acceptance criteria:
 Included:
 
 - member-home tab becomes the default opening view
-- tab order now prioritizes the member center
-- landing and summary copy now frame Passport as the member home
-- roadmap documenting the corrected product direction
+- tab order now prioritizes the passport home
+- landing and summary copy now frame Passport as the passport home
+- roadmap documenting the corrected product direction and Phase 2 dashboard-first plan
 
 Excluded:
 

@@ -4,6 +4,16 @@
 
 Status: `本機可驗證，production auth 待真人關閉`
 
+## Phase 2 Focus
+
+Passport 目前的定位是 passport home / dashboard-first 的護照入口，不再是單純的護照封面頁。
+
+Phase 2 的文件目標是把首頁敘事、路由與 launch guidance 都維持在同一個方向：
+
+- `PassportScreen` 打開後的第一視圖是護照首頁
+- 護照首頁優先顯示 profile snapshot、today action、points、checkin、latest order
+- 公開護照、邀請、兌換仍保留，但視為護照入口的下層流程
+
 已完成驗證：
 - `npm run build` 通過
 - `npm run preview -- --host 127.0.0.1 --port 3102` 可啟動
@@ -40,6 +50,7 @@ Status: `本機可驗證，production auth 待真人關閉`
 
 ## 今晚可以直接做的項目
 
+- 先確認護照首頁的第一屏內容仍維持 dashboard-first，而不是回到護照封面優先
 - 到 Supabase Dashboard 確認 Redirect URLs 至少包含 `https://passport.kiwimu.com/`
 - 在 Vercel 明確補上 `VITE_SUPABASE_AUTH_REDIRECT_URL=https://passport.kiwimu.com/`
 - 若要打開 LINE 流程，再補 `VITE_LIFF_ID`

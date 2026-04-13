@@ -58,7 +58,7 @@
 
 - `index.tsx`：route 掛載
 - `App.tsx`：landing、URL 參數處理、claim 入口
-- `PassportScreen.tsx`：會員中心主介面
+- `PassportScreen.tsx`：護照首頁主介面
 - `src/api/passportSystem.ts`：公開護照與邀請 / 兌換 API
 - `src/api/points.ts`：點數查詢與 RPC
 - `src/contexts/SupabaseAuthContext.tsx`：登入流程

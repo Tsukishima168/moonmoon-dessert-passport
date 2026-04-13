@@ -10,13 +10,15 @@
 
 - [ ] Landing 正常顯示「Moon Moon Passport」
 - [ ] Header logo 可返回首頁
-- [ ] 「打開我的護照」按鈕可進入護照主介面
+- [ ] 開啟後預設進入護照首頁 / dashboard-first 主視圖
+- [ ] 「打開我的護照」按鈕可進入護照入口
 - [ ] 非 LINE WebView 下可看到 Google 登入按鈕
 - [ ] UTM 進站時不影響首頁渲染
 
-### 2. 護照主介面
+### 2. 護照首頁 / 護照主介面
 
 - [ ] Passport 可正常開啟與關閉
+- [ ] 護照首頁第一屏先顯示 profile、points、today action、latest order
 - [ ] 點數、徽章數、會員資料區塊正常顯示
 - [ ] `ProfileCenter` 可讀取並更新 shared profile 設定
 - [ ] `MemberHub` 能顯示站點足跡與 MBTI 資訊

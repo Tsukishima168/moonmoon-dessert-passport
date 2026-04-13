@@ -157,7 +157,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
             <ArrowUpRight className="h-3.5 w-3.5 text-brand-black/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>
           <p className="text-[10px] font-bold tracking-[0.16em] text-brand-black/30">
-            會員中心 · 任務 · 訂單
+            身份 · 任務 · 訂單
           </p>
         </div>
       </div>

@@ -12,7 +12,7 @@ import {
     Mail,
     LoaderCircle,
 } from 'lucide-react';
-import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS } from './constants';
+import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, MOONMOON_SITES } from './constants';
 import { Stamp } from './types';
 import {
     getPassportState,
@@ -27,6 +27,7 @@ import {
     addPassportPoints,
 } from './passportUtils';
 import BadgeJourney from './components/BadgeJourney';
+import PassportHomeDashboard from './components/PassportHomeDashboard';
 import MemberHub from './components/MemberHub';
 import ProfileCenter from './components/ProfileCenter';
 import RewardShop from './components/RewardShop';
@@ -61,7 +62,7 @@ interface PassportScreenProps {
 }
 
 const TAB_LABELS: Record<'journey' | 'rewards' | 'shop' | 'hub', string> = {
-    hub: '會員首頁',
+    hub: '護照首頁',
     journey: '任務',
     rewards: '集章獎勵',
     shop: '會員福利',
@@ -411,6 +412,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
         '月島旅人';
     const passportHolder = profileCenterDraft.displayName.trim() || fallbackPassportHolder;
     const passportMode = user || profile ? '已啟用' : '訪客模式';
+    const nextRewardTier =
+        REWARD_TIERS.find((reward) => !redeemedRewards.includes(reward.id)) || null;
+    const handleOpenCheckin = () => {
+        setShowCheckinModal(true);
+        trackEvent('checkin_card_tapped', { source: activeTab });
+    };
     const handleMagicLinkSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (isSendingMagicLink) {
@@ -499,10 +506,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                 <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
                     <div className="mb-5 rounded-[1.75rem] border border-brand-black/10 bg-white px-4 py-3 shadow-[3px_3px_0px_black]">
                         <p className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">
-                            Member Home
+                            Passport Home
                         </p>
                         <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
-                            先從會員首頁看你的資料、足跡與下一步，再決定要前往任務、獎勵或會員福利。
+                            先看身份、今日行動、里程碑與最近動態，再決定要前往任務、獎勵或會員福利。
                         </p>
                     </div>
 
@@ -596,12 +603,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
                     {activeTab === 'journey' && (
                         <div className="space-y-4">
                             {/* ─── Daily Check-in (prominent placement) ─── */}
-                            <CheckinCard
-                                onOpen={() => {
-                                    setShowCheckinModal(true);
-                                    trackEvent('checkin_card_tapped', {});
-                                }}
-                            />
+                            <CheckinCard onOpen={handleOpenCheckin} />
 
                             {gpsDebug && (
                                 <KiwimuPanel
@@ -695,6 +697,37 @@ const PassportScreen: React.FC<PassportScreenProps> = ({ onClose, passportCoverN
 
                     {activeTab === 'hub' && (
                         <div className="space-y-4">
+                            <PassportHomeDashboard
+                                displayName={passportHolder}
+                                passportCoverNumber={passportCoverNumber}
+                                passportMode={passportMode}
+                                userLevel={userLevel}
+                                points={points}
+                                unlockedCount={unlockedCount}
+                                visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
+                                visitedSiteTotal={MOONMOON_SITES.length}
+                                mbtiType={hubProfileSnapshot.mbtiType}
+                                hasIdentity={Boolean(user || profile)}
+                                userId={user?.id ?? null}
+                                nextReward={
+                                    nextRewardTier
+                                        ? {
+                                              title: nextRewardTier.title,
+                                              requiredStamps: nextRewardTier.requiredStamps,
+                                              remainingStamps: Math.max(
+                                                  nextRewardTier.requiredStamps - unlockedCount,
+                                                  0
+                                              ),
+                                              isReady: unlockedCount >= nextRewardTier.requiredStamps,
+                                          }
+                                        : null
+                                }
+                                onOpenCheckin={handleOpenCheckin}
+                                onGoJourney={() => setActiveTab('journey')}
+                                onGoRewards={() => setActiveTab('rewards')}
+                                onGoShop={() => setActiveTab('shop')}
+                                onLogin={signInWithGoogle}
+                            />
                             <ProfileCenter
                                 draft={profileCenterDraft}
                                 mbtiType={hubProfileSnapshot.mbtiType}
