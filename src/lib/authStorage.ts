@@ -146,6 +146,17 @@ export function getOAuthRedirectUrl() {
   return origin.endsWith('/') ? origin : `${origin}/`;
 }
 
+export function buildOAuthRedirectUrl(returnTo?: string) {
+  const redirectUrl = new URL(getOAuthRedirectUrl(), window.location.origin);
+  const normalizedReturnTo = typeof returnTo === 'string' ? normalizeRedirectUrl(returnTo) : null;
+
+  if (normalizedReturnTo) {
+    redirectUrl.searchParams.set('redirect_to', normalizedReturnTo);
+  }
+
+  return redirectUrl.toString();
+}
+
 const ACTIVE_REDIRECT_KEY = 'auth_redirect_to';
 const PENDING_REDIRECT_KEY = 'pending_auth_redirect_to';
 

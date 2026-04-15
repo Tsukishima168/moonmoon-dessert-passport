@@ -256,6 +256,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     }, [profile?.displayName, profile?.userId, user?.id, user?.user_metadata?.full_name, user?.user_metadata?.name]);
 
     useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
+
+    useEffect(() => {
         onTabChange?.(activeTab);
     }, [activeTab, onTabChange]);
 
@@ -545,7 +549,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 <p className="text-[10px] text-gray-500 font-bold mt-1">登入以永久保存印章與積分，並在所有宇宙服務中同步。</p>
                             </div>
                             <button
-                                onClick={signInWithGoogle}
+                                onClick={() => void signInWithGoogle()}
                                 className="w-full py-2.5 bg-brand-lime text-brand-black rounded-xl text-xs font-black uppercase tracking-wider border-2 border-brand-black shadow-[2px_2px_0px_black] active:translate-y-[2px] active:shadow-none transition-all"
                             >
                                 登入 Google 帳號快速綁定

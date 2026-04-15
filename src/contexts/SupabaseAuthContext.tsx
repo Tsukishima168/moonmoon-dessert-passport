@@ -13,6 +13,7 @@ import { setDeviceId } from '../../passportUtils';
 import { supabase } from '../lib/supabase';
 import {
   activateRedirectTo,
+  buildOAuthRedirectUrl,
   clearRedirectState,
   clearPendingRedirectTo,
   ensureRedirectTo,
@@ -127,13 +128,14 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     setError(null);
-    ensureRedirectTo(returnTo || window.location.href);
+    const resolvedReturnTo = typeof returnTo === 'string' ? returnTo : window.location.href;
+    ensureRedirectTo(resolvedReturnTo);
     activateRedirectTo();
 
     const { error: signInError } = await client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getOAuthRedirectUrl(),
+        redirectTo: buildOAuthRedirectUrl(resolvedReturnTo),
         queryParams: {
           prompt: 'select_account',
         },
@@ -166,13 +168,14 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     setError(null);
-    ensureRedirectTo(returnTo || window.location.href);
+    const resolvedReturnTo = typeof returnTo === 'string' ? returnTo : window.location.href;
+    ensureRedirectTo(resolvedReturnTo);
     activateRedirectTo();
 
     const { error: otpError } = await client.auth.signInWithOtp({
       email: normalizedEmail,
       options: {
-        emailRedirectTo: getOAuthRedirectUrl(),
+        emailRedirectTo: buildOAuthRedirectUrl(resolvedReturnTo),
       },
     });
 

@@ -105,7 +105,7 @@ const Header = ({
               </div>
             ) : (
               <button 
-                onClick={signInWithGoogle} 
+                onClick={() => void signInWithGoogle()} 
                 className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-[1px] hover:shadow-[1px_1px_0px_black] transition-all"
               >
                 <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
