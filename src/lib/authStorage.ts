@@ -9,8 +9,16 @@ function canShareKiwimuCookies(hostname: string): boolean {
   return hostname === 'kiwimu.com' || hostname.endsWith('.kiwimu.com');
 }
 
+function isLocalhost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function canUseLocalRedirects(hostname: string = window.location.hostname): boolean {
+  return import.meta.env.DEV && (isLocalhost(hostname) || IPV4_HOST_PATTERN.test(hostname));
+}
+
 export function resolveCookieDomain(hostname: string = window.location.hostname): string | undefined {
-  if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || IPV4_HOST_PATTERN.test(hostname)) {
+  if (!hostname || isLocalhost(hostname) || IPV4_HOST_PATTERN.test(hostname)) {
     return undefined;
   }
 
@@ -164,14 +172,13 @@ function normalizeRedirectUrl(url: string): string | null {
   try {
     const parsed = new URL(url, window.location.origin);
     const { hostname, protocol } = parsed;
-
+    const localRedirectsAllowed = canUseLocalRedirects();
+    const isAllowedProtocol = protocol === 'https:' || (protocol === 'http:' && localRedirectsAllowed);
     const isAllowedHost =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      IPV4_HOST_PATTERN.test(hostname) ||
-      canShareKiwimuCookies(hostname);
+      canShareKiwimuCookies(hostname) ||
+      (localRedirectsAllowed && (isLocalhost(hostname) || hostname === window.location.hostname));
 
-    if (!isAllowedHost || (protocol !== 'http:' && protocol !== 'https:')) {
+    if (!isAllowedHost || !isAllowedProtocol) {
       return null;
     }
 

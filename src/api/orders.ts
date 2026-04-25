@@ -29,6 +29,7 @@ export async function getUserShopOrders(userId: string): Promise<ShopOrderRecord
     .from('orders')
     .select('order_id, status, pickup_time, created_at, final_price, total_price, payment_method, linepay_transaction_id, items')
     .eq('user_id', userId)
+    .eq('checkout_site', 'shop')
     .order('created_at', { ascending: false })
     .limit(20);
 
