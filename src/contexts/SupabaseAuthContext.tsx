@@ -50,7 +50,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       saveRedirectTo(incomingRedirect);
       params.delete('redirect_to');
       const newSearch = params.toString();
-      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
+      const nextUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
+      window.history.replaceState({}, '', nextUrl);
     } else {
       clearPendingRedirectTo();
     }

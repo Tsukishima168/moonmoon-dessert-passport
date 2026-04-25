@@ -240,7 +240,7 @@ function App() {
     }
 
     const nextSearch = params.toString();
-    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`;
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
     window.history.replaceState({}, '', nextUrl);
   }, [passportTab, screen]);
 
@@ -503,7 +503,7 @@ function App() {
       }
 
       // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
     })();
   }, []);
 
