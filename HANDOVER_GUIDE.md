@@ -36,7 +36,7 @@
 ## 4. 目前完成的功能
 
 - landing 與護照主介面切換
-- Google OAuth / Magic Link 登入
+- Google OAuth 登入
 - LIFF 非阻塞初始化與 profile 快取
 - 集章、每日打卡、點數與獎勵商店
 - shared profile / profile center

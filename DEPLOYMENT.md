@@ -72,11 +72,15 @@ Vercel 建議值：
 
 1. 開首頁，確認 landing 正常顯示。
 2. 點「打開我的護照」，確認護照主介面可進入。
-3. 測 Google 登入或 Magic Link。
+3. 測 Google 登入。
 4. 測公開護照頁 `/passport/:id`。
 5. 測邀請頁 `/join/:passportId` 可提交。
 6. 測店員兌換頁 `/redeem` 可查詢護照與核銷。
 7. 到 GA4 即時報表確認事件有進線。
+8. 在 Chrome / Android 測試 PWA 安裝提示，確認可加入主畫面。
+9. 在 iOS Safari 測試分享選單的加入主畫面，確認 icon 與 title 顯示正確。
+10. 在桌面 Chrome / Safari 測試安裝或加入 Dock，確認 standalone 視窗可開啟。
+11. 部署新版後重新開啟舊頁籤，確認 service worker 更新提示可刷新到新版。
 
 ## 6. 常見問題
 
@@ -101,3 +105,9 @@ Vercel 建議值：
 
 - 檢查 `VITE_LIFF_ID`
 - 檢查是否在 LINE WebView 或對應 LIFF 設定網域下測試
+
+### PWA 沒有出現安裝提示
+
+- 確認 production 使用 HTTPS 正式網域。
+- 確認 `npm run build` 沒有設定 `VITE_DISABLE_PWA=1`。
+- Chrome 只會在符合安裝條件時觸發 prompt；iOS Safari 需透過分享選單加入主畫面。

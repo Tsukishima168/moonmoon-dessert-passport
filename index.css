@@ -8,6 +8,18 @@ body {
   color: #111111;
   min-height: 100vh;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background-color: #F4F4F0;
+}
+
+@media (display-mode: standalone) {
+  body {
+    min-height: 100dvh;
+  }
 }
 
 /* Custom scrollbar hide for clean UI */

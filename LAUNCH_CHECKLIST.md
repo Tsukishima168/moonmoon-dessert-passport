@@ -48,7 +48,7 @@
 ### 1. Supabase
 
 - [ ] `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` 已設定
-- [ ] Google OAuth / Magic Link 可正常使用
+- [ ] Google OAuth 可正常使用
 - [ ] 點數 API 正常讀寫 `point_transactions`
 - [ ] 公開護照、邀請、核銷流程可正常存取
 

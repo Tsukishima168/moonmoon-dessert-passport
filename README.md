@@ -17,7 +17,7 @@ MoonMoon Dessert Passport 是 Kiwimu 生態中的護照入口，提供 dashboard
 
 - Passport landing 與護照首頁切換
 - 護照首頁 dashboard、ProfileCenter、MemberHub
-- Supabase Auth Google OAuth / Magic Link
+- Supabase Auth Google OAuth
 - LIFF profile 讀取與 fallback
 - 集章、點數、獎勵兌換
 - 公開護照、邀請加入、店員核銷流程
@@ -102,6 +102,17 @@ Vercel 設定請看 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 - `PassportScreen.tsx`：護照首頁 / dashboard 容器
 - `src/api/passportSystem.ts`：公開護照 / 邀請 / 兌換 API
 - `src/api/points.ts`：點數讀寫與 RPC
-- `src/contexts/SupabaseAuthContext.tsx`：Google / Magic Link 登入
+- `src/contexts/SupabaseAuthContext.tsx`：Google OAuth 登入
 - `src/contexts/LiffContext.tsx`：LINE LIFF 整合
 - `supabase/migrations/`：資料庫 migration
+
+## PWA
+
+Passport 以 PWA 形式建置：
+
+- `npm run build` 會產生 service worker 與 `manifest.json`
+- production 可安裝到 Android / 桌面 Chrome，也支援 iOS Safari 加入主畫面
+- Safari desktop 可透過分享選單加入 Dock
+- 新版 service worker 會顯示更新入口，避免使用者長時間停在舊版本
+- Supabase Auth API 不會被 service worker 快取，避免登入狀態被舊資料干擾
+- 主要靜態資源與圖示會被 precache，離線時仍保留 app shell

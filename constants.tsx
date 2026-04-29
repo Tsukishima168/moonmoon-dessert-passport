@@ -195,6 +195,13 @@ export const MOONMOON_SITES: MoonSite[] = [
     iconType: 'BrainCircuit'
   },
   {
+    id: 'passport',
+    name: 'Kiwimu Passport',
+    url: 'https://passport.kiwimu.com',
+    description: '會員中心與身份護照',
+    iconType: 'BookOpen'
+  },
+  {
     id: 'moon_map',
     name: '月島地圖',
     url: 'https://map.kiwimu.com',

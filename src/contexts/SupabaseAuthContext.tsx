@@ -2,8 +2,8 @@
  * Passport — Supabase Auth Context（跨網域 cookie）
  *
  * 與 LiffContext 並行運作：
- * - 若 LIFF 已登入 → 取得 LINE user_id，可選擇性同步至 profiles
- * - 若非 LIFF 環境 → 提供 Google OAuth 入口
+ * - LIFF 僅供 LINE profile / 分享功能使用，不作為登入入口
+ * - Auth 登入一律走 Google OAuth
  * - Cookie domain = .kiwimu.com → 與 Booking / MBTI / Gacha / Moon Map 共享 session
  */
 
@@ -30,7 +30,6 @@ interface SupabaseAuthContextType {
   loading: boolean;
   error: string | null;
   signInWithGoogle: (returnTo?: string) => Promise<void>;
-  signInWithMagicLink: (email: string, returnTo?: string) => Promise<{ ok: boolean; message?: string }>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -115,6 +114,15 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         // 記錄活躍時間（fire-and-forget）
         client.rpc('update_last_seen', { p_site: 'passport' }).then(() => {});
+        client.rpc('insert_user_event', {
+          p_event_type: 'site_visited',
+          p_site: 'passport',
+          p_metadata: {
+            site_id: 'passport',
+            source: 'auth_session',
+            path: window.location.pathname,
+          },
+        }).then(() => {});
       }
     });
 
@@ -155,44 +163,6 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  const signInWithMagicLink = async (email: string, returnTo?: string) => {
-    const client = supabase;
-    if (!client) {
-      const message = 'Supabase Auth 尚未設定完成，Magic Link 登入目前不可用。';
-      setError(message);
-      return { ok: false, message };
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      return { ok: false, message: '請先輸入 Email。' };
-    }
-
-    setError(null);
-    const resolvedReturnTo = typeof returnTo === 'string' ? returnTo : window.location.href;
-    ensureRedirectTo(resolvedReturnTo);
-    activateRedirectTo();
-
-    const { error: otpError } = await client.auth.signInWithOtp({
-      email: normalizedEmail,
-      options: {
-        emailRedirectTo: buildOAuthRedirectUrl(resolvedReturnTo),
-      },
-    });
-
-    if (otpError) {
-      clearRedirectState();
-      const message = `Magic Link 發送失敗：${otpError.message}`;
-      setError(message);
-      return { ok: false, message };
-    }
-
-    return {
-      ok: true,
-      message: '登入連結已寄出，請到信箱點擊 Magic Link 完成登入。',
-    };
-  };
-
   const handleSignOut = async () => {
     const client = supabase;
     if (!client) return;
@@ -201,7 +171,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   return (
-    <SupabaseAuthContext.Provider value={{ user, loading, error, signInWithGoogle, signInWithMagicLink, signOut: handleSignOut, clearError: () => setError(null) }}>
+    <SupabaseAuthContext.Provider value={{ user, loading, error, signInWithGoogle, signOut: handleSignOut, clearError: () => setError(null) }}>
       {children}
     </SupabaseAuthContext.Provider>
   );

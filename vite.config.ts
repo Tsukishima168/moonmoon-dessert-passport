@@ -27,51 +27,45 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       ...(!disablePwa ? [VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['icons/*.png', 'icons/*.svg'],
-        manifest: {
-          name: '月島甜點護照',
-          short_name: '月島護照',
-          description: '你的甜點靈魂旅程護照 — 集章、任務、每日簽到',
-          theme_color: '#F5F0E8',
-          background_color: '#F5F0E8',
-          display: 'standalone',
-          orientation: 'portrait',
-          start_url: '/',
-          scope: '/',
-          lang: 'zh-TW',
-          icons: [
-            {
-              src: '/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: '/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-          ],
-        },
+        injectRegister: false,
+        registerType: 'prompt',
+        manifest: false,
+        includeAssets: [
+          'manifest.json',
+          'logo.svg',
+          'apple-touch-icon.png',
+          'icon-192x192.png',
+          'icon-512x512.png',
+          'maskable-icon-192x192.png',
+          'maskable-icon-512x512.png',
+        ],
         workbox: {
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
           navigateFallback: '/',
-          globPatterns: ['**/*.{css,js,html,svg,png,jpg,ico,txt,woff2}'],
+          globPatterns: ['**/*.{css,js,html,svg,png,jpg,jpeg,webp,ico,txt,woff,woff2}'],
           runtimeCaching: [
             {
-              // API calls: network first
-              urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+              urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/v1\/.*/i,
+              handler: 'NetworkOnly',
+              options: {
+                cacheName: 'supabase-auth',
+              },
+            },
+            {
+              urlPattern: /^https:\/\/.*\.supabase\.co\/(?:rest|storage)\/v1\/.*/i,
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'supabase-cache',
+                cacheName: 'supabase-runtime',
+                networkTimeoutSeconds: 4,
                 expiration: { maxEntries: 50, maxAgeSeconds: 300 },
               },
             },
             {
-              // Images: cache first
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
               handler: 'CacheFirst',
               options: {
-                cacheName: 'image-cache',
+                cacheName: 'passport-images',
                 expiration: { maxEntries: 100, maxAgeSeconds: 86400 * 30 },
               },
             },

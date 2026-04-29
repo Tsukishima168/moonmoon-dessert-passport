@@ -10,14 +10,22 @@ import {
 } from 'lucide-react';
 import { MOONMOON_SITES, DESSERTS } from '../constants';
 import { useLiff } from '../src/contexts/LiffContext';
+import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 import { getVisitedSites, markSiteVisited, getPassportState } from '../passportUtils';
 import { trackEvent, trackOutboundNavigation } from '../analytics';
+import {
+    FootprintSiteId,
+    loadCloudFootprints,
+    markCloudFootprint,
+    syncLocalFootprintsOnce,
+} from '../src/lib/footprints';
 import { KiwimuHubMilestoneCard } from './kiwimu/KiwimuHubMilestoneCard';
 import { KiwimuPanel } from './kiwimu/KiwimuPanel';
 import { KiwimuSiteCard } from './kiwimu/KiwimuSiteCard';
 
 const IconMap: Record<string, any> = {
     BrainCircuit,
+    BookOpen,
     Map,
     CakeSlice,
     Dices
@@ -40,42 +48,78 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
     const [mbtiType, setMbtiType] = useState<string | null>(null);
     const [stampCount, setStampCount] = useState(0);
     const { profile } = useLiff();
+    const { user } = useSupabaseAuth();
 
     useEffect(() => {
-        // 1. Get visited sites from localStorage
-        const saved = getVisitedSites();
-        setVisitedSites(saved);
+        let isActive = true;
 
-        // 2. Read MBTI result from localStorage (written by kiwimu.com redirect)
+        // 1. Read MBTI result from localStorage (written by kiwimu.com redirect)
         try {
             const storedMbti = localStorage.getItem('user_mbti_result');
             if (storedMbti) setMbtiType(storedMbti.toUpperCase());
         } catch { /* ignore */ }
 
-        // 3. Get stamp count
+        // 2. Get stamp count
         const state = getPassportState();
         setStampCount(state.unlockedStamps.length);
 
-        // 2. Multi-channel detection for site visits
-        const currentUrl = window.location.href;
-        const urlParams = new URLSearchParams(window.location.search);
-        const referrer = document.referrer;
-        const fromParam = urlParams.get('from');
+        const hydrateFootprints = async () => {
+            const saved = getVisitedSites();
+            const cloud = user?.id ? await loadCloudFootprints() : [];
+            const merged = new Set<string>([...saved, ...cloud]);
 
-        // Logic: Identify which Moon site the user is coming from
-        MOONMOON_SITES.forEach(site => {
-            if (
-                (fromParam === site.id) ||
-                (referrer && site.url && referrer.includes(new URL(site.url).hostname))
-            ) {
-                if (!saved.includes(site.id)) {
-                    markSiteVisited(site.id);
-                    setVisitedSites(prev => [...prev, site.id]);
-                    trackEvent('moon_site_visit_detected', { site_id: site.id, source: fromParam ? 'url_param' : 'referrer' });
-                }
+            if (!merged.has('passport')) {
+                markSiteVisited('passport');
+                markCloudFootprint('passport', { source: 'member_hub', path: window.location.pathname });
+                merged.add('passport');
             }
-        });
-    }, []);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const referrer = document.referrer;
+            const fromParam = urlParams.get('from');
+
+            MOONMOON_SITES.forEach(site => {
+                const isCurrentSite =
+                    site.id === 'passport' && window.location.hostname === 'passport.kiwimu.com';
+                const isReferrerMatch =
+                    referrer && site.url && referrer.includes(new URL(site.url).hostname);
+                const isUrlMatch = fromParam === site.id;
+
+                if (isCurrentSite || isUrlMatch || isReferrerMatch) {
+                    if (!merged.has(site.id)) {
+                        markSiteVisited(site.id);
+                        markCloudFootprint(site.id as FootprintSiteId, {
+                            source: isUrlMatch ? 'url_param' : isReferrerMatch ? 'referrer' : 'current_site',
+                            referrer: referrer || null,
+                            path: window.location.pathname,
+                        });
+                        merged.add(site.id);
+                        trackEvent('moon_site_visit_detected', {
+                            site_id: site.id,
+                            source: isUrlMatch ? 'url_param' : isReferrerMatch ? 'referrer' : 'current_site',
+                        });
+                    }
+                }
+            });
+
+            const nextVisitedSites = Array.from(merged);
+            nextVisitedSites.forEach(siteId => markSiteVisited(siteId));
+
+            if (user?.id) {
+                syncLocalFootprintsOnce(user.id, nextVisitedSites);
+            }
+
+            if (isActive) {
+                setVisitedSites(nextVisitedSites);
+            }
+        };
+
+        void hydrateFootprints();
+
+        return () => {
+            isActive = false;
+        };
+    }, [user?.id]);
 
     useEffect(() => {
         onProfileSnapshotChange?.({

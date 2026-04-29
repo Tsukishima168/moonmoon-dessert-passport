@@ -8,6 +8,7 @@ type EventType =
   | 'stamp_earned'
   | 'reward_redeemed'
   | 'passport_visited'
+  | 'site_visited'
   | 'quiz_completed'
   | 'gacha_played'
   | 'map_checkin'

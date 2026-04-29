@@ -6,6 +6,7 @@ import { PassportTab, Screen } from './types';
 import { BRANDING } from './constants';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import {
   unlockStamp,
   getUnlockedStampCount,
@@ -95,23 +96,19 @@ const Header = ({
           Passport No. {passportCoverNumber}
         </div>
 
-        {!/Line\//i.test(navigator.userAgent) && (
-          <>
-            {supabaseUser ? (
-              <div className="flex items-center bg-white border border-brand-black rounded-full px-2 py-1 shadow-[2px_2px_0px_black] ml-1 gap-2">
-                <button onClick={supabaseSignOut} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-brand-black transition-colors">
-                  <LogOut size={12} /> <span className="hidden sm:inline">登出</span>
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => void signInWithGoogle()} 
-                className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-[1px] hover:shadow-[1px_1px_0px_black] transition-all"
-              >
-                <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
-              </button>
-            )}
-          </>
+        {supabaseUser ? (
+          <div className="flex items-center bg-white border border-brand-black rounded-full px-2 py-1 shadow-[2px_2px_0px_black] ml-1 gap-2">
+            <button onClick={supabaseSignOut} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-brand-black transition-colors">
+              <LogOut size={12} /> <span className="hidden sm:inline">登出</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => void signInWithGoogle()}
+            className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-[1px] hover:shadow-[1px_1px_0px_black] transition-all"
+          >
+            <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
+          </button>
         )}
       </div>
     </header>
@@ -573,6 +570,7 @@ function App() {
         )}
       </main>
 
+      <PwaInstallPrompt />
 
     </div>
   );
