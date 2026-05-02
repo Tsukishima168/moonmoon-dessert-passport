@@ -53,6 +53,7 @@ import {
     ProfileCenterSyncStatus,
     saveProfileCenterDraft,
 } from './src/lib/profileCenter';
+import { readStoredMbtiResult } from './src/lib/mbtiResult';
 
 
 interface PassportScreenProps {
@@ -174,9 +175,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
-        const storedMbti = localStorage.getItem('user_mbti_result');
+        const storedMbti = readStoredMbtiResult();
         setHubProfileSnapshot({
-            mbtiType: storedMbti ? storedMbti.toUpperCase() : null,
+            mbtiType: storedMbti?.mbtiType ?? null,
             visitedSiteCount: getVisitedSites().length,
         });
         void refreshPoints();

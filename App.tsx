@@ -15,6 +15,7 @@ import {
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
 import { trackUserEvent } from './src/lib/eventTracker';
+import { saveStoredMbtiResult } from './src/lib/mbtiResult';
 import {
   trackEvent,
   trackDessertView,
@@ -364,12 +365,12 @@ function App() {
         if (validTypes.includes(upperType)) {
           unlockStamp('quiz_completed');
 
-          // Save result
           try {
-            localStorage.setItem('user_mbti_result', upperType);
-            if (variant) {
-              localStorage.setItem('user_mbti_variant', variant);
-            }
+            saveStoredMbtiResult({
+              mbtiType: upperType,
+              variant: variant === 'A' || variant === 'T' ? variant : null,
+              source: 'auto_unlock_url',
+            });
           } catch (e) {
             console.error('Failed to save MBTI result', e);
           }
@@ -416,8 +417,19 @@ function App() {
         const result = await consumeMbtiClaim(claimParam);
         if (result.ok) {
           unlockStamp('quiz_completed');
+          saveStoredMbtiResult({
+            mbtiType: result.mbtiType,
+            variant: result.variant === 'A' || result.variant === 'T' ? result.variant : null,
+            source: 'mbti_claim',
+          });
           trackEvent('stamp_auto_unlocked', { stamp_id: 'quiz_completed', source: 'mbti_claim' });
           trackEvent('stamp_claim', { status: 'success', source: 'mbti_claim' });
+          trackUserEvent('stamp_earned', {
+            stamp_id: 'quiz_completed',
+            method: 'mbti_claim',
+            mbti_type: result.mbtiType,
+            variant: result.variant,
+          });
           stampUnlocked = true;
         } else if ('reason' in result) {
           trackEvent('stamp_claim_failed', { reason: result.reason });

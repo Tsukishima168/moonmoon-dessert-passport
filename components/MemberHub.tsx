@@ -19,6 +19,11 @@ import {
     markCloudFootprint,
     syncLocalFootprintsOnce,
 } from '../src/lib/footprints';
+import {
+    loadCloudMbtiResult,
+    readStoredMbtiResult,
+    saveStoredMbtiResult,
+} from '../src/lib/mbtiResult';
 import { KiwimuHubMilestoneCard } from './kiwimu/KiwimuHubMilestoneCard';
 import { KiwimuPanel } from './kiwimu/KiwimuPanel';
 import { KiwimuSiteCard } from './kiwimu/KiwimuSiteCard';
@@ -53,11 +58,8 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
     useEffect(() => {
         let isActive = true;
 
-        // 1. Read MBTI result from localStorage (written by kiwimu.com redirect)
-        try {
-            const storedMbti = localStorage.getItem('user_mbti_result');
-            if (storedMbti) setMbtiType(storedMbti.toUpperCase());
-        } catch { /* ignore */ }
+        const storedMbti = readStoredMbtiResult();
+        if (storedMbti) setMbtiType(storedMbti.mbtiType);
 
         // 2. Get stamp count
         const state = getPassportState();
@@ -65,8 +67,18 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
 
         const hydrateFootprints = async () => {
             const saved = getVisitedSites();
-            const cloud = user?.id ? await loadCloudFootprints() : [];
+            const [cloud, cloudMbti] = user?.id
+                ? await Promise.all([
+                    loadCloudFootprints(),
+                    loadCloudMbtiResult(user.id),
+                ])
+                : [[], null] as const;
             const merged = new Set<string>([...saved, ...cloud]);
+            const nextMbtiType = cloudMbti?.mbtiType ?? storedMbti?.mbtiType ?? null;
+
+            if (cloudMbti) {
+                saveStoredMbtiResult(cloudMbti);
+            }
 
             if (!merged.has('passport')) {
                 markSiteVisited('passport');
@@ -111,6 +123,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
 
             if (isActive) {
                 setVisitedSites(nextVisitedSites);
+                setMbtiType(nextMbtiType);
             }
         };
 
