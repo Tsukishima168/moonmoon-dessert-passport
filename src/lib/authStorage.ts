@@ -220,6 +220,15 @@ export function ensureRedirectTo(url: string) {
   }
 }
 
+/** 讀取目前等待中的跨站回跳目標，但不消耗它。 */
+export function getPendingRedirectTo(): string | null {
+  try {
+    return sessionStorage.getItem(PENDING_REDIRECT_KEY);
+  } catch {
+    return null;
+  }
+}
+
 /** 將本次待跳轉目標提升為 OAuth 完成後要使用的目標 */
 export function activateRedirectTo(): string | null {
   try {

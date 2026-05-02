@@ -12,7 +12,6 @@ import { User } from '@supabase/supabase-js';
 import { setDeviceId } from '../../passportUtils';
 import { supabase } from '../lib/supabase';
 import {
-  activateRedirectTo,
   buildOAuthRedirectUrl,
   clearRedirectState,
   clearPendingRedirectTo,
@@ -20,6 +19,7 @@ import {
   getAndClearPendingRedirectTo,
   getAndClearRedirectTo,
   getOAuthRedirectUrl,
+  getPendingRedirectTo,
   saveRedirectTo,
 } from '../lib/authStorage';
 
@@ -137,9 +137,11 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     setError(null);
-    const resolvedReturnTo = typeof returnTo === 'string' ? returnTo : window.location.href;
+    const resolvedReturnTo =
+      typeof returnTo === 'string'
+        ? returnTo
+        : getPendingRedirectTo() ?? window.location.href;
     ensureRedirectTo(resolvedReturnTo);
-    activateRedirectTo();
 
     const { error: signInError } = await client.auth.signInWithOAuth({
       provider: 'google',
