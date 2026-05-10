@@ -7,6 +7,7 @@ import { BRANDING } from './constants';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
 import {
   unlockStamp,
   getUnlockedStampCount,
@@ -160,6 +161,10 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
               fetchPriority="high"
             />
           </div>
+        </div>
+
+        <div className="relative z-20 mb-4 w-full max-w-4xl self-center pointer-events-auto md:self-start">
+          <KiwimuUniverseNav surface="passport_landing" compact />
         </div>
 
         <div className="flex flex-col items-center gap-2 self-center pointer-events-auto md:self-start">

@@ -34,6 +34,7 @@ import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
+import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
 import { KiwimuAchievementModal } from './components/kiwimu/KiwimuAchievementModal';
 import { KiwimuMetricCard } from './components/kiwimu/KiwimuMetricCard';
 import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
@@ -151,6 +152,25 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         tone: 'idle',
         message: '尚未檢查 shared profiles 同步狀態。',
     });
+
+    const handleHubProfileSnapshotChange = React.useCallback((snapshot: {
+        mbtiType: string | null;
+        visitedSiteCount: number;
+    }) => {
+        setHubProfileSnapshot((current) => {
+            if (
+                current.mbtiType === snapshot.mbtiType &&
+                current.visitedSiteCount === snapshot.visitedSiteCount
+            ) {
+                return current;
+            }
+
+            return {
+                mbtiType: snapshot.mbtiType,
+                visitedSiteCount: snapshot.visitedSiteCount,
+            };
+        });
+    }, []);
 
     const refreshPoints = React.useCallback(async () => {
         const state = getPassportState();
@@ -625,6 +645,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
                     {activeTab === 'hub' && (
                         <div className="space-y-4">
+                            <KiwimuUniverseNav surface="passport_home" />
                             <PassportHomeDashboard
                                 displayName={passportHolder}
                                 passportCoverNumber={passportCoverNumber}
@@ -665,9 +686,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 onChange={setProfileCenterDraft}
                             />
                             <MemberHub
-                                onProfileSnapshotChange={({ mbtiType, visitedSiteCount }) => {
-                                    setHubProfileSnapshot({ mbtiType, visitedSiteCount });
-                                }}
+                                onProfileSnapshotChange={handleHubProfileSnapshotChange}
                             />
                         </div>
                     )}
