@@ -7,7 +7,7 @@ import {
   Dices,
   Map,
 } from 'lucide-react';
-import { MOONMOON_SITES } from '../constants';
+import { PUBLIC_MOONMOON_SITES } from '../constants';
 import { buildUtmUrl, trackEvent, trackOutboundNavigation } from '../analytics';
 
 const IconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -50,7 +50,7 @@ export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
             Kiwimu Universe
           </p>
           <h2 className="mt-1 text-sm font-black tracking-tight text-brand-black">
-            五站入口
+            公開入口
           </h2>
         </div>
         <span className="rounded-full border border-brand-black/10 bg-brand-lime/70 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-brand-black">
@@ -58,8 +58,8 @@ export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
         </span>
       </div>
 
-      <div className={compact ? 'no-scrollbar flex gap-2 overflow-x-auto pb-1' : 'grid grid-cols-2 gap-2 sm:grid-cols-5'}>
-        {MOONMOON_SITES.map((site) => {
+      <div className={compact ? 'no-scrollbar flex gap-2 overflow-x-auto pb-1' : 'grid grid-cols-2 gap-2 sm:grid-cols-4'}>
+        {PUBLIC_MOONMOON_SITES.map((site) => {
           const isCurrent = site.id === currentSiteId;
           const Icon = IconMap[site.iconType] || BrainCircuit;
           const href = buildUtmUrl(site.url, {

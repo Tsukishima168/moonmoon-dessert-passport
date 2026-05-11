@@ -10,7 +10,7 @@ import {
     CheckCircle2,
     Gift,
 } from 'lucide-react';
-import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, MOONMOON_SITES } from './constants';
+import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, MOONMOON_SITES, PUBLIC_MOONMOON_SITES } from './constants';
 import { Stamp } from './types';
 import { PassportTab } from './types';
 import {
@@ -654,7 +654,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 points={points}
                                 unlockedCount={unlockedCount}
                                 visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
-                                visitedSiteTotal={MOONMOON_SITES.length}
+                                visitedSiteTotal={PUBLIC_MOONMOON_SITES.length}
                                 mbtiType={hubProfileSnapshot.mbtiType}
                                 hasIdentity={Boolean(user || profile)}
                                 userId={user?.id ?? null}

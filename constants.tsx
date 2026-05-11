@@ -224,6 +224,10 @@ export const MOONMOON_SITES: MoonSite[] = [
   },
 ];
 
+export const PUBLIC_MOONMOON_SITES = MOONMOON_SITES.filter(
+  (site) => site.id !== 'dessert_booking'
+);
+
 // ─── Points Redemption Store ───
 export const REDEEMABLE_ITEMS: RedeemableItem[] = [
   // 飲品 (低門檻)

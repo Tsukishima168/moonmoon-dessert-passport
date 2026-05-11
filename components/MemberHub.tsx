@@ -8,7 +8,7 @@ import {
     Sparkles,
     BookOpen,
 } from 'lucide-react';
-import { MOONMOON_SITES, DESSERTS } from '../constants';
+import { MOONMOON_SITES, PUBLIC_MOONMOON_SITES, DESSERTS } from '../constants';
 import { useLiff } from '../src/contexts/LiffContext';
 import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 import { getVisitedSites, markSiteVisited, getPassportState } from '../passportUtils';
@@ -135,9 +135,13 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
     }, [user?.id]);
 
     useEffect(() => {
+        const publicVisitedCount = visitedSites.filter((siteId) =>
+            PUBLIC_MOONMOON_SITES.some((site) => site.id === siteId)
+        ).length;
+
         onProfileSnapshotChange?.({
             mbtiType,
-            visitedSiteCount: visitedSites.length,
+            visitedSiteCount: publicVisitedCount,
             stampCount,
         });
     }, [mbtiType, onProfileSnapshotChange, stampCount, visitedSites.length]);
@@ -158,7 +162,10 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
         window.open(outboundUrl.toString(), '_blank');
     };
 
-    const completionRate = (visitedSites.length / MOONMOON_SITES.length) * 100;
+    const publicVisitedSites = visitedSites.filter((siteId) =>
+        PUBLIC_MOONMOON_SITES.some((site) => site.id === siteId)
+    );
+    const completionRate = (publicVisitedSites.length / PUBLIC_MOONMOON_SITES.length) * 100;
 
     return (
         <KiwimuPanel padded={false}>
@@ -170,7 +177,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                 </div>
                 <div className="bg-brand-lime px-2 py-0.5 rounded-full border border-brand-black">
                     <span className="text-[10px] font-black text-brand-black uppercase">
-                        {visitedSites.length === MOONMOON_SITES.length ? '已完成' : `${visitedSites.length}/${MOONMOON_SITES.length}`}
+                        {publicVisitedSites.length === PUBLIC_MOONMOON_SITES.length ? '已完成' : `${publicVisitedSites.length}/${PUBLIC_MOONMOON_SITES.length}`}
                     </span>
                 </div>
             </div>
@@ -212,7 +219,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
             <div className="p-3 bg-gray-50/50">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1">宇宙探索進度</p>
                 <div className="grid grid-cols-1 gap-2.5">
-                    {MOONMOON_SITES.map((site) => {
+                    {PUBLIC_MOONMOON_SITES.map((site) => {
                         const isVisited = visitedSites.includes(site.id);
                         const IconComponent = IconMap[site.iconType] || BrainCircuit;
 
@@ -230,7 +237,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                 </div>
 
                 {/* Completion Message */}
-                {visitedSites.length === MOONMOON_SITES.length && (
+                {publicVisitedSites.length === PUBLIC_MOONMOON_SITES.length && (
                     <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
                         <Sparkles size={16} className="text-brand-lime-dark" />
                         <p className="text-[10px] font-bold text-brand-lime-dark uppercase">
