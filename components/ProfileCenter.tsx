@@ -9,7 +9,7 @@ import {
   Sparkles,
   UserRound,
 } from 'lucide-react';
-import { MOONMOON_SITES } from '../constants';
+import { PUBLIC_MOONMOON_SITES } from '../constants';
 import {
   KIWIMU_CHARACTER_OPTIONS,
   ProfileCenterSyncStatus,
@@ -253,7 +253,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
             <PrivacySeal
               checked={draft.isFootprintPublic}
               label="月島足跡"
-              description={`目前累積 ${visitedSiteCount}/${MOONMOON_SITES.length} 站，之後可決定是否展示探索進度。`}
+              description={`目前累積 ${visitedSiteCount}/${PUBLIC_MOONMOON_SITES.length} 站，之後可決定是否展示探索進度。`}
               onToggle={() => updateDraft('isFootprintPublic', !draft.isFootprintPublic)}
             />
           </div>

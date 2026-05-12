@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Kiwimu Passport 會員中心",
   "short_name": "Passport",
-  "description": "Kiwimu 與月島甜點的會員中心：Google 登入、跨站身份、MBTI、任務、訂單與積分。",
+  "description": "Kiwimu 與月島甜點的會員入口：Google 登入、跨站身份、MBTI、任務、集章與積分。",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -11,7 +11,7 @@
   "theme_color": "#F4F4F0",
   "orientation": "portrait",
   "lang": "zh-TW",
-  "categories": ["food", "lifestyle", "shopping"],
+  "categories": ["food", "lifestyle"],
   "prefer_related_applications": false,
   "icons": [
     {
@@ -53,10 +53,10 @@
       "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "會員福利",
-      "short_name": "福利",
-      "description": "查看會員福利與訂單",
-      "url": "/?screen=passport&tab=shop",
+      "name": "今日任務",
+      "short_name": "任務",
+      "description": "開啟護照任務與簽到",
+      "url": "/?screen=passport&tab=journey",
       "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
