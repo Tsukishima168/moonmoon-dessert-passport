@@ -10,7 +10,7 @@ import {
     CheckCircle2,
     Gift,
 } from 'lucide-react';
-import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, MOONMOON_SITES, PUBLIC_MOONMOON_SITES } from './constants';
+import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, PUBLIC_MOONMOON_SITES } from './constants';
 import { Stamp } from './types';
 import { PassportTab } from './types';
 import {
@@ -29,8 +29,6 @@ import BadgeJourney from './components/BadgeJourney';
 import PassportHomeDashboard from './components/PassportHomeDashboard';
 import MemberHub from './components/MemberHub';
 import ProfileCenter from './components/ProfileCenter';
-import RewardShop from './components/RewardShop';
-import ShopOrderHistory from './components/ShopOrderHistory';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
 import { Button } from './components/Button';
@@ -64,11 +62,14 @@ interface PassportScreenProps {
     onTabChange?: (tab: PassportTab) => void;
 }
 
-const TAB_LABELS: Record<PassportTab, string> = {
+const normalizePublicPassportTab = (tab: string | null | undefined): PassportTab => (
+    tab === 'journey' || tab === 'rewards' ? tab : 'hub'
+);
+
+const TAB_LABELS: Partial<Record<PassportTab, string>> = {
     hub: '護照首頁',
     journey: '任務',
     rewards: '集章獎勵',
-    shop: '會員福利',
 };
 
 const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[PassportTab, string]>).map(([key, label]) => ({ key, label }));
@@ -123,7 +124,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     initialTab = 'hub',
     onTabChange,
 }) => {
-    const [activeTab, setActiveTab] = useState<PassportTab>(initialTab);
+    const [activeTab, setActiveTab] = useState<PassportTab>(normalizePublicPassportTab(initialTab));
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
     const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
@@ -269,10 +270,15 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     }, [profile?.displayName, profile?.userId, user?.id, user?.user_metadata?.full_name, user?.user_metadata?.name]);
 
     useEffect(() => {
-        setActiveTab(initialTab);
+        setActiveTab(normalizePublicPassportTab(initialTab));
     }, [initialTab]);
 
     useEffect(() => {
+        if (activeTab === 'shop') {
+            setActiveTab('hub');
+            return;
+        }
+
         onTabChange?.(activeTab);
     }, [activeTab, onTabChange]);
 
@@ -473,7 +479,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         </h1>
 
                         <p className="mb-4 text-[11px] font-bold text-white/60">
-                            把你在月島的會員資料、任務、訂單、集章與足跡都收進這裡。
+                            把你在月島的會員資料、任務、集章與足跡都收進這裡。
                         </p>
 
                         <div className="mb-4 grid w-full max-w-[280px] grid-cols-3 gap-2">
@@ -512,7 +518,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             Passport Home
                         </p>
                         <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
-                            先看身份、今日行動、里程碑與最近動態，再決定要前往任務、獎勵或會員福利。
+                            先看身份、今日行動、里程碑與最近動態，再決定要前往任務或獎勵。
                         </p>
                     </div>
 
@@ -657,7 +663,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 visitedSiteTotal={PUBLIC_MOONMOON_SITES.length}
                                 mbtiType={hubProfileSnapshot.mbtiType}
                                 hasIdentity={Boolean(user || profile)}
-                                userId={user?.id ?? null}
                                 nextReward={
                                     nextRewardTier
                                         ? {
@@ -674,7 +679,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 onOpenCheckin={handleOpenCheckin}
                                 onGoJourney={() => setActiveTab('journey')}
                                 onGoRewards={() => setActiveTab('rewards')}
-                                onGoShop={() => setActiveTab('shop')}
                                 onLogin={signInWithGoogle}
                             />
                             <ProfileCenter
@@ -691,36 +695,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         </div>
                     )}
 
-                    {activeTab === 'shop' && (
-                        <div className="space-y-6">
-                            {/* 遊戲中心導流卡 */}
-                            <a
-                                href="https://gacha.kiwimu.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-purple-200 p-4 no-underline"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-2xl shrink-0 shadow-sm">
-                                        🎮
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <h3 className="text-sm font-black text-stone-800">月島遊戲中心</h3>
-                                            <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">NEW</span>
-                                        </div>
-                                        <p className="text-xs text-stone-500">每日搖珠機 + 幸運轉盤，賺積分、換驚喜</p>
-                                    </div>
-                                    <ExternalLink className="w-4 h-4 text-stone-400 shrink-0" />
-                                </div>
-                            </a>
-                            <ShopOrderHistory
-                                userId={user?.id ?? null}
-                                onLogin={signInWithGoogle}
-                            />
-                            <RewardShop currentPoints={points} />
-                        </div>
-                    )}
                 </div>
 
                 {/* ─── Checkin Modal ─── */}

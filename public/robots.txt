@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /redeem
+Disallow: /join/
+Disallow: /passport/
+Disallow: /*?*
+
+Sitemap: https://passport.kiwimu.com/sitemap.xml

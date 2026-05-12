@@ -42,7 +42,7 @@ const getOrCreatePassportCoverNumber = () => {
   return generated;
 };
 
-const PASSPORT_TABS: PassportTab[] = ['hub', 'journey', 'rewards', 'shop'];
+const PUBLIC_PASSPORT_TABS: PassportTab[] = ['hub', 'journey', 'rewards'];
 
 const getInitialScreen = (): Screen => {
   if (typeof window === 'undefined') {
@@ -60,7 +60,7 @@ const getInitialPassportTab = (): PassportTab => {
 
   const params = new URLSearchParams(window.location.search);
   const tab = params.get('tab');
-  return PASSPORT_TABS.includes(tab as PassportTab) ? (tab as PassportTab) : 'hub';
+  return PUBLIC_PASSPORT_TABS.includes(tab as PassportTab) ? (tab as PassportTab) : 'hub';
 };
 
 // -- Header --
@@ -144,7 +144,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
             Moon Moon Passport
           </h1>
           <p className="mt-3 max-w-[14rem] text-sm font-medium leading-relaxed text-brand-black/62 md:mt-4 md:max-w-[18rem] md:text-base">
-            你的會員資料、MBTI、任務、訂單與積分，都從這本護照開始。
+            你的會員資料、MBTI、任務、集章與積分，都從這本護照開始。
           </p>
           <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-brand-black/28 md:text-[11px]">
             No. {passportCoverNumber}
@@ -181,7 +181,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
             <ArrowUpRight className="h-3.5 w-3.5 text-brand-black/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>
           <p className="text-[10px] font-bold tracking-[0.16em] text-brand-black/30">
-            身份 · 任務 · 訂單
+            身份 · 任務 · 集章
           </p>
         </div>
       </div>
