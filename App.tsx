@@ -27,6 +27,43 @@ import {
   trackUtmLanding
 } from './analytics';
 
+type PassportWindow = Window & {
+  __PASSPORT_INITIAL_SEARCH__?: string;
+};
+
+const getInitialUrlSearch = () => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return (window as PassportWindow).__PASSPORT_INITIAL_SEARCH__ || window.location.search;
+};
+
+const getInitialUrlParams = () => new URLSearchParams(getInitialUrlSearch());
+
+const scrubSensitiveClaimParamsFromUrl = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  let changed = false;
+
+  ['claim', 'claim_code', 'code', 'reward'].forEach((param) => {
+    if (url.searchParams.has(param)) {
+      url.searchParams.delete(param);
+      changed = true;
+    }
+  });
+
+  if (!changed) {
+    return;
+  }
+
+  const nextSearch = url.searchParams.toString();
+  window.history.replaceState({}, '', `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`);
+};
+
 const getOrCreatePassportCoverNumber = () => {
   if (typeof window === 'undefined') {
     return '001';
@@ -289,7 +326,7 @@ function App() {
 
   // Handle URL parameters for stamp unlocking (QR codes, MBTI claims, etc.)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = getInitialUrlParams();
     const stampParam = params.get('stamp');
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
@@ -299,6 +336,11 @@ function App() {
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
+    const hasSensitiveClaimParam = Boolean(claimParam || claimCodeParam || rewardParam);
+
+    if (hasSensitiveClaimParam) {
+      scrubSensitiveClaimParamsFromUrl();
+    }
 
     if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !claimCodeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
       return;
