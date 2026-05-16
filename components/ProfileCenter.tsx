@@ -111,24 +111,23 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
   };
 
   return (
-    <KiwimuPanel padded={false}>
-      <div className="border-b-2 border-brand-black bg-brand-black px-4 py-3 text-white">
+    <KiwimuPanel padded={false} className="border-brand-black/20 shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
+      <div className="border-b border-brand-black/10 bg-white px-4 py-3 text-brand-black">
         <div className="flex items-center gap-2">
-          <UserRound size={16} className="text-brand-lime" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand-black/10 bg-brand-lime/40">
+            <UserRound size={15} className="text-brand-black" />
+          </div>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
-              Passport Holder
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/35">
+              Holder Record
             </p>
-            <h3 className="text-sm font-black">持有人頁</h3>
+            <h3 className="text-sm font-black text-brand-black">身份資料</h3>
           </div>
         </div>
       </div>
 
       <div className="space-y-4 bg-[linear-gradient(180deg,#fffdf6_0%,#f7f7f3_100%)] p-4">
         <section className="relative overflow-hidden rounded-[2rem] border-2 border-brand-black bg-white shadow-[4px_4px_0px_black]">
-          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand-lime/20 blur-2xl" />
-          <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-brand-black/5 blur-2xl" />
-
           <div className="relative p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
@@ -136,7 +135,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                   Holder Record
                 </p>
                 <p className="mt-1 text-xs font-bold text-brand-black/60">
-                  打開護照時，第一眼看到的就是這一頁。
+                  這裡維護護照名稱、公開印記與陪伴角色。
                 </p>
               </div>
               <span

@@ -13,12 +13,16 @@ export interface ShopOrderRecord {
   status: string;
   pickup_time: string;
   created_at: string;
+  checkout_site?: string | null;
+  source_from?: string | null;
   final_price?: number | null;
   total_price?: number | null;
   payment_method?: string | null;
   linepay_transaction_id?: string | null;
   items: ShopOrderItem[];
 }
+
+const USER_VISIBLE_CHECKOUT_SITES = ['shop', 'map'];
 
 export async function getUserShopOrders(userId: string): Promise<ShopOrderRecord[]> {
   if (!supabase) {
@@ -27,9 +31,9 @@ export async function getUserShopOrders(userId: string): Promise<ShopOrderRecord
 
   const { data, error } = await supabase
     .from('orders')
-    .select('order_id, status, pickup_time, created_at, final_price, total_price, payment_method, linepay_transaction_id, items')
+    .select('order_id, status, pickup_time, created_at, checkout_site, source_from, final_price, total_price, payment_method, linepay_transaction_id, items')
     .eq('user_id', userId)
-    .eq('checkout_site', 'shop')
+    .in('checkout_site', USER_VISIBLE_CHECKOUT_SITES)
     .order('created_at', { ascending: false })
     .limit(20);
 

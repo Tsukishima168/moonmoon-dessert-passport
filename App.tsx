@@ -41,15 +41,67 @@ const getInitialUrlSearch = () => {
 
 const getInitialUrlParams = () => new URLSearchParams(getInitialUrlSearch());
 
+const PENDING_REWARD_CLAIM_KEY = 'kiwimu_passport_pending_reward_claim';
+
+type PendingRewardClaim = {
+  code: string;
+  rewardId: string;
+};
+
+const getRewardClaimCodeParam = (params: URLSearchParams) => {
+  return params.get('claim_code') || (params.has('reward') ? params.get('code') : null);
+};
+
+const readPendingRewardClaim = (): PendingRewardClaim | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(PENDING_REWARD_CLAIM_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PendingRewardClaim>;
+    if (typeof parsed.code !== 'string' || typeof parsed.rewardId !== 'string') {
+      return null;
+    }
+    return {
+      code: parsed.code,
+      rewardId: parsed.rewardId,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const savePendingRewardClaim = (claim: PendingRewardClaim) => {
+  try {
+    window.sessionStorage.setItem(PENDING_REWARD_CLAIM_KEY, JSON.stringify(claim));
+  } catch {
+    // Ignore storage failures; the URL fallback is already scrubbed for safety.
+  }
+};
+
+const clearPendingRewardClaim = () => {
+  try {
+    window.sessionStorage.removeItem(PENDING_REWARD_CLAIM_KEY);
+  } catch {
+    // no-op
+  }
+};
+
 const scrubSensitiveClaimParamsFromUrl = () => {
   if (typeof window === 'undefined') {
     return;
   }
 
   const url = new URL(window.location.href);
+  const paramsToScrub = ['claim', 'claim_code', 'reward'];
+  if (url.searchParams.has('reward') && url.searchParams.has('code')) {
+    paramsToScrub.push('code');
+  }
   let changed = false;
 
-  ['claim', 'claim_code', 'code', 'reward'].forEach((param) => {
+  paramsToScrub.forEach((param) => {
     if (url.searchParams.has(param)) {
       url.searchParams.delete(param);
       changed = true;
@@ -86,8 +138,23 @@ const getInitialScreen = (): Screen => {
     return 'landing';
   }
 
-  const params = new URLSearchParams(window.location.search);
-  return params.get('screen') === 'passport' ? 'passport' : 'landing';
+  const params = getInitialUrlParams();
+  const opensPassport =
+    params.get('screen') === 'passport' ||
+    params.has('tab') ||
+    params.has('stamp') ||
+    params.has('unlock') ||
+    params.has('claim') ||
+    params.has('claim_code') ||
+    (params.has('reward') && params.has('code')) ||
+    params.has('reward') ||
+    params.get('auto_unlock') === 'true' ||
+    params.get('action') === 'add_points' ||
+    params.has('amount') ||
+    params.has('utm_source') ||
+    params.has('from');
+
+  return opensPassport ? 'passport' : 'landing';
 };
 
 const getInitialPassportTab = (): PassportTab => {
@@ -95,7 +162,7 @@ const getInitialPassportTab = (): PassportTab => {
     return 'hub';
   }
 
-  const params = new URLSearchParams(window.location.search);
+  const params = getInitialUrlParams();
   const tab = params.get('tab');
   return PUBLIC_PASSPORT_TABS.includes(tab as PassportTab) ? (tab as PassportTab) : 'hub';
 };
@@ -330,13 +397,14 @@ function App() {
     const stampParam = params.get('stamp');
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
-    const rewardParam = params.get('reward');
-    const claimCodeParam = params.get('claim_code') || params.get('code');
+    const pendingRewardClaim = readPendingRewardClaim();
+    const rewardParam = params.get('reward') || pendingRewardClaim?.rewardId || null;
+    const claimCodeParam = getRewardClaimCodeParam(params) || pendingRewardClaim?.code || null;
     const debugParam = params.get('debug');
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
-    const hasSensitiveClaimParam = Boolean(claimParam || claimCodeParam || rewardParam);
+    const hasSensitiveClaimParam = Boolean(claimParam || params.get('claim_code') || rewardParam);
 
     if (hasSensitiveClaimParam) {
       scrubSensitiveClaimParamsFromUrl();
@@ -491,6 +559,7 @@ function App() {
         const rewardTarget = resolveRewardClaimTarget(rewardParam);
 
         if (!rewardTarget) {
+          clearPendingRewardClaim();
           trackEvent('stamp_claim_failed', { reason: 'unsupported_reward_id', reward_id: rewardParam });
           setAppNotice({
             tone: 'error',
@@ -505,6 +574,7 @@ function App() {
             trackEvent('stamp_claim_failed', { reason: errorReason, reward_id: rewardParam, stamp_id: rewardTarget.stampId });
 
             if (errorReason === 'invalid_or_used') {
+              clearPendingRewardClaim();
               // Check if already unlocked locally
               const currentState = JSON.parse(localStorage.getItem('moonmoon_passport') || '{}');
               if (currentState.unlockedStamps?.includes(rewardTarget.stampId)) {
@@ -520,6 +590,12 @@ function App() {
                 tone: 'error',
                 message: 'Passport 尚未完成 reward claim 設定，請先確認 Supabase 環境變數。',
               });
+            } else if (errorReason === 'auth_required') {
+              savePendingRewardClaim({ code: claimCodeParam, rewardId: rewardParam });
+              setAppNotice({
+                tone: 'error',
+                message: '請先登入 Kiwimu Passport，再回來領取這枚限定徽章。',
+              });
             } else {
               setAppNotice({
                 tone: 'error',
@@ -528,6 +604,7 @@ function App() {
             }
           } else {
             // Success
+            clearPendingRewardClaim();
             unlockStamp(rewardTarget.stampId);
             trackEvent('stamp_auto_unlocked', { stamp_id: rewardTarget.stampId, source: 'reward_claim', reward_id: rewardParam });
             trackEvent('stamp_claim', {
