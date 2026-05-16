@@ -168,14 +168,16 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
     const completionRate = (publicVisitedSites.length / PUBLIC_MOONMOON_SITES.length) * 100;
 
     return (
-        <KiwimuPanel padded={false}>
+        <KiwimuPanel padded={false} className="border-brand-black/20 shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
             {/* Header Bar */}
-            <div className="bg-brand-black px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white">
-                    <Trophy size={16} className="text-brand-lime" />
+            <div className="border-b border-brand-black/10 bg-white px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-brand-black">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand-black/10 bg-brand-lime/40">
+                        <Trophy size={15} className="text-brand-black" />
+                    </div>
                     <h2 className="text-sm font-bold tracking-tight uppercase">月島足跡</h2>
                 </div>
-                <div className="bg-brand-lime px-2 py-0.5 rounded-full border border-brand-black">
+                <div className="bg-brand-gray/10 px-2 py-0.5 rounded-full border border-brand-black/10">
                     <span className="text-[10px] font-black text-brand-black uppercase">
                         {publicVisitedSites.length === PUBLIC_MOONMOON_SITES.length ? '已完成' : `${publicVisitedSites.length}/${PUBLIC_MOONMOON_SITES.length}`}
                     </span>

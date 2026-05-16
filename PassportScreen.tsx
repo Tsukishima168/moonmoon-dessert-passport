@@ -4,11 +4,7 @@ import {
     MapPin,
     ExternalLink,
     ShieldCheck,
-    Star,
     Trophy,
-    Lock,
-    CheckCircle2,
-    Gift,
 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, PUBLIC_MOONMOON_SITES } from './constants';
 import { Stamp } from './types';
@@ -19,11 +15,10 @@ import {
     markRewardRedeemed,
     getUnlockedStampCount,
     calculateUserLevel,
-    isStampUnlocked,
-    getUnlockedAchievements,
     getVisitedSites,
-    markSiteVisited,
     addPassportPoints,
+    canCheckinToday,
+    getLocalCheckinStreak,
 } from './passportUtils';
 import BadgeJourney from './components/BadgeJourney';
 import PassportHomeDashboard from './components/PassportHomeDashboard';
@@ -31,10 +26,8 @@ import MemberHub from './components/MemberHub';
 import ProfileCenter from './components/ProfileCenter';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
-import { Button } from './components/Button';
 import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
 import { KiwimuAchievementModal } from './components/kiwimu/KiwimuAchievementModal';
-import { KiwimuMetricCard } from './components/kiwimu/KiwimuMetricCard';
 import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
 import { KiwimuRewardTierCard } from './components/kiwimu/KiwimuRewardTierCard';
 import { KiwimuSectionIntro } from './components/kiwimu/KiwimuSectionIntro';
@@ -129,6 +122,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
     const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
+    const [canDailyCheckin, setCanDailyCheckin] = useState(canCheckinToday);
+    const [checkinStreak, setCheckinStreak] = useState(getLocalCheckinStreak);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isCheckingLocation, setIsCheckingLocation] = useState(false);
     const [gpsDebug, setGpsDebug] = useState<GpsDebugInfo | null>(null);
@@ -196,6 +191,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
+        setCanDailyCheckin(canCheckinToday());
+        setCheckinStreak(getLocalCheckinStreak());
         const storedMbti = readStoredMbtiResult();
         setHubProfileSnapshot({
             mbtiType: storedMbti?.mbtiType ?? null,
@@ -227,14 +224,21 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
             void refreshPoints();
         };
 
+        const handleDailyCheckin = () => {
+            setCanDailyCheckin(canCheckinToday());
+            setCheckinStreak(getLocalCheckinStreak());
+        };
+
         document.addEventListener('kiwimu:points_earned', handleExternalPoints);
         document.addEventListener('kiwimu:passport_migrated', handlePassportMigrated);
         document.addEventListener('passport-points-updated', handlePointsUpdated);
+        document.addEventListener('daily-checkin', handleDailyCheckin);
 
         return () => {
             document.removeEventListener('kiwimu:points_earned', handleExternalPoints);
             document.removeEventListener('kiwimu:passport_migrated', handlePassportMigrated);
             document.removeEventListener('passport-points-updated', handlePointsUpdated);
+            document.removeEventListener('daily-checkin', handleDailyCheckin);
         };
     }, [isLoggedIn, profile, refreshPoints, user]);
 
@@ -434,9 +438,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     };
 
     const userLevel = calculateUserLevel();
-    const gpsNavigationUrl = gpsDebug
-        ? `https://maps.google.com/?q=${gpsDebug.targetLat},${gpsDebug.targetLng}`
-        : null;
     const fallbackPassportHolder =
         user?.user_metadata?.full_name ||
         user?.user_metadata?.name ||
@@ -455,73 +456,42 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
             <div className="flex flex-col w-full h-full md:max-w-md md:h-[90vh] md:rounded-[40px] bg-brand-bg shadow-2xl relative overflow-hidden animate-slide-up">
 
                 {/* ─── Hero Header ─── */}
-                <div className="bg-brand-black pt-16 pb-8 px-6 rounded-b-[40px] shadow-lg relative overflow-hidden flex-shrink-0">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-lime/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
-
-                    <div className="relative z-10 flex flex-col items-center">
+                <div className="bg-brand-black px-5 pb-4 pt-7 shadow-lg relative overflow-hidden flex-shrink-0">
+                    <div className="relative z-10">
                         <button
                             onClick={onClose}
-                            className="absolute top-0 right-0 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                            className="absolute right-0 top-0 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
                         >
                             <X size={20} />
                         </button>
 
-                        <div className="w-16 h-16 rounded-2xl bg-brand-lime border-2 border-white shadow-[0_0_20px_rgba(212,255,0,0.3)] flex items-center justify-center mb-3 animate-float">
-                            <Trophy size={32} className="text-brand-black" />
-                        </div>
-
-                        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.28em] text-white/45">
-                            Passport No. {passportCoverNumber}
-                        </p>
-
-                        <h1 className="text-xl font-black text-white tracking-tight mb-1">
-                            Kiwimu 月島護照
-                        </h1>
-
-                        <p className="mb-4 text-[11px] font-bold text-white/60">
-                            把你在月島的會員資料、任務、集章與足跡都收進這裡。
-                        </p>
-
-                        <div className="mb-4 grid w-full max-w-[280px] grid-cols-3 gap-2">
-                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">持有人</p>
-                                <p className="mt-1 truncate text-[11px] font-black text-white">{passportHolder}</p>
+                        <div className="flex items-center gap-3 pr-10">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-2 border-white bg-brand-lime shadow-[0_0_18px_rgba(212,255,0,0.25)]">
+                                <Trophy size={22} className="text-brand-black" />
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">模式</p>
-                                <p className="mt-1 text-[11px] font-black text-white">{passportMode}</p>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-white/40">
+                                    Passport No. {passportCoverNumber}
+                                </p>
+                                <h1 className="mt-1 truncate text-lg font-black tracking-tight text-white">
+                                    Kiwimu 月島護照
+                                </h1>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-brand-lime">
+                                        <ShieldCheck size={11} />
+                                        Lv.{userLevel}
+                                    </span>
+                                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/65">
+                                        {passportMode}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">編號</p>
-                                <p className="mt-1 text-[11px] font-black text-white">#{passportCoverNumber}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-4">
-                            <ShieldCheck size={12} className="text-brand-lime" />
-                            <span className="text-[9px] font-black text-brand-lime uppercase tracking-widest">
-                                護照等級 Lv.{userLevel}
-                            </span>
-                        </div>
-
-                        <div className="flex w-full max-w-[240px] gap-3">
-                            <KiwimuMetricCard label="印章" value={unlockedCount} />
-                            <KiwimuMetricCard label="積分" value={`${points}P`} accent="lime" />
                         </div>
                     </div>
                 </div>
 
                 {/* ─── Content Tabs ─── */}
-                <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
-                    <div className="mb-5 rounded-[1.75rem] border border-brand-black/10 bg-white px-4 py-3 shadow-[3px_3px_0px_black]">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-brand-black/35">
-                            Passport Home
-                        </p>
-                        <p className="mt-1 text-sm font-bold leading-relaxed text-brand-black/75">
-                            先看身份、今日行動、里程碑與最近動態，再決定要前往任務或獎勵。
-                        </p>
-                    </div>
-
+                <div className="flex-1 overflow-y-auto px-5 py-5 scrollbar-hide">
                     {/* Tab Navigation */}
                     <KiwimuTabs
                         tabs={PASSPORT_TABS}
@@ -663,6 +633,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 visitedSiteTotal={PUBLIC_MOONMOON_SITES.length}
                                 mbtiType={hubProfileSnapshot.mbtiType}
                                 hasIdentity={Boolean(user || profile)}
+                                userId={user?.id ?? null}
+                                canCheckin={canDailyCheckin}
+                                checkinStreak={checkinStreak}
                                 nextReward={
                                     nextRewardTier
                                         ? {
@@ -681,17 +654,25 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 onGoRewards={() => setActiveTab('rewards')}
                                 onLogin={signInWithGoogle}
                             />
-                            <ProfileCenter
-                                draft={profileCenterDraft}
-                                mbtiType={hubProfileSnapshot.mbtiType}
-                                visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
-                                hasIdentity={Boolean(user || profile)}
-                                syncStatus={profileCenterSyncStatus}
-                                onChange={setProfileCenterDraft}
-                            />
-                            <MemberHub
-                                onProfileSnapshotChange={handleHubProfileSnapshotChange}
-                            />
+                            <div className="space-y-3 pt-1">
+                                <div className="px-1">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-black/35">
+                                        Extension Records
+                                    </p>
+                                    <h2 className="mt-1 text-sm font-black text-brand-black">身份資料與宇宙足跡</h2>
+                                </div>
+                                <ProfileCenter
+                                    draft={profileCenterDraft}
+                                    mbtiType={hubProfileSnapshot.mbtiType}
+                                    visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
+                                    hasIdentity={Boolean(user || profile)}
+                                    syncStatus={profileCenterSyncStatus}
+                                    onChange={setProfileCenterDraft}
+                                />
+                                <MemberHub
+                                    onProfileSnapshotChange={handleHubProfileSnapshotChange}
+                                />
+                            </div>
                         </div>
                     )}
 

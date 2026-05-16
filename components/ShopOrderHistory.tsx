@@ -25,6 +25,12 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
   line_pay: 'LINE Pay',
 };
 
+const ORDER_SOURCE_LABEL: Record<string, string> = {
+  shop: 'Shop',
+  map: 'Map',
+  moon_map: 'Map',
+};
+
 interface ShopOrderHistoryProps {
   userId: string | null;
   onLogin: () => Promise<void> | void;
@@ -134,7 +140,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
           <div className="rounded-2xl border border-dashed border-brand-black/30 bg-brand-gray/20 p-4">
             <p className="text-sm font-black text-brand-black">登入後就能同步你的 shop 訂單</p>
             <p className="mt-2 text-xs font-medium leading-relaxed text-gray-600">
-              這裡會顯示你在 `shop.kiwimu.com` 的甜點訂單、取貨時間與狀態。若你先前未登入就下單，紀錄可能不會自動綁進來。
+              這裡會顯示你在 `shop.kiwimu.com` 與 Map 甜點目錄的訂單、取貨時間與狀態。若你先前未登入就下單，紀錄可能不會自動綁進來。
             </p>
           </div>
           <button
@@ -222,6 +228,12 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gray-500">
+                    <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
+                      <p className="font-bold uppercase tracking-wider text-gray-400">來源</p>
+                      <p className="mt-1 font-semibold text-brand-black/80">
+                        {ORDER_SOURCE_LABEL[order.source_from || order.checkout_site || ''] || order.source_from || order.checkout_site || '未設定'}
+                      </p>
+                    </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
                       <p className="font-bold uppercase tracking-wider text-gray-400">建立時間</p>
                       <p className="mt-1 font-semibold text-brand-black/80">{formatDateTime(order.created_at)}</p>

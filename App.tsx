@@ -86,8 +86,23 @@ const getInitialScreen = (): Screen => {
     return 'landing';
   }
 
-  const params = new URLSearchParams(window.location.search);
-  return params.get('screen') === 'passport' ? 'passport' : 'landing';
+  const params = getInitialUrlParams();
+  const opensPassport =
+    params.get('screen') === 'passport' ||
+    params.has('tab') ||
+    params.has('stamp') ||
+    params.has('unlock') ||
+    params.has('claim') ||
+    params.has('claim_code') ||
+    params.has('code') ||
+    params.has('reward') ||
+    params.get('auto_unlock') === 'true' ||
+    params.get('action') === 'add_points' ||
+    params.has('amount') ||
+    params.has('utm_source') ||
+    params.has('from');
+
+  return opensPassport ? 'passport' : 'landing';
 };
 
 const getInitialPassportTab = (): PassportTab => {
@@ -95,7 +110,7 @@ const getInitialPassportTab = (): PassportTab => {
     return 'hub';
   }
 
-  const params = new URLSearchParams(window.location.search);
+  const params = getInitialUrlParams();
   const tab = params.get('tab');
   return PUBLIC_PASSPORT_TABS.includes(tab as PassportTab) ? (tab as PassportTab) : 'hub';
 };
