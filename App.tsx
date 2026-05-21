@@ -108,10 +108,10 @@ const scrubSensitiveClaimParamsFromUrl = () => {
   }
 
   const url = new URL(window.location.href);
-  const paramsToScrub = ['claim', 'claim_code', 'reward'];
-  if (url.searchParams.has('reward') && url.searchParams.has('code')) {
-    paramsToScrub.push('code');
-  }
+  const hasRewardClaimCode = url.searchParams.has('code') && url.searchParams.has('reward');
+  const paramsToScrub = hasRewardClaimCode
+    ? ['claim', 'claim_code', 'reward', 'code']
+    : ['claim', 'claim_code', 'reward'];
   let changed = false;
 
   paramsToScrub.forEach((param) => {
