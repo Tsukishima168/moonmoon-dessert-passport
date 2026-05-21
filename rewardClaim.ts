@@ -2,7 +2,7 @@ import { supabase } from './src/lib/supabase';
 
 export type RewardClaimResult =
     | { ok: true; rewardId: string }
-    | { ok: false; reason: 'unconfigured' | 'invalid_or_used' | 'request_failed' };
+    | { ok: false; reason: 'unconfigured' | 'auth_required' | 'invalid_or_used' | 'request_failed' };
 
 export interface RewardClaimTarget {
     rewardId: string;
@@ -41,6 +41,16 @@ export async function consumeRewardClaim(code: string, rewardId: string): Promis
     const normalizedRewardId = rewardId.trim();
 
     try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+            console.error('Reward claim session check failed:', sessionError.message);
+            return { ok: false, reason: 'request_failed' };
+        }
+
+        if (!sessionData.session) {
+            return { ok: false, reason: 'auth_required' };
+        }
+
         const { data, error } = await supabase.rpc('consume_reward_claim', {
             p_code: normalizedCode,
             p_reward_id: normalizedRewardId,
@@ -55,6 +65,10 @@ export async function consumeRewardClaim(code: string, rewardId: string): Promis
 
         if (result?.ok && result.reward_id) {
             return { ok: true, rewardId: result.reward_id };
+        }
+
+        if (result?.error === 'auth_required') {
+            return { ok: false, reason: 'auth_required' };
         }
 
         return { ok: false, reason: 'invalid_or_used' };

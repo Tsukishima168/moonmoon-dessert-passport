@@ -4,6 +4,7 @@
 CREATE TABLE IF NOT EXISTS public.reward_claims (
   code TEXT,
   reward_id TEXT,
+  user_id UUID,
   source TEXT,
   created_at TIMESTAMPTZ,
   claimed_at TIMESTAMPTZ,
@@ -13,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.reward_claims (
 ALTER TABLE public.reward_claims
   ADD COLUMN IF NOT EXISTS code TEXT,
   ADD COLUMN IF NOT EXISTS reward_id TEXT,
+  ADD COLUMN IF NOT EXISTS user_id UUID,
   ADD COLUMN IF NOT EXISTS source TEXT,
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ,
@@ -185,11 +187,19 @@ AS $$
 DECLARE
   v_code TEXT := btrim(coalesce(p_code, ''));
   v_requested_reward_id TEXT := btrim(coalesce(p_reward_id, ''));
+  v_auth_user_id UUID := auth.uid();
   v_reward_id TEXT;
 BEGIN
+  IF v_auth_user_id IS NULL THEN
+    INSERT INTO public.reward_claim_attempts (reward_id, ok, auth_user_id)
+    VALUES (nullif(v_requested_reward_id, ''), false, null);
+
+    RETURN jsonb_build_object('ok', false, 'error', 'auth_required');
+  END IF;
+
   IF char_length(v_code) < 16 OR char_length(v_requested_reward_id) = 0 THEN
     INSERT INTO public.reward_claim_attempts (reward_id, ok, auth_user_id)
-    VALUES (nullif(v_requested_reward_id, ''), false, auth.uid());
+    VALUES (nullif(v_requested_reward_id, ''), false, v_auth_user_id);
 
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_or_used');
   END IF;
@@ -198,12 +208,13 @@ BEGIN
   SET claimed_at = now()
   WHERE code = v_code
     AND reward_id = v_requested_reward_id
+    AND user_id = v_auth_user_id
     AND claimed_at IS NULL
     AND (expires_at IS NULL OR expires_at > now())
   RETURNING reward_id INTO v_reward_id;
 
   INSERT INTO public.reward_claim_attempts (reward_id, ok, auth_user_id)
-  VALUES (nullif(v_requested_reward_id, ''), v_reward_id IS NOT NULL, auth.uid());
+  VALUES (nullif(v_requested_reward_id, ''), v_reward_id IS NOT NULL, v_auth_user_id);
 
   IF v_reward_id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_or_used');
