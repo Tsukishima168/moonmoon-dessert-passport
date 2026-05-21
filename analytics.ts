@@ -25,6 +25,7 @@ const withSiteId = (params?: Record<string, any>) => ({
 declare global {
   interface Window {
     __GA4_ID__?: string;
+    __PASSPORT_INITIAL_SEARCH__?: string;
     gtag?: (
       command: 'config' | 'event' | 'set',
       targetId: string,
@@ -137,8 +138,9 @@ export const buildUtmUrl = (
   return url.toString();
 };
 
-export const trackUtmLanding = () => {
-  const utmParams = getUtmParamsFromUrl();
+export const trackUtmLanding = (input?: string) => {
+  const initialSearch = input || (typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ : undefined);
+  const utmParams = getUtmParamsFromUrl(initialSearch);
   if (!Object.values(utmParams).some(Boolean)) return;
 
   trackEvent('utm_landing', compactUtmParams(utmParams));

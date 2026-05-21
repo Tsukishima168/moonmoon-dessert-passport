@@ -41,19 +41,34 @@
         window.__PASSPORT_INITIAL_SEARCH__ = window.location.search;
 
         const url = new URL(window.location.href);
+        const trackingParams = [
+          'utm_source',
+          'utm_medium',
+          'utm_campaign',
+          'utm_content',
+          'utm_term',
+          'from',
+          'source',
+          'source_site',
+          'origin_path',
+          'entry_surface',
+          'destination_type'
+        ];
         const sensitiveParams = ['claim', 'claim_code', 'reward'];
         const hasRewardClaimCode = url.searchParams.has('code') && url.searchParams.has('reward');
         const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
         const hasSensitiveClaimParam = paramsToScrub.some((param) => url.searchParams.has(param));
+        const hasTrackingParam = trackingParams.some((param) => url.searchParams.has(param));
 
-        if (hasSensitiveClaimParam) {
+        if (hasSensitiveClaimParam || hasTrackingParam) {
+          trackingParams.forEach((param) => url.searchParams.delete(param));
           paramsToScrub.forEach((param) => url.searchParams.delete(param));
           const nextSearch = url.searchParams.toString();
           window.history.replaceState({}, '', `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`);
         }
 
         const privatePath = /^\/(redeem|join|passport)(\/|$)/.test(window.location.pathname);
-        const privateQuery = window.__PASSPORT_INITIAL_SEARCH__.length > 1;
+        const privateQuery = hasSensitiveClaimParam || Array.from(url.searchParams.keys()).length > 0;
 
         if (privatePath || privateQuery) {
           const robots = document.querySelector('meta[name="robots"]') || document.createElement('meta');

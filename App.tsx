@@ -42,6 +42,19 @@ const getInitialUrlSearch = () => {
 const getInitialUrlParams = () => new URLSearchParams(getInitialUrlSearch());
 
 const PENDING_REWARD_CLAIM_KEY = 'kiwimu_passport_pending_reward_claim';
+const TRACKING_ENTRY_PARAMS = new Set([
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'from',
+  'source',
+  'source_site',
+  'origin_path',
+  'entry_surface',
+  'destination_type',
+]);
 
 type PendingRewardClaim = {
   code: string;
@@ -165,6 +178,12 @@ const getInitialPassportTab = (): PassportTab => {
   const params = getInitialUrlParams();
   const tab = params.get('tab');
   return PUBLIC_PASSPORT_TABS.includes(tab as PassportTab) ? (tab as PassportTab) : 'hub';
+};
+
+const isPureTrackingEntry = () => {
+  const params = getInitialUrlParams();
+  const keys = Array.from(params.keys());
+  return keys.length > 0 && keys.every((key) => TRACKING_ENTRY_PARAMS.has(key));
 };
 
 // -- Header --
@@ -302,6 +321,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
+  const skipInitialTrackingUrlSyncRef = useRef(isPureTrackingEntry());
   const [passportCoverNumber] = useState(getOrCreatePassportCoverNumber);
 
   // Initial Loading Simulation
@@ -336,6 +356,11 @@ function App() {
   }, [authError]);
 
   useEffect(() => {
+    if (skipInitialTrackingUrlSyncRef.current) {
+      skipInitialTrackingUrlSyncRef.current = false;
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
 
     if (screen === 'passport') {
@@ -381,8 +406,9 @@ function App() {
 
   // GA4：記錄進入來源（所有 UTM 皆發送 entrance_scan），方便依放置位置分析
   useEffect(() => {
-    trackUtmLanding();
-    const params = new URLSearchParams(window.location.search);
+    const initialSearch = getInitialUrlSearch();
+    trackUtmLanding(initialSearch);
+    const params = new URLSearchParams(initialSearch);
     const utmSource = params.get('utm_source');
     const utmMedium = params.get('utm_medium') || 'qr';
     const utmCampaign = params.get('utm_campaign');
