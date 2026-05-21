@@ -48,8 +48,12 @@ const scrubSensitiveClaimParamsFromUrl = () => {
 
   const url = new URL(window.location.href);
   let changed = false;
+  const hasRewardClaimCode = url.searchParams.has('code') && url.searchParams.has('reward');
+  const paramsToScrub = hasRewardClaimCode
+    ? ['claim', 'claim_code', 'reward', 'code']
+    : ['claim', 'claim_code', 'reward'];
 
-  ['claim', 'claim_code', 'code', 'reward'].forEach((param) => {
+  paramsToScrub.forEach((param) => {
     if (url.searchParams.has(param)) {
       url.searchParams.delete(param);
       changed = true;
@@ -331,12 +335,12 @@ function App() {
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
     const rewardParam = params.get('reward');
-    const claimCodeParam = params.get('claim_code') || params.get('code');
+    const claimCodeParam = params.get('claim_code') || (params.has('reward') ? params.get('code') : null);
     const debugParam = params.get('debug');
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
-    const hasSensitiveClaimParam = Boolean(claimParam || claimCodeParam || rewardParam);
+    const hasSensitiveClaimParam = Boolean(claimParam || params.get('claim_code') || rewardParam);
 
     if (hasSensitiveClaimParam) {
       scrubSensitiveClaimParamsFromUrl();
