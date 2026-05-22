@@ -42,9 +42,34 @@ export default defineConfig(({ mode }) => {
         workbox: {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
-          navigateFallback: '/',
+          // 立即接管所有 client：搭配 clientsClaim，hotfix 後新 SW 不必等到所有舊頁面關閉才生效。
+          skipWaiting: true,
+          // 保留 navigateFallback 給離線情境，但用 denylist 把含敏感 query 的 navigation 排除，
+          // 讓 OAuth callback / reward claim / mbti claim 永遠走網路抓最新 HTML，
+          // 不再被 SW precache 的舊 scrubber 鎖住 ?code=。
+          navigateFallback: 'index.html',
+          navigateFallbackDenylist: [
+            /\bcode=/,
+            /\bclaim(?:_code)?=/,
+            /\breward=/,
+            /\bredirect_to=/,
+            // service worker / manifest / 靜態資源不走 SPA fallback
+            /\.(?:json|js|css|map|png|jpg|jpeg|svg|gif|webp|ico|txt|woff2?)$/,
+          ],
           globPatterns: ['**/*.{css,js,html,svg,png,jpg,jpeg,webp,ico,txt,woff,woff2}'],
           runtimeCaching: [
+            // HTML 導航走 NetworkFirst：denylist 命中的 URL 會落到這條規則，
+            // 永遠拿最新版 index.html；網路失敗時才回退到上一次成功的快取，保留離線可用性。
+            {
+              urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'passport-html',
+                networkTimeoutSeconds: 3,
+                expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 7 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
             {
               urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/v1\/.*/i,
               handler: 'NetworkOnly',
