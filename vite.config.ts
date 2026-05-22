@@ -44,18 +44,13 @@ export default defineConfig(({ mode }) => {
           clientsClaim: true,
           // 立即接管所有 client：搭配 clientsClaim，hotfix 後新 SW 不必等到所有舊頁面關閉才生效。
           skipWaiting: true,
-          // 保留 navigateFallback 給離線情境，但用 denylist 把含敏感 query 的 navigation 排除，
-          // 讓 OAuth callback / reward claim / mbti claim 永遠走網路抓最新 HTML，
-          // 不再被 SW precache 的舊 scrubber 鎖住 ?code=。
+          // 保留 navigateFallback 給離線情境，但用 denylist 把「任何帶 query string 的 navigation」
+          // 全部排除，永遠走網路抓最新 HTML。比列舉敏感 param 更穩：
+          //   - 自動覆蓋 encoded variants（?%63ode= 規避列舉式 regex）
+          //   - 自動覆蓋未來新增的敏感 query（token / session / 其他 callback param）
+          //   - 唯一代價：?utm_source 之類 tracking 也走 network，但這類用戶本來就該拿最新版
           navigateFallback: 'index.html',
-          navigateFallbackDenylist: [
-            /\bcode=/,
-            /\bclaim(?:_code)?=/,
-            /\breward=/,
-            /\bredirect_to=/,
-            // service worker / manifest / 靜態資源不走 SPA fallback
-            /\.(?:json|js|css|map|png|jpg|jpeg|svg|gif|webp|ico|txt|woff2?)$/,
-          ],
+          navigateFallbackDenylist: [/\?/],
           globPatterns: ['**/*.{css,js,html,svg,png,jpg,jpeg,webp,ico,txt,woff,woff2}'],
           runtimeCaching: [
             // HTML 導航走 NetworkFirst：denylist 命中的 URL 會落到這條規則，

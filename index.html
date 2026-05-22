@@ -55,7 +55,9 @@
           'destination_type'
         ];
         const sensitiveParams = ['claim', 'claim_code', 'reward'];
-        const hasRewardClaimCode = url.searchParams.has('code') && url.searchParams.has('reward');
+        // OAuth callback 一定帶 state；只要看到 state，就保留 code（即使有人手刻 reward+code+state）。
+        const hasOAuthState = url.searchParams.has('state');
+        const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
         const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
         const hasSensitiveClaimParam = paramsToScrub.some((param) => url.searchParams.has(param));
         const hasTrackingParam = trackingParams.some((param) => url.searchParams.has(param));
