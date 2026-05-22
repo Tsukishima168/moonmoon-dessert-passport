@@ -108,7 +108,9 @@ const scrubSensitiveClaimParamsFromUrl = () => {
   }
 
   const url = new URL(window.location.href);
-  const hasRewardClaimCode = url.searchParams.has('code') && url.searchParams.has('reward');
+  // OAuth callback 一定帶 state；只要看到 state，就保留 code（與 index.html 早期 scrubber 對齊）。
+  const hasOAuthState = url.searchParams.has('state');
+  const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
   const paramsToScrub = hasRewardClaimCode
     ? ['claim', 'claim_code', 'reward', 'code']
     : ['claim', 'claim_code', 'reward'];
