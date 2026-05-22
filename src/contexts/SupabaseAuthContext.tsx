@@ -22,6 +22,10 @@ import {
   getPendingRedirectTo,
   saveRedirectTo,
 } from '../lib/authStorage';
+import {
+  releaseSameOriginServiceWorkersForOAuth,
+  removeOAuthCallbackParamsFromCurrentUrl,
+} from '../lib/oauthSafety';
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +64,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       params.get('error');
     if (authFlowError) {
       setError(authFlowError);
+      removeOAuthCallbackParamsFromCurrentUrl();
     }
 
     const client = supabase;
@@ -75,6 +80,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (!currentUser) {
         return;
       }
+
+      removeOAuthCallbackParamsFromCurrentUrl();
 
       const pendingRedirect = getAndClearPendingRedirectTo();
       if (pendingRedirect) {
@@ -142,6 +149,7 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         ? returnTo
         : getPendingRedirectTo() ?? window.location.href;
     ensureRedirectTo(resolvedReturnTo);
+    await releaseSameOriginServiceWorkersForOAuth();
 
     const { error: signInError } = await client.auth.signInWithOAuth({
       provider: 'google',
