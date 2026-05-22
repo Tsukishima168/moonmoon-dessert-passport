@@ -53,10 +53,21 @@ export default defineConfig(({ mode }) => {
           navigateFallbackDenylist: [/\?/],
           globPatterns: ['**/*.{css,js,html,svg,png,jpg,jpeg,webp,ico,txt,woff,woff2}'],
           runtimeCaching: [
-            // HTML 導航走 NetworkFirst：denylist 命中的 URL 會落到這條規則，
-            // 永遠拿最新版 index.html；網路失敗時才回退到上一次成功的快取，保留離線可用性。
+            // 帶 query string 的 navigation（OAuth callback、reward link、tracking param 等）
+            // 一律走 NetworkOnly，不寫進 SW cache。原因：
+            //   - cache key 預設用完整 URL（含 query），會把帶 ?code= 的 callback HTML 短期留在 Cache Storage
+            //   - 不是 P0/P1 auth bypass（same-origin SW cache 外部不可寫），但會造成 cache churn 與調試噪音
+            //   - 這類 URL 用後即廢，沒有離線快取價值
             {
-              urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+              urlPattern: ({ request, url }: { request: Request; url: URL }) =>
+                request.mode === 'navigate' && url.search.length > 0,
+              handler: 'NetworkOnly',
+            },
+            // 不帶 query 的 HTML 導航走 NetworkFirst：永遠拿最新版 index.html；
+            // 網路失敗時才回退到上一次成功的快取，保留離線可用性。
+            {
+              urlPattern: ({ request, url }: { request: Request; url: URL }) =>
+                request.mode === 'navigate' && url.search.length === 0,
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'passport-html',

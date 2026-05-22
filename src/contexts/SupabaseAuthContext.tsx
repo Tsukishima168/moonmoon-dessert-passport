@@ -106,6 +106,9 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         setError(sessionError.message);
       }
       handleSignedInUser(session?.user ?? null);
+      // 即使 PKCE exchange 默默失敗（無 session、無 error param），URL 仍可能殘留 ?code/state。
+      // helper 內部會檢查 hasOAuthCallbackSignal，沒東西清就 no-op，呼叫無副作用。
+      removeOAuthCallbackParamsFromCurrentUrl();
     });
 
     // 監聽 auth 狀態變化
