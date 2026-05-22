@@ -108,8 +108,11 @@ const scrubSensitiveClaimParamsFromUrl = () => {
   }
 
   const url = new URL(window.location.href);
-  // OAuth callback 一定帶非空 state；看到非空 state 就保留 code（與 index.html 早期 scrubber 對齊）。
-  const hasOAuthState = Boolean(url.searchParams.get('state'));
+  // OAuth callback 一定帶非空 state；用 getAll + trim 收斂兩個 edge：
+  //   - `?state=%20` 之類純空白 state 不再被當成 OAuth state 保護 reward code
+  //   - `?state=&state=REAL` 之類重複 state 不會被第一個空值矇騙，誤刪真實 OAuth code
+  // 與 index.html 早期 scrubber、oauthSafety.ts 的 hasOAuthCallbackSignal 三邊對齊。
+  const hasOAuthState = url.searchParams.getAll('state').some((value) => value.trim().length > 0);
   const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
   const paramsToScrub = hasRewardClaimCode
     ? ['claim', 'claim_code', 'reward', 'code']
