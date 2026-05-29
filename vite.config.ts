@@ -32,7 +32,8 @@ export default defineConfig(({ mode }) => {
         manifest: false,
         includeAssets: [
           'manifest.json',
-          'logo.svg',
+          'favicon-16x16.png',
+          'favicon-32x32.png',
           'apple-touch-icon.png',
           'icon-192x192.png',
           'icon-512x512.png',
