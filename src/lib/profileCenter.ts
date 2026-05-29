@@ -32,7 +32,7 @@ export interface ProfileCenterSyncStatus {
 
 const STORAGE_KEY = 'moonmoon_profile_center_mvp';
 
-export const PROFILE_CENTER_AVATAR_URL = '/icon-192x192.png';
+export const PROFILE_CENTER_AVATAR_URL = '/icon-192x192-kiwimu-v2.png';
 
 export const KIWIMU_CHARACTER_OPTIONS: KiwimuCharacterOption[] = [
   { id: 'kiwimu', name: 'Kiwimu', mood: '絕對接納' },
