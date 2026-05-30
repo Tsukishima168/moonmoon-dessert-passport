@@ -16,6 +16,12 @@
     <meta name="format-detection" content="telephone=no" />
     <meta name="msapplication-TileColor" content="#D4FF00" />
 
+    <!-- 地理標記（與 map / kiwimu 同一 NAP） -->
+    <meta name="geo.placename" content="台南市安南區本原街一段97巷168號" />
+    <meta name="geo.region" content="TW-TN" />
+    <meta name="geo.position" content="23.0473181;120.1987003" />
+    <meta name="ICBM" content="23.0473181, 120.1987003" />
+
     <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="/index.css" />
     <link rel="canonical" href="https://passport.kiwimu.com/" />
@@ -38,6 +44,63 @@
     <meta name="twitter:image" content="https://passport.kiwimu.com/icon-512x512-kiwimu-v2.png" />
 
     <title>Kiwimu Passport | 會員入口與宇宙路由</title>
+
+    <!-- JSON-LD 結構化資料（品牌 entity @id 與 map / kiwimu 對齊以利知識圖譜合併） -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://passport.kiwimu.com/#passport",
+          "name": "Kiwimu Passport 會員中心",
+          "alternateName": ["Kiwimu Passport", "月島會員護照"],
+          "applicationCategory": "LifestyleApplication",
+          "description": "Kiwimu 與 Moon Moon 月島甜點的公開會員入口：Google 登入、跨站身份、MBTI、任務、集章與積分。",
+          "url": "https://passport.kiwimu.com/",
+          "inLanguage": "zh-TW",
+          "isPartOf": { "@id": "https://map.kiwimu.com/#moonmoon" },
+          "about": { "@id": "https://kiwimu.com/#kiwimu" }
+        },
+        {
+          "@type": ["Bakery", "CafeOrCoffeeShop"],
+          "@id": "https://map.kiwimu.com/#moonmoon",
+          "name": "Moon Moon 月島甜點",
+          "alternateName": ["月島甜點店", "MOON MOON"],
+          "description": "位於台南市安南區本原街一段97巷168號的療癒系甜點品牌，以甜點、Kiwimu 角色與心理學敘事陪伴情緒。",
+          "url": "https://map.kiwimu.com/",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "本原街一段97巷168號",
+            "addressLocality": "台南市",
+            "addressRegion": "安南區",
+            "addressCountry": "TW"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 23.0473181,
+            "longitude": 120.1987003
+          },
+          "hasMenu": "https://map.kiwimu.com/menu",
+          "servesCuisine": "Dessert",
+          "priceRange": "$$",
+          "sameAs": [
+            "https://www.instagram.com/moon_moon_dessert/",
+            "https://lin.ee/MndRHE2",
+            "https://kiwimu.com"
+          ]
+        },
+        {
+          "@type": "Thing",
+          "@id": "https://kiwimu.com/#kiwimu",
+          "name": "Kiwimu",
+          "description": "Moon Moon 月島甜點的敘事角色。圓潤白色鳥型生物，由鮮奶油誕生，以 16 型 MBTI 人格化身，承載品牌的情緒敘事。",
+          "isPartOf": { "@id": "https://map.kiwimu.com/#moonmoon" },
+          "url": "https://kiwimu.com"
+        }
+      ]
+    }
+    </script>
 
     <script>
       (() => {
@@ -110,5 +173,19 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+
+    <!-- ===== Kiwimu Passport AI 語意層（Visually Hidden）===== -->
+    <section style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="false" aria-labelledby="passport-semantic-title">
+      <h1 id="passport-semantic-title">Kiwimu Passport 會員護照</h1>
+      <p>
+        Kiwimu Passport 是 Moon Moon 月島甜點與 Kiwimu 宇宙的公開會員入口。透過 Google 登入串連跨站身份，
+        整合 MBTI 人格、月島地圖（Moon Map）、Gacha 與甜點護照體驗，提供任務、集章與積分等會員功能。
+      </p>
+      <p>
+        Moon Moon 月島甜點是一個位於台灣台南市安南區本原街一段97巷168號的療癒系甜點品牌，與日本東京的月島地區無關。
+        Kiwimu 是品牌的敘事角色，圓潤白色鳥型生物，以 16 型 MBTI 人格化身承載情緒敘事。
+      </p>
+    </section>
+    <!-- ===== End Semantic Layer ===== -->
   </body>
 </html>

@@ -1,8 +1,49 @@
-User-agent: *
+# Kiwimu Passport - robots.txt
+# Public discovery policy:
+# - Allow search crawlers and OAI-SearchBot to read the public member entry.
+# - Keep private member, redeem, join, and token/query surfaces out of crawl.
+# - Disallow GPTBot for model-training crawl while still allowing ChatGPT Search.
+
+User-agent: OAI-SearchBot
 Allow: /
+Allow: /llms.txt
 Disallow: /redeem
 Disallow: /join/
 Disallow: /passport/
 Disallow: /*?*
+Disallow: /*?*token=
+Disallow: /*?*access_token=
+Disallow: /*?*refresh_token=
+Disallow: /*?*id_token=
+Disallow: /*?*code=
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Disallow: /redeem
+Disallow: /join/
+Disallow: /passport/
+Disallow: /*?*
+Disallow: /*?*token=
+Disallow: /*?*access_token=
+Disallow: /*?*refresh_token=
+Disallow: /*?*id_token=
+Disallow: /*?*code=
+
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Disallow: /redeem
+Disallow: /join/
+Disallow: /passport/
+Disallow: /*?*
+Disallow: /*?*token=
+Disallow: /*?*access_token=
+Disallow: /*?*refresh_token=
+Disallow: /*?*id_token=
+Disallow: /*?*code=
 
 Sitemap: https://passport.kiwimu.com/sitemap.xml
