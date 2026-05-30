@@ -14,6 +14,7 @@ const TARGET_SITE_BY_HOST: Record<string, string> = {
   'moon-map-original.vercel.app': 'moon_map',
   'shop.kiwimu.com': 'dessert_booking',
   'dessert-booking.vercel.app': 'dessert_booking',
+  'gacha.kiwimu.com': 'gacha',
 };
 
 const withSiteId = (params?: Record<string, any>) => ({
