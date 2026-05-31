@@ -103,8 +103,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
   }, [userId]);
 
   const handleOpenShop = () => {
-    const outboundUrl = new URL('https://shop.kiwimu.com');
-    outboundUrl.pathname = '/menu';
+    const outboundUrl = new URL('https://map.kiwimu.com/menu');
     outboundUrl.searchParams.set('from', 'passport');
     window.open(outboundUrl.toString(), '_blank');
   };
@@ -138,9 +137,9 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
       {!userId ? (
         <div className="space-y-4 p-4">
           <div className="rounded-2xl border border-dashed border-brand-black/30 bg-brand-gray/20 p-4">
-            <p className="text-sm font-black text-brand-black">登入後就能同步你的 shop 訂單</p>
+            <p className="text-sm font-black text-brand-black">登入後就能同步你的甜點訂單</p>
             <p className="mt-2 text-xs font-medium leading-relaxed text-gray-600">
-              這裡會顯示你在 `shop.kiwimu.com` 與 Map 甜點目錄的訂單、取貨時間與狀態。若你先前未登入就下單，紀錄可能不會自動綁進來。
+              這裡會顯示你的甜點訂單、取貨時間與狀態。若你先前未登入就下單，紀錄可能不會自動綁進來。
             </p>
           </div>
           <button

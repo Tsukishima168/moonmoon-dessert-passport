@@ -74,7 +74,7 @@ function getOrderSourceLabel(order: ShopOrderRecord) {
 }
 
 function openShopMenu() {
-  const outboundUrl = new URL('https://shop.kiwimu.com/menu');
+  const outboundUrl = new URL('https://map.kiwimu.com/menu');
   outboundUrl.searchParams.set('from', 'passport');
   window.open(outboundUrl.toString(), '_blank', 'noopener,noreferrer');
 }
