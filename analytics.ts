@@ -148,6 +148,32 @@ export const trackUtmLanding = (input?: string) => {
 };
 
 /**
+ * Track an SSO auth conversion. Passport is the 5-site identity provider, so a
+ * sign-in here is the ecosystem's login/sign_up conversion. Fires the GA4
+ * recommended `sign_up` (first-time) or `login` (returning) event, tagged with
+ * the originating site (source_site, resolved from the cross-site redirect_to
+ * target) and any preserved utm.
+ */
+export const trackAuthConversion = (isNewUser: boolean, sourceUrl?: string) => {
+  let sourceSite = 'passport';
+  if (sourceUrl) {
+    try {
+      sourceSite = TARGET_SITE_BY_HOST[new URL(sourceUrl).hostname] || 'external';
+    } catch {
+      sourceSite = 'external';
+    }
+  }
+  const utmParams = compactUtmParams(
+    getUtmParamsFromUrl(typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ : undefined),
+  );
+  trackEvent(isNewUser ? 'sign_up' : 'login', {
+    method: 'google',
+    source_site: sourceSite,
+    ...utmParams,
+  });
+};
+
+/**
  * Track dessert card view
  */
 export const trackDessertView = (dessertId: string, dessertName: string) => {

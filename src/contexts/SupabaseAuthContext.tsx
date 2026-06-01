@@ -26,6 +26,7 @@ import {
   releaseSameOriginServiceWorkersForOAuth,
   removeOAuthCallbackParamsFromCurrentUrl,
 } from '../lib/oauthSafety';
+import { trackAuthConversion } from '../../analytics';
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -112,8 +113,24 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     });
 
     // 監聽 auth 狀態變化
-    const { data: { subscription } } = client.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
+
+      // SSO conversion (passport = 5-site identity provider): fire the GA4
+      // sign_up/login event only on a real sign-in (not INITIAL_SESSION /
+      // TOKEN_REFRESHED), and before handleSignedInUser may redirect away.
+      if (currentUser && event === 'SIGNED_IN') {
+        const createdAt = Date.parse(currentUser.created_at ?? '');
+        const lastSignInAt = currentUser.last_sign_in_at
+          ? Date.parse(currentUser.last_sign_in_at)
+          : createdAt;
+        const isNewUser =
+          Number.isFinite(createdAt) &&
+          Number.isFinite(lastSignInAt) &&
+          Math.abs(lastSignInAt - createdAt) < 10_000;
+        trackAuthConversion(isNewUser, getPendingRedirectTo() ?? undefined);
+      }
+
       handleSignedInUser(currentUser);
 
       if (currentUser) {
