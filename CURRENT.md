@@ -1,5 +1,26 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-06-04
+
+Status: `main` clean before this documentation pass. Latest checked commit: `defdb88 Merge pull request #27 from Tsukishima168/fix/passport-launch-prep-2026-05-30`.
+
+Passport is the account and member identity surface for the five-site universe. Its current production responsibility is dashboard-first membership, Google OAuth through Supabase Auth, cross-site profile/points continuity, public passport/invite/redeem flows, and PWA installability.
+
+Current source-of-truth files for new agents:
+
+- `CURRENT.md`
+- `BOOT.md`
+- `AI_HANDOVER.md`
+- `VERIFY.md`
+- `README.md`
+
+Operational notes:
+
+- `npm run build` runs `vite build && npm test`; the test is `scripts/regression-passport-oauth.mjs`.
+- Google OAuth is the login authority. LIFF is profile/share support, not the primary login authority.
+- Supabase Redirect URLs remain the critical production setting for auth callback stability.
+- Keep commerce/order ownership in `shop.kiwimu.com`; Passport may display order history and outbound links, but should not become checkout.
+
 ## Snapshot · 2026-04-29
 
 Status: `Google SSO 已統一，PWA 建置已開啟，production 仍需真人 smoke`

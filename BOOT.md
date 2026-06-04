@@ -4,6 +4,37 @@
 
 ---
 
+## 現況覆寫摘要 · 2026-06-04
+
+以下內容優先於舊快照：
+
+- Current branch: `main`
+- Latest checked commit: `defdb88 Merge pull request #27 from Tsukishima168/fix/passport-launch-prep-2026-05-30`
+- Current role: Passport SSO/member identity, dashboard-first membership, points/profile continuity, public passport/invite/redeem, PWA shell
+- Build command: `npm run build`
+- Test command: `npm test`
+- Verification doc: `VERIFY.md`
+- Handoff doc: `AI_HANDOVER.md`
+
+First read order for a new agent:
+
+1. `CURRENT.md`
+2. `AI_HANDOVER.md`
+3. `VERIFY.md`
+4. `README.md`
+5. `package.json`
+6. `App.tsx`
+7. `src/contexts/SupabaseAuthContext.tsx`
+8. `src/lib/supabase.ts`
+9. `src/lib/oauthSafety.ts`
+10. `src/api/passportSystem.ts`
+11. `src/api/points.ts`
+12. `components/PassportHomeDashboard.tsx`
+
+Do not use the old branch name below as current state. It is retained only as historical context.
+
+---
+
 ## 冷啟動快照 · 2026-03-21
 
 ### 當前分支
