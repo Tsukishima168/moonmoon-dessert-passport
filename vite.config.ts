@@ -16,10 +16,13 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-supabase-line': ['@supabase/supabase-js', '@line/liff'],
-            'vendor-icons': ['lucide-react'],
+          // vite 8（rolldown）不支援物件形式 manualChunks，改函式形式
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return undefined;
+            if (/node_modules\/(react|react-dom|react-router|react-router-dom)\//.test(id)) return 'vendor-react';
+            if (/node_modules\/(@supabase|@line)\//.test(id)) return 'vendor-supabase-line';
+            if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
+            return undefined;
           },
         },
       },
