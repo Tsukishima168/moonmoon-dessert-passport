@@ -15,7 +15,7 @@ export const KiwimuRewardConfirmDialog: React.FC<KiwimuRewardConfirmDialogProps>
   onCancel,
 }) => {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-5">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 p-5">
       <div className="w-full max-w-80 rounded-[20px] bg-white p-7 text-center">
         <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-[18px] bg-orange-50 text-orange-600">
           <Gift size={28} />
@@ -35,7 +35,7 @@ export const KiwimuRewardConfirmDialog: React.FC<KiwimuRewardConfirmDialogProps>
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 rounded-[10px] bg-gradient-to-r from-[#ff8f00] to-[#ffa000] py-3 font-bold text-white"
+            className="flex-1 rounded-[10px] bg-linear-to-r from-[#ff8f00] to-[#ffa000] py-3 font-bold text-white"
           >
             確認兌換
           </button>

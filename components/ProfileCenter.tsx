@@ -127,7 +127,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
       </div>
 
       <div className="space-y-4 bg-[linear-gradient(180deg,#fffdf6_0%,#f7f7f3_100%)] p-4">
-        <section className="relative overflow-hidden rounded-[2rem] border-2 border-brand-black bg-white shadow-[4px_4px_0px_black]">
+        <section className="relative overflow-hidden rounded-4xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black]">
           <div className="relative p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
@@ -164,7 +164,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="rounded-[1.5rem] border border-brand-black/10 bg-brand-gray/10 px-3 py-2">
+                <div className="rounded-3xl border border-brand-black/10 bg-brand-gray/10 px-3 py-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-black/35">
                     護照顯示名
                   </p>
@@ -175,7 +175,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                       value={draft.displayName}
                       onChange={(event) => updateDraft('displayName', event.target.value)}
                       placeholder="輸入你想在護照裡顯示的名字"
-                      className="w-full border-none bg-transparent p-0 text-base font-black text-brand-black outline-none placeholder:text-brand-black/20"
+                      className="w-full border-none bg-transparent p-0 text-base font-black text-brand-black outline-hidden placeholder:text-brand-black/20"
                     />
                   </div>
                 </div>
@@ -214,7 +214,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </div>
         </section>
 
-        <section className={`rounded-[1.5rem] border px-3 py-3 ${syncToneClass}`}>
+        <section className={`rounded-3xl border px-3 py-3 ${syncToneClass}`}>
           <p className="text-[10px] font-black uppercase tracking-[0.18em]">
             Shared Profile Sync
           </p>
@@ -223,7 +223,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </p>
         </section>
 
-        <section className="rounded-[2rem] border-2 border-brand-black bg-brand-black p-4 text-white shadow-[4px_4px_0px_black]">
+        <section className="rounded-4xl border-2 border-brand-black bg-brand-black p-4 text-white shadow-[4px_4px_0px_black]">
           <div className="flex items-center gap-2">
             <ShieldCheck size={16} className="text-brand-lime" />
             <div>
@@ -258,7 +258,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </div>
         </section>
 
-        <section className="rounded-[2rem] border-2 border-brand-black bg-white p-4 shadow-[4px_4px_0px_black]">
+        <section className="rounded-4xl border-2 border-brand-black bg-white p-4 shadow-[4px_4px_0px_black]">
           <div className="flex items-center gap-2">
             <Heart size={16} className="text-brand-black" />
             <div>
@@ -304,7 +304,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </div>
         </section>
 
-        <section className="relative overflow-hidden rounded-[2rem] border-2 border-brand-black bg-brand-black p-4 text-white shadow-[4px_4px_0px_black]">
+        <section className="relative overflow-hidden rounded-4xl border-2 border-brand-black bg-brand-black p-4 text-white shadow-[4px_4px_0px_black]">
           <div className="absolute -right-6 bottom-0 h-24 w-24 rounded-full bg-brand-lime/15 blur-2xl" />
 
           <div className="relative">

@@ -74,7 +74,7 @@ export default function JoinPage() {
               value={igHandle}
               onChange={e => setIgHandle(e.target.value)}
               placeholder="ig_username"
-              className="flex-1 bg-transparent text-brand-bg text-sm outline-none placeholder:text-brand-bg/30"
+              className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30"
               autoComplete="off"
             />
           </div>

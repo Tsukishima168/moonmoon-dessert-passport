@@ -119,7 +119,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
                     </p>
 
                     <div className="flex items-center gap-5">
-                        <div className={`w-16 h-16 rounded-2xl bg-brand-lime flex items-center justify-center border-2 border-brand-black shadow-[3px_3px_0px_black] flex-shrink-0 ${getAnimClass(nextStamp.animationType)}`}>
+                        <div className={`w-16 h-16 rounded-2xl bg-brand-lime flex items-center justify-center border-2 border-brand-black shadow-[3px_3px_0px_black] shrink-0 ${getAnimClass(nextStamp.animationType)}`}>
                             {React.createElement(IconMap[nextStamp.icon] || MapPin, { size: 32, className: 'text-brand-black' })}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -207,7 +207,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
                                     key={stamp.id}
                                     className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-gray-200"
                                 >
-                                    <div className="w-8 h-8 rounded-lg bg-brand-lime/10 border border-brand-lime/30 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-brand-lime/10 border border-brand-lime/30 flex items-center justify-center shrink-0">
                                         {React.createElement(IconMap[stamp.icon] || MapPin, { size: 16, className: 'text-brand-black' })}
                                     </div>
                                     <div className="min-w-0">

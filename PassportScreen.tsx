@@ -456,7 +456,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
             <div className="flex flex-col w-full h-full md:max-w-md md:h-[90vh] md:rounded-[40px] bg-brand-bg shadow-2xl relative overflow-hidden animate-slide-up">
 
                 {/* ─── Hero Header ─── */}
-                <div className="bg-brand-black px-5 pb-4 pt-7 shadow-lg relative overflow-hidden flex-shrink-0">
+                <div className="bg-brand-black px-5 pb-4 pt-7 shadow-lg relative overflow-hidden shrink-0">
                     <div className="relative z-10">
                         <button
                             onClick={onClose}
@@ -501,7 +501,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
                     {locationError && (
                         <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl animate-shake flex items-start gap-3">
-                            <MapPin size={20} className="text-red-500 flex-shrink-0" />
+                            <MapPin size={20} className="text-red-500 shrink-0" />
                             <p className="text-xs font-bold text-red-700">{locationError}</p>
                         </div>
                     )}

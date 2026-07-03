@@ -54,7 +54,7 @@ export default function RedeemPage() {
             value={pwInput}
             onChange={e => { setPwInput(e.target.value); setRedeemError(null) }}
             placeholder="店員密碼"
-            className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-none placeholder:text-brand-black/30"
+            className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-hidden placeholder:text-brand-black/30"
             autoComplete="current-password"
             required
           />
@@ -68,7 +68,7 @@ export default function RedeemPage() {
                 placeholder="001"
                 min={1}
                 max={100}
-                className="flex-1 bg-transparent text-brand-bg text-sm outline-none placeholder:text-brand-bg/30 w-16"
+                className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30 w-16"
                 required
               />
             </div>

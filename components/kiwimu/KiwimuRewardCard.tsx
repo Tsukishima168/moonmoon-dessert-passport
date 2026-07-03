@@ -84,7 +84,7 @@ export const KiwimuRewardCard: React.FC<KiwimuRewardCardProps> = ({
       <h3 className="m-0 text-center text-[15px] font-bold text-[#3d2c00]">
         {reward.name}
       </h3>
-      <p className="m-0 min-h-9 text-center text-xs leading-[1.5] text-[#8d6e63]">
+      <p className="m-0 min-h-9 text-center text-xs leading-normal text-[#8d6e63]">
         {reward.description}
       </p>
       <div
@@ -101,7 +101,7 @@ export const KiwimuRewardCard: React.FC<KiwimuRewardCardProps> = ({
         disabled={!canAfford}
         className={`w-full rounded-[10px] py-2.5 text-sm font-bold text-white transition-all ${
           canAfford
-            ? 'cursor-pointer bg-gradient-to-r from-[#ff8f00] to-[#ffa000]'
+            ? 'cursor-pointer bg-linear-to-r from-[#ff8f00] to-[#ffa000]'
             : 'cursor-not-allowed bg-[#bdbdbd]'
         }`}
       >
