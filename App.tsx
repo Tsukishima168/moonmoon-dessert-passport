@@ -8,6 +8,7 @@ import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
+import { isSsoBrokerMode } from './src/lib/ssoBroker';
 import {
   unlockStamp,
   getUnlockedStampCount,
@@ -191,6 +192,8 @@ const isPureTrackingEntry = () => {
   return keys.length > 0 && keys.every((key) => TRACKING_ENTRY_PARAMS.has(key));
 };
 
+const isInitialSsoBrokerEntry = () => isSsoBrokerMode(getInitialUrlParams());
+
 // -- Header --
 const Header = ({
   currentScreen,
@@ -317,6 +320,55 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
   );
 };
 
+const SsoBrokerScreen = () => {
+  const { user, loading, error, signInWithGoogle } = useSupabaseAuth();
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (loading || user || startedRef.current) {
+      return;
+    }
+
+    startedRef.current = true;
+    void signInWithGoogle();
+  }, [loading, signInWithGoogle, user]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-brand-cream px-6 text-center">
+      <div className="w-full max-w-sm rounded-[28px] border-2 border-brand-black bg-white p-8 shadow-[8px_8px_0px_black]">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-black bg-brand-lime">
+          <LogIn size={22} className="text-brand-black" />
+        </div>
+        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.28em] text-brand-black/35">
+          Kiwimu Passport
+        </p>
+        <h1 className="text-2xl font-black leading-tight text-brand-black">
+          正在確認會員身份
+        </h1>
+        <p className="mt-4 text-sm font-semibold leading-7 text-brand-black/55">
+          這個視窗只用來完成登入。完成後會自動回到原本頁面。
+        </p>
+        {error ? (
+          <button
+            type="button"
+            onClick={() => {
+              startedRef.current = false;
+              void signInWithGoogle();
+            }}
+            className="mt-6 w-full rounded-full border-2 border-brand-black bg-brand-lime px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-black shadow-[3px_3px_0px_black]"
+          >
+            重新登入
+          </button>
+        ) : (
+          <p className="mt-6 animate-pulse text-xs font-black uppercase tracking-[0.2em] text-brand-black/35">
+            Opening Google...
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // -- Main App --
 
 function App() {
@@ -327,6 +379,7 @@ function App() {
   const [appNotice, setAppNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const prevScreenRef = useRef<Screen | null>(null);
   const skipInitialTrackingUrlSyncRef = useRef(isPureTrackingEntry());
+  const [isBrokerEntry] = useState(isInitialSsoBrokerEntry);
   const [passportCoverNumber] = useState(getOrCreatePassportCoverNumber);
 
   // Initial Loading Simulation
@@ -689,6 +742,10 @@ function App() {
 
   return (
     <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
+      {isBrokerEntry ? (
+        <SsoBrokerScreen />
+      ) : (
+        <>
       {loading && <LoadingScreen />}
 
       {/* Google Login is now inside <Header /> */}
@@ -738,6 +795,8 @@ function App() {
       </main>
 
       <PwaInstallPrompt />
+        </>
+      )}
 
     </div>
   );

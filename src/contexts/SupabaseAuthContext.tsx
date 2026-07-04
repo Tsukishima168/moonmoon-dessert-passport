@@ -26,6 +26,12 @@ import {
   releaseSameOriginServiceWorkersForOAuth,
   removeOAuthCallbackParamsFromCurrentUrl,
 } from '../lib/oauthSafety';
+import {
+  getIncomingSsoMode,
+  notifySsoBrokerComplete,
+  removeSsoBrokerParams,
+  saveSsoBrokerMode,
+} from '../lib/ssoBroker';
 import { trackAuthConversion } from '../../analytics';
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -50,20 +56,33 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     // 跨站 SSO：若 URL 帶有 ?redirect_to=，存到 sessionStorage 再清除 URL
     const params = new URLSearchParams(window.location.search);
     const incomingRedirect = params.get('redirect_to');
+    const incomingSsoMode = getIncomingSsoMode(params);
+    saveSsoBrokerMode(incomingSsoMode);
+
     if (incomingRedirect) {
       saveRedirectTo(incomingRedirect);
       params.delete('redirect_to');
+    } else {
+      clearPendingRedirectTo();
+    }
+
+    if (incomingSsoMode) {
+      removeSsoBrokerParams(params);
+    }
+
+    if (incomingRedirect || incomingSsoMode) {
       const newSearch = params.toString();
       const nextUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
       window.history.replaceState({}, '', nextUrl);
-    } else {
-      clearPendingRedirectTo();
     }
 
     const authFlowError =
       params.get('error_description') ||
       params.get('error');
     if (authFlowError) {
+      if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)) {
+        return;
+      }
       setError(authFlowError);
       removeOAuthCallbackParamsFromCurrentUrl();
     }
@@ -86,12 +105,18 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
       const pendingRedirect = getAndClearPendingRedirectTo();
       if (pendingRedirect) {
+        if (notifySsoBrokerComplete(pendingRedirect)) {
+          return;
+        }
         window.location.href = pendingRedirect;
         return;
       }
 
       const redirectTo = getAndClearRedirectTo();
       if (redirectTo) {
+        if (notifySsoBrokerComplete(redirectTo)) {
+          return;
+        }
         window.location.href = redirectTo;
         return;
       }
