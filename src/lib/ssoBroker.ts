@@ -17,7 +17,7 @@ export function getIncomingSsoMode(params: URLSearchParams): string | null {
 
 export function isSsoBrokerMode(params: URLSearchParams): boolean {
   const mode = getIncomingSsoMode(params);
-  return mode === SSO_BROKER_MODE_POPUP || mode === 'sso';
+  return mode === SSO_BROKER_MODE_POPUP;
 }
 
 export function saveSsoBrokerMode(mode: string | null) {

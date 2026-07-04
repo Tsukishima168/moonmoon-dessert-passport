@@ -99,7 +99,7 @@ assert(indexHtml.includes(stateGuard), 'index.html state guard must use getAll +
 assert(appTsx.includes(stateGuard), 'App.tsx state guard must mirror index.html');
 assert(oauthSafety.includes("url.searchParams.has('code') && url.searchParams.has('state')"), 'oauthSafety must clean code+state residue');
 assert(ssoBroker.includes("return params.get('presentation') || params.get('sso_presentation') || params.get('mode');"), 'SSO broker must accept presentation/sso_presentation/mode params');
-assert(ssoBroker.includes("return mode === SSO_BROKER_MODE_POPUP || mode === 'sso';"), 'SSO broker must only take over popup or sso mode');
+assert(ssoBroker.includes('return mode === SSO_BROKER_MODE_POPUP;'), 'SSO broker must only take over presentation=popup, not redirect fallback (mode=sso alone)');
 assert(ssoBroker.includes("params.delete('presentation');"), 'SSO broker must scrub presentation param');
 assert(ssoBroker.includes("params.delete('mode');"), 'SSO broker must scrub mode param');
 assert(ssoBroker.includes('targetOrigin = new URL(redirectTo).origin;'), 'SSO broker must derive postMessage targetOrigin from redirectTo');
