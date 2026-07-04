@@ -4,6 +4,7 @@ import { Gift } from 'lucide-react';
 interface KiwimuRewardConfirmDialogProps {
   rewardName: string;
   pointsCost: number;
+  isSubmitting?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -11,6 +12,7 @@ interface KiwimuRewardConfirmDialogProps {
 export const KiwimuRewardConfirmDialog: React.FC<KiwimuRewardConfirmDialogProps> = ({
   rewardName,
   pointsCost,
+  isSubmitting = false,
   onConfirm,
   onCancel,
 }) => {
@@ -29,15 +31,17 @@ export const KiwimuRewardConfirmDialog: React.FC<KiwimuRewardConfirmDialogProps>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
+            disabled={isSubmitting}
             className="flex-1 rounded-[10px] border-2 border-[#eee] bg-white py-3 font-semibold text-[#666]"
           >
             取消
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 rounded-[10px] bg-gradient-to-r from-[#ff8f00] to-[#ffa000] py-3 font-bold text-white"
+            disabled={isSubmitting}
+            className="flex-1 rounded-[10px] bg-gradient-to-r from-[#ff8f00] to-[#ffa000] py-3 font-bold text-white disabled:opacity-60"
           >
-            確認兌換
+            {isSubmitting ? '兌換中...' : '確認兌換'}
           </button>
         </div>
       </div>

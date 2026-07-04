@@ -4,14 +4,28 @@ import { Sparkles } from 'lucide-react';
 interface KiwimuRewardSuccessDialogProps {
   rewardName: string;
   category: 'drink' | 'dessert' | 'merch';
+  redemptionCode?: string;
+  expiresAt?: string;
+  balance?: number;
   onClose: () => void;
 }
 
 export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps> = ({
   rewardName,
   category,
+  redemptionCode,
+  expiresAt,
+  balance,
   onClose,
 }) => {
+  const expiresLabel = expiresAt
+    ? new Date(expiresAt).toLocaleDateString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    : null;
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-5">
       <div className="w-full max-w-80 rounded-[20px] border-2 border-[#f0c070] bg-gradient-to-br from-[#fff9f0] to-[#fff3e0] p-8 text-center">
@@ -25,6 +39,20 @@ export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps>
           已成功兌換
         </p>
 
+        {redemptionCode && (
+          <div className="mb-5 rounded-2xl border-2 border-dashed border-[#f0c070] bg-white p-4">
+            <p className="mb-2 text-xs font-bold tracking-[0.18em] text-[#8a6d1f]">兌換碼</p>
+            <p className="font-mono text-2xl font-black tracking-[0.16em] text-[#3d2c00]">
+              {redemptionCode}
+            </p>
+            {expiresLabel && (
+              <p className="mt-2 text-xs font-semibold text-[#8a6d1f]">
+                有效期限：{expiresLabel}
+              </p>
+            )}
+          </div>
+        )}
+
         <div
           className={`mb-5 rounded-xl border border-[#f0c070] p-4 text-sm text-[#5d4037] ${
             category === 'merch' ? 'bg-[#ede7f6]' : 'bg-white'
@@ -34,6 +62,12 @@ export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps>
           <br />
           請在店員面前出示此畫面，由店員掃描或確認後完成核銷。
         </div>
+
+        {typeof balance === 'number' && (
+          <p className="mb-4 text-xs font-bold text-[#5d4037]">
+            目前剩餘 {balance} 點
+          </p>
+        )}
 
         <button
           onClick={onClose}

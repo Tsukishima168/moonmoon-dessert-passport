@@ -453,6 +453,45 @@ export function redeemItem(itemId: string): { success: boolean; newBalance: numb
 }
 
 /**
+ * Mirror an authoritative server redemption into local passport state.
+ * The database RPC has already deducted points and issued the voucher code.
+ */
+export function syncRewardRedemptionFromServer(
+    itemId: string,
+    newBalance: number,
+    redemptionCode?: string
+): void {
+    const item = REDEEMABLE_ITEMS.find(i => i.id === itemId);
+    const state = getPassportState();
+
+    state.points = Math.max(0, newBalance);
+    state.lastUpdatedAt = Date.now();
+
+    if (!state.redeemedRewards.includes(itemId)) {
+        state.redeemedRewards.push(itemId);
+    }
+
+    const tx: PointTransaction = {
+        id: redemptionCode || crypto.randomUUID(),
+        type: 'redeem_spend',
+        amount: item ? -item.pointsCost : 0,
+        description: item
+            ? `兌換 ${item.name}${redemptionCode ? `（${redemptionCode}）` : ''}`
+            : `兌換 ${itemId}${redemptionCode ? `（${redemptionCode}）` : ''}`,
+        timestamp: Date.now(),
+    };
+
+    if (!state.pointsHistory) state.pointsHistory = [];
+    state.pointsHistory.push(tx);
+    if (state.pointsHistory.length > 200) {
+        state.pointsHistory.splice(0, state.pointsHistory.length - 200);
+    }
+
+    safeSetItem(STORAGE_KEY, JSON.stringify(state));
+    dispatchPointsUpdated(state.points, tx.amount, `redeem:${itemId}`);
+}
+
+/**
  * Get points transaction history
  */
 export function getPointsHistory(): PointTransaction[] {

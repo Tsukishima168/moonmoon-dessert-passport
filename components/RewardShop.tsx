@@ -15,12 +15,11 @@ import {
     X,
     CircleAlert,
 } from 'lucide-react';
-import { getPassportPointsBalance, redeemItem } from '../passportUtils';
+import { getPassportPointsBalance, syncRewardRedemptionFromServer } from '../passportUtils';
 import { REDEEMABLE_ITEMS } from '../constants';
 import { RedeemableItem } from '../types';
-import { adjustPointsByIdentity } from '../src/api/points';
+import { redeemRewardItem, type RewardRedemption } from '../src/api/rewards';
 import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
-import { useLiff } from '../src/contexts/LiffContext';
 import { KiwimuRewardBalanceCard } from './kiwimu/KiwimuRewardBalanceCard';
 import { KiwimuRewardCard } from './kiwimu/KiwimuRewardCard';
 import { KiwimuRewardConfirmDialog } from './kiwimu/KiwimuRewardConfirmDialog';
@@ -60,10 +59,11 @@ interface SuccessDialogProps {
 
 const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
     const { user } = useSupabaseAuth();
-    const { profile } = useLiff();
     const [userPoints, setUserPoints] = useState(() => getPassportPointsBalance());
     const [pendingReward, setPendingReward] = useState<RedeemableItem | null>(null);
     const [successReward, setSuccessReward] = useState<RedeemableItem | null>(null);
+    const [successRedemption, setSuccessRedemption] = useState<RewardRedemption | null>(null);
+    const [redeeming, setRedeeming] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'drink' | 'dessert' | 'merch'>('all');
 
@@ -93,30 +93,47 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
     }, []);
 
     const handleConfirm = useCallback(async () => {
-        if (!pendingReward) return;
+        if (!pendingReward || redeeming) return;
 
-        const result = redeemItem(pendingReward.id);
-        if (result.success) {
-            setUserPoints(result.newBalance);
-            setErrorMessage(null);
-            if (user?.id || profile?.userId) {
-                await adjustPointsByIdentity(
-                    {
-                        authUserId: user?.id,
-                        lineUserId: profile?.userId,
-                    },
-                    -pendingReward.pointsCost,
-                    `reward_redeem_${pendingReward.id}`
-                ).catch((error) => {
-                    console.warn('[RewardShop] Profile point sync failed:', error);
-                });
-            }
-            setSuccessReward(pendingReward);
-        } else {
-            setErrorMessage(result.error || '兌換失敗，請稍後再試');
+        if (!user?.id) {
+            setErrorMessage('請先登入 Passport 後再兌換，避免點數與兌換紀錄不同步。');
+            setPendingReward(null);
+            return;
         }
+
+        setRedeeming(true);
+        setErrorMessage(null);
+
+        const { data, error } = await redeemRewardItem({
+            rewardId: pendingReward.id,
+            expectedPointsCost: pendingReward.pointsCost,
+        });
+
+        if (error || !data) {
+            const msgMap: Record<string, string> = {
+                auth_required: '請先登入 Passport 後再兌換。',
+                profile_not_found: '找不到會員資料，請重新登入後再試。',
+                reward_unavailable: '此福利目前無法兌換。',
+                reward_price_changed: '兌換點數已更新，請重新整理後再試。',
+                insufficient_points: '積分不足，無法兌換此福利。',
+            };
+            setErrorMessage(msgMap[error?.message || ''] || '兌換失敗，請稍後再試。');
+            setRedeeming(false);
+            setPendingReward(null);
+            return;
+        }
+
+        syncRewardRedemptionFromServer(
+            pendingReward.id,
+            data.balance,
+            data.redemption.redemption_code
+        );
+        setUserPoints(data.balance);
+        setSuccessReward(pendingReward);
+        setSuccessRedemption(data.redemption);
+        setRedeeming(false);
         setPendingReward(null);
-    }, [pendingReward, profile?.userId, user?.id]);
+    }, [pendingReward, redeeming, user?.id]);
 
     const filteredRewards = REDEEMABLE_ITEMS.filter(r =>
         filter === 'all' ? true : r.category === filter
@@ -129,8 +146,11 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 <KiwimuRewardConfirmDialog
                     rewardName={pendingReward.name}
                     pointsCost={pendingReward.pointsCost}
+                    isSubmitting={redeeming}
                     onConfirm={handleConfirm}
-                    onCancel={() => setPendingReward(null)}
+                    onCancel={() => {
+                        if (!redeeming) setPendingReward(null);
+                    }}
                 />
             )}
 
@@ -139,7 +159,13 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 <KiwimuRewardSuccessDialog
                     rewardName={successReward.name}
                     category={successReward.category}
-                    onClose={() => setSuccessReward(null)}
+                    redemptionCode={successRedemption?.redemption_code}
+                    expiresAt={successRedemption?.expires_at}
+                    balance={userPoints}
+                    onClose={() => {
+                        setSuccessReward(null);
+                        setSuccessRedemption(null);
+                    }}
                 />
             )}
 
