@@ -7,7 +7,7 @@ MoonMoon Dessert Passport 是 Kiwimu 生態中的護照入口，提供 dashboard
 - `/`：Passport landing，登入後預設進入護照首頁 / dashboard
 - `/passport/:id`：公開護照頁，顯示邀請進度與可否兌換
 - `/join/:passportId`：接受邀請頁，提交 IG 帳號
-- `/redeem`：店員端布丁兌換頁
+- `/redeem`：店員端兌換核銷頁，支援點數兌換碼與舊版護照布丁
 
 備註：
 - 專案仍會承接 MBTI 站帶來的 `mbti_type`、claim code、跨站點數同步，但它本身不是 MBTI 測驗前端。
@@ -19,7 +19,7 @@ MoonMoon Dessert Passport 是 Kiwimu 生態中的護照入口，提供 dashboard
 - 護照首頁 dashboard、ProfileCenter、MemberHub
 - Supabase Auth Google OAuth
 - LIFF profile 讀取與 fallback
-- 集章、點數、獎勵兌換
+- 集章、點數、獎勵兌換與可審計兌換 ledger
 - 公開護照、邀請加入、店員核銷流程
 - GA4 UTM 與入口追蹤
 
@@ -102,9 +102,13 @@ Vercel 設定請看 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 - `PassportScreen.tsx`：護照首頁 / dashboard 容器
 - `src/api/passportSystem.ts`：公開護照 / 邀請 / 兌換 API
 - `src/api/points.ts`：點數讀寫與 RPC
+- `src/api/rewards.ts`：點數福利兌換與店員核銷 RPC
 - `src/contexts/SupabaseAuthContext.tsx`：Google OAuth 登入
 - `src/contexts/LiffContext.tsx`：LINE LIFF 整合
 - `supabase/migrations/`：資料庫 migration
+- `docs/connected-badge-system.md`：五站連動徽章系統設計
+- `docs/sso-broker-contract.md`：跨站原地登入 / popup SSO broker contract
+- `docs/reward-redemption-ledger.md`：兌換中心 catalog / ledger / RPC contract
 
 ## PWA
 

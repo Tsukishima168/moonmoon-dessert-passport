@@ -32,3 +32,4 @@ supabase/.temp/
 # Test / session artifacts
 memory/
 test-results/
+.gstack/

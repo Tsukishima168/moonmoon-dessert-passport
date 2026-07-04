@@ -14,6 +14,7 @@ import { getPassportState, canCheckinToday, performDailyCheckin } from '../passp
 import { adjustPointsByIdentity } from '../src/api/points';
 import { useLiff } from '../src/contexts/LiffContext';
 import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
+import { trackEvent } from '../analytics';
 
 interface CheckinModalProps {
     onClose: () => void;
@@ -166,10 +167,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
             setShowConfetti(true);
             onCheckinComplete?.(result.newBalance);
 
-            // GA4: passport_checkin 每日線上簽到
-            if (typeof window !== 'undefined' && window.gtag) {
-                window.gtag('event', 'passport_checkin', { location: 'daily_online' });
-            }
+            trackEvent('passport_checkin', { location: 'daily_online' });
 
             // Hide confetti after animation
             setTimeout(() => setShowConfetti(false), 2500);
