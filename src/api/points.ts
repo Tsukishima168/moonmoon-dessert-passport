@@ -19,30 +19,58 @@ interface ProfilePointRecord {
     points: number;
 }
 
+interface OwnProfileByLineIdResult {
+    ok: boolean;
+    error?: string;
+    data?: { id: string; points: number | null } | null;
+}
+
 async function resolveProfile(identity: PointIdentity): Promise<ProfilePointRecord | null> {
     if (!supabase) return null;
 
-    const column = identity.authUserId ? 'id' : identity.lineUserId ? 'line_user_id' : null;
-    const value = identity.authUserId || identity.lineUserId;
-    if (!column || !value) return null;
+    // authUserId：有 Supabase auth session，直接走 own-read RLS policy（auth.uid() = id）。
+    if (identity.authUserId) {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, points')
+            .eq('id', identity.authUserId)
+            .maybeSingle();
 
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('id, points')
-        .eq(column, value)
-        .maybeSingle();
+        if (error) {
+            console.error('[points] Failed to resolve profile:', error);
+            return null;
+        }
 
-    if (error) {
-        console.error('[points] Failed to resolve profile:', error);
-        return null;
+        if (!data) return null;
+
+        return {
+            id: data.id as string,
+            points: (data.points as number) || 0,
+        };
     }
 
-    if (!data) return null;
+    // lineUserId：LIFF-only 用戶沒有 Supabase auth session，profiles 表已無公開
+    // SELECT policy，改走白名單 RPC（只回 id/points，不含 email/phone/google_id 等）。
+    if (identity.lineUserId) {
+        const { data, error } = await supabase.rpc('get_own_profile_by_line_id', {
+            p_line_user_id: identity.lineUserId,
+        });
 
-    return {
-        id: data.id as string,
-        points: (data.points as number) || 0,
-    };
+        if (error) {
+            console.error('[points] Failed to resolve profile by line_user_id:', error);
+            return null;
+        }
+
+        const result = data as OwnProfileByLineIdResult;
+        if (!result?.ok || !result.data) return null;
+
+        return {
+            id: result.data.id,
+            points: result.data.points || 0,
+        };
+    }
+
+    return null;
 }
 
 export async function getUserPoints(userId: string, isLineId: boolean = false): Promise<number> {
@@ -74,14 +102,19 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
         let targetUuid = userId;
 
         if (isLineId) {
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('line_user_id', userId)
-                .maybeSingle();
+            // profiles 已無公開 SELECT policy，改走白名單 RPC 取回自己的 id
+            const { data: rpcData, error: rpcError } = await supabase.rpc('get_own_profile_by_line_id', {
+                p_line_user_id: userId,
+            });
 
-            if (!profileData) return [];
-            targetUuid = profileData.id as string;
+            if (rpcError) {
+                console.error('[points] Failed to resolve profile id by line_user_id:', rpcError);
+                return [];
+            }
+
+            const result = rpcData as OwnProfileByLineIdResult;
+            if (!result?.ok || !result.data) return [];
+            targetUuid = result.data.id;
         }
 
         const { data, error } = await supabase

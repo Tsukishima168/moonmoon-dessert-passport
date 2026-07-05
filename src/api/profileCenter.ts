@@ -57,31 +57,57 @@ function readCharacterId(row: ProfileRow, key: string): string | null {
   return KIWIMU_CHARACTER_OPTIONS.some((option) => option.id === value) ? value : null;
 }
 
+interface OwnProfileByLineIdResult {
+  ok: boolean;
+  error?: string;
+  data?: ProfileRow | null;
+}
+
 async function fetchProfileRowBySource(
   source: ProfileLookupSource,
   value: string
 ): Promise<ResolvedProfileRow | null> {
   if (!supabase) return null;
 
-  const column = source === 'authUserId' ? 'id' : 'line_user_id';
-  const query = supabase.from('profiles').select('*').eq(column, value);
+  // authUserId：有 Supabase auth session，走 own-read RLS policy（auth.uid() = id）。
+  if (source === 'authUserId') {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', value)
+      .maybeSingle();
 
-  const { data, error } = await query.maybeSingle();
+    if (error) {
+      console.error('[profileCenter] Failed to fetch profile row by id:', error);
+      return null;
+    }
+
+    const row = data ? (data as ProfileRow) : null;
+    const profileId = row ? readString(row, ['id']) : null;
+    if (!row || !profileId) return null;
+
+    return { profileId, row, source };
+  }
+
+  // lineUserId：LIFF-only 用戶沒有 Supabase auth session，profiles 已無公開
+  // SELECT policy，改走白名單 RPC（只回非敏感欄位，不含 email/phone/google_id 等）。
+  const { data, error } = await supabase.rpc('get_own_profile_by_line_id', {
+    p_line_user_id: value,
+  });
+
   if (error) {
-    console.error(`[profileCenter] Failed to fetch profile row by ${column}:`, error);
+    console.error('[profileCenter] Failed to fetch profile row by line_user_id:', error);
     return null;
   }
 
-  const row = data ? (data as ProfileRow) : null;
-  const profileId = row ? readString(row, ['id']) : null;
+  const result = data as OwnProfileByLineIdResult;
+  if (!result?.ok || !result.data) return null;
 
-  if (!row || !profileId) return null;
+  const row = result.data;
+  const profileId = readString(row, ['id']);
+  if (!profileId) return null;
 
-  return {
-    profileId,
-    row,
-    source,
-  };
+  return { profileId, row, source };
 }
 
 async function fetchProfileRow(params: {
