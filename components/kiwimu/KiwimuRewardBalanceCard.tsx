@@ -9,7 +9,7 @@ export const KiwimuRewardBalanceCard: React.FC<KiwimuRewardBalanceCardProps> = (
   points,
 }) => {
   return (
-    <div className="mb-5 flex items-center justify-between rounded-2xl bg-gradient-to-br from-[#ff8f00] to-[#ffa000] px-5 py-4">
+    <div className="mb-5 flex items-center justify-between rounded-2xl bg-linear-to-br from-[#ff8f00] to-[#ffa000] px-5 py-4">
       <div>
         <p className="m-0 text-xs text-white/80">我的積分餘額</p>
         <div className="mt-1 flex items-center gap-2 text-white">

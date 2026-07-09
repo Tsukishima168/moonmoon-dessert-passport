@@ -15,7 +15,7 @@ export const KiwimuHubMilestoneCard: React.FC<KiwimuHubMilestoneCardProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2.5 rounded-xl border-2 border-brand-black bg-white p-2.5 shadow-[2px_2px_0px_black]">
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-brand-black bg-brand-lime text-brand-black">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-black bg-brand-lime text-brand-black">
         {icon}
       </div>
       <div className="min-w-0">

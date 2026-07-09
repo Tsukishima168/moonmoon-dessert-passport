@@ -238,7 +238,7 @@ const Header = ({
         ) : (
           <button
             onClick={() => void signInWithGoogle()}
-            className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-[1px] hover:shadow-[1px_1px_0px_black] transition-all"
+            className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-px hover:shadow-[1px_1px_0px_black] transition-all"
           >
             <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
           </button>
@@ -263,7 +263,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
   const illustration = BRANDING.LANDING_ILLUSTRATION;
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-[#F7F5EF] text-brand-black">
+    <div className="relative h-dvh overflow-hidden bg-[#F7F5EF] text-brand-black">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(255,255,255,0.96)_0%,rgba(247,245,239,0.84)_42%,rgba(247,245,239,1)_78%)]" />
       <div className="absolute inset-x-0 top-0 h-[28vh] bg-[linear-gradient(180deg,rgba(255,255,255,0.74)_0%,rgba(255,255,255,0)_100%)]" />
       <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col px-5 pb-8 pt-24 md:px-8 md:pb-10 md:pt-28">
@@ -274,7 +274,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
           <h1 className="mt-3 text-[2.5rem] font-black leading-[0.94] tracking-[-0.06em] text-brand-black md:text-[4.8rem]">
             Moon Moon Passport
           </h1>
-          <p className="mt-3 max-w-[14rem] text-sm font-medium leading-relaxed text-brand-black/62 md:mt-4 md:max-w-[18rem] md:text-base">
+          <p className="mt-3 max-w-56 text-sm font-medium leading-relaxed text-brand-black/62 md:mt-4 md:max-w-[18rem] md:text-base">
             你的會員資料、MBTI、任務、集章與積分，都從這本護照開始。
           </p>
           <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-brand-black/28 md:text-[11px]">
@@ -304,7 +304,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
               trackButtonClick('open_passport', 'landing_cover');
               onOpenPassport();
             }}
-            className="group inline-flex items-center gap-2 rounded-full border border-brand-black/12 bg-white/84 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_10px_28px_rgba(17,17,17,0.08)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/26 hover:bg-white"
+            className="group inline-flex items-center gap-2 rounded-full border border-brand-black/12 bg-white/84 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_10px_28px_rgba(17,17,17,0.08)] backdrop-blur-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/26 hover:bg-white"
             aria-label="打開我的護照"
           >
             <BookOpen className="h-4 w-4 text-brand-black" />
@@ -753,7 +753,7 @@ function App() {
       <Header currentScreen={screen} passportCoverNumber={passportCoverNumber} onHomeClick={goHome} />
 
       {appNotice && (
-        <div className="fixed top-24 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
+        <div className="fixed top-24 left-1/2 z-70 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
           <div
             className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-3 shadow-[4px_4px_0px_black] ${
               appNotice.tone === 'success'

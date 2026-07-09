@@ -192,15 +192,15 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
 
     return (
         <div
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
+            className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center"
             onClick={e => e.target === e.currentTarget && onClose()}
         >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={onClose} />
 
             {/* Confetti shimmer */}
             {showConfetti && (
-                <div className="absolute inset-0 pointer-events-none z-[10000] flex items-center justify-center">
+                <div className="absolute inset-0 pointer-events-none z-10000 flex items-center justify-center">
                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-black/85 text-brand-lime animate-bounce shadow-2xl">
                         <Sparkles size={42} />
                     </div>
@@ -259,7 +259,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                                             ? 'ring-2 ring-brand-black ring-offset-1'
                                             : ''}
                                         ${cell.isCheckedIn
-                                            ? 'bg-brand-lime text-brand-black shadow-sm'
+                                            ? 'bg-brand-lime text-brand-black shadow-xs'
                                             : cell.isToday
                                                 ? 'bg-brand-black/5 text-brand-black'
                                                 : 'text-gray-400'
@@ -284,7 +284,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                     {MILESTONES.map(m => (
                         <div
                             key={m.days}
-                            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold
+                            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold
                                 ${streak >= m.days
                                     ? 'bg-brand-lime border-brand-black text-brand-black'
                                     : 'bg-gray-50 border-gray-200 text-gray-400'
@@ -330,11 +330,11 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                     {/* Legend */}
                     <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400">
                         <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded bg-brand-lime border border-brand-black/20" />
+                            <div className="w-3 h-3 rounded-sm bg-brand-lime border border-brand-black/20" />
                             <span>已簽到</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded ring-1 ring-brand-black bg-white" />
+                            <div className="w-3 h-3 rounded-sm ring-1 ring-brand-black bg-white" />
                             <span>今日</span>
                         </div>
                     </div>

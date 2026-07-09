@@ -27,8 +27,8 @@ export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps>
     : null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-5">
-      <div className="w-full max-w-80 rounded-[20px] border-2 border-[#f0c070] bg-gradient-to-br from-[#fff9f0] to-[#fff3e0] p-8 text-center">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 p-5">
+      <div className="w-full max-w-80 rounded-[20px] border-2 border-[#f0c070] bg-linear-to-br from-[#fff9f0] to-[#fff3e0] p-8 text-center">
         <div className="mx-auto mb-3 flex h-[68px] w-[68px] items-center justify-center rounded-[22px] bg-white/85 text-amber-500">
           <Sparkles size={34} />
         </div>
@@ -71,7 +71,7 @@ export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps>
 
         <button
           onClick={onClose}
-          className="w-full rounded-[10px] bg-gradient-to-r from-[#ff8f00] to-[#ffa000] py-3 text-[15px] font-bold text-white"
+          className="w-full rounded-[10px] bg-linear-to-r from-[#ff8f00] to-[#ffa000] py-3 text-[15px] font-bold text-white"
         >
           完成
         </button>

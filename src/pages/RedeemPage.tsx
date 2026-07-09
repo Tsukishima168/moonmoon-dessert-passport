@@ -106,7 +106,7 @@ export default function RedeemPage() {
             value={pwInput}
             onChange={e => { setPwInput(e.target.value); setRedeemError(null) }}
             placeholder="店員密碼"
-            className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-none placeholder:text-brand-black/30"
+            className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-hidden placeholder:text-brand-black/30"
             autoComplete="current-password"
             required
           />
@@ -119,7 +119,7 @@ export default function RedeemPage() {
                   value={redemptionCode}
                   onChange={e => { setRedemptionCode(e.target.value.toUpperCase()); setRedeemError(null); setFulfilledReward(null) }}
                   placeholder="AB12CD34EF56"
-                  className="flex-1 bg-transparent text-brand-bg text-sm outline-none placeholder:text-brand-bg/30 min-w-0"
+                  className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30 min-w-0"
                   required
                 />
               </div>
