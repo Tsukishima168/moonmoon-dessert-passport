@@ -142,7 +142,7 @@ export default function RedeemPage() {
                   placeholder="001"
                   min={1}
                   max={100}
-                  className="flex-1 bg-transparent text-brand-bg text-sm outline-none placeholder:text-brand-bg/30 w-16"
+                  className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30 w-16"
                   required
                 />
               </div>
