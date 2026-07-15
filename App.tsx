@@ -211,7 +211,7 @@ const Header = ({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
+    <header className="ku-passport-fixed-header fixed left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="flex items-center gap-2 pointer-events-auto">
         <button onClick={onHomeClick} className="cursor-pointer" aria-label="回首頁">
           <img
@@ -263,14 +263,12 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
   const illustration = BRANDING.LANDING_ILLUSTRATION;
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-[#F7F5EF] text-brand-black">
+    <div className="ku-passport-viewport relative overflow-hidden bg-[#F7F5EF] text-brand-black">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(255,255,255,0.96)_0%,rgba(247,245,239,0.84)_42%,rgba(247,245,239,1)_78%)]" />
       <div className="absolute inset-x-0 top-0 h-[28vh] bg-[linear-gradient(180deg,rgba(255,255,255,0.74)_0%,rgba(255,255,255,0)_100%)]" />
       <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col px-5 pb-8 pt-24 md:px-8 md:pb-10 md:pt-28">
         <div className="max-w-[240px] md:max-w-[420px] animate-fade-in">
-          <p className="text-[10px] font-black uppercase tracking-[0.34em] text-brand-black/35 md:text-[11px]">
-            Kiwimu
-          </p>
+          <p className="ku-site-kicker">02 / Member identity</p>
           <h1 className="mt-3 text-[2.5rem] font-black leading-[0.94] tracking-[-0.06em] text-brand-black md:text-[4.8rem]">
             Moon Moon Passport
           </h1>
@@ -334,7 +332,7 @@ const SsoBrokerScreen = () => {
   }, [loading, signInWithGoogle, user]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-brand-cream px-6 text-center">
+    <div className="ku-passport-route-shell flex items-center justify-center bg-brand-cream px-6 text-center">
       <div className="w-full max-w-sm rounded-[28px] border-2 border-brand-black bg-white p-8 shadow-[8px_8px_0px_black]">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-black bg-brand-lime">
           <LogIn size={22} className="text-brand-black" />
@@ -741,7 +739,7 @@ function App() {
 
 
   return (
-    <div className="min-h-screen font-sans selection:bg-brand-lime selection:text-brand-black">
+    <div className="ku-passport-app-shell font-sans selection:bg-brand-lime selection:text-brand-black">
       {isBrokerEntry ? (
         <SsoBrokerScreen />
       ) : (
@@ -753,7 +751,7 @@ function App() {
       <Header currentScreen={screen} passportCoverNumber={passportCoverNumber} onHomeClick={goHome} />
 
       {appNotice && (
-        <div className="fixed top-24 left-1/2 z-70 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
+        <div className="fixed top-[calc(var(--ku-rail-height)+6rem)] left-1/2 z-70 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
           <div
             className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-3 shadow-[4px_4px_0px_black] ${
               appNotice.tone === 'success'

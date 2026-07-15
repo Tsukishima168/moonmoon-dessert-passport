@@ -74,7 +74,7 @@ export default function RedeemPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-bg font-sans">
+    <div className="ku-passport-route-shell bg-brand-bg font-sans">
       <PageHeader />
       <div className="max-w-md mx-auto px-5 pt-28 pb-10">
 

@@ -84,6 +84,19 @@ html {
   background-color: #F4F4F0;
 }
 
+.ku-passport-fixed-header {
+  top: var(--ku-rail-height);
+}
+
+.ku-passport-app-shell,
+.ku-passport-route-shell {
+  min-height: calc(100dvh - var(--ku-rail-height));
+}
+
+.ku-passport-viewport {
+  height: calc(100dvh - var(--ku-rail-height));
+}
+
 @media (display-mode: standalone) {
   body {
     min-height: 100dvh;

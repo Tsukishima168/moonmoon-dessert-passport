@@ -5,6 +5,8 @@ import App from './App';
 import PassportPage from './src/pages/PassportPage';
 import JoinPage from './src/pages/JoinPage';
 import RedeemPage from './src/pages/RedeemPage';
+import KiwimuUniverseRail from './components/KiwimuUniverseRail';
+import './styles/kiwimu-universe.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -20,6 +22,7 @@ root.render(
     <SupabaseAuthProvider>
       <LiffProvider>
         <BrowserRouter>
+          <KiwimuUniverseRail currentSite="passport" />
           <Routes>
             <Route path="/passport/:id" element={<PassportPage />} />
             <Route path="/join/:passportId" element={<JoinPage />} />
