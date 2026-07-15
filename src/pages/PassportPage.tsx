@@ -27,7 +27,7 @@ export default function PassportPage() {
   const canInvite = passport.status === 'active' && slotsLeft > 0
 
   return (
-    <div className="min-h-screen bg-brand-bg font-sans">
+    <div className="ku-passport-route-shell bg-brand-bg font-sans">
       <PageHeader />
       <div className="max-w-md mx-auto px-5 pt-28 pb-10">
 
@@ -102,7 +102,7 @@ export default function PassportPage() {
 
 function StatusView({ text }: { text: string }) {
   return (
-    <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+    <div className="ku-passport-route-shell bg-brand-bg flex items-center justify-center">
       <p className="text-brand-black/40 text-sm">{text}</p>
     </div>
   )

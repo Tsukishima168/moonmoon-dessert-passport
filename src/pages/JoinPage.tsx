@@ -43,7 +43,7 @@ export default function JoinPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-brand-bg font-sans">
+      <div className="ku-passport-route-shell bg-brand-bg font-sans">
         <PageHeader />
         <div className="max-w-md mx-auto px-5 pt-28 pb-10 text-center">
           <p className="text-4xl mb-4">🎉</p>
@@ -55,7 +55,7 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-bg font-sans">
+    <div className="ku-passport-route-shell bg-brand-bg font-sans">
       <PageHeader />
       <div className="max-w-md mx-auto px-5 pt-28 pb-10">
         <div className="mb-8">
@@ -93,7 +93,7 @@ export default function JoinPage() {
 
 function StatusView({ text }: { text: string }) {
   return (
-    <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+    <div className="ku-passport-route-shell bg-brand-bg flex items-center justify-center">
       <p className="text-brand-black/40 text-sm">{text}</p>
     </div>
   )

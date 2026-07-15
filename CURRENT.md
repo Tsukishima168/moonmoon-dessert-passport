@@ -1,5 +1,16 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-07-15
+
+Status: `五站共用視覺語言已完成本機整合與瀏覽器驗證，尚未 commit／push／deploy`
+
+- All public routes now mount the shared Kiwimu Universe rail; the landing page adds the `02 / Member identity` role label.
+- Global headers, route shells, app notices, and viewport offsets now consume the rail-height token on desktop and mobile, preventing fixed-header overlap and duplicate rail-height scrolling.
+- Fresh-context review extended the rail-aware header contract to `/passport/:id`, `/join/:passportId`, and `/redeem`; full-screen passport overlays remain above the rail so their controls stay reachable.
+- Verified `npm run build` plus OAuth/SSO/service-worker/reward-ledger regression tests, homepage, and `/redeem`; desktop and 390px browser QA passed with no horizontal overflow.
+- The remaining local warning is the expected missing LIFF ID. Google OAuth, real member data, and successful redemption still require production/human verification.
+- No points, redemption, auth, or Supabase data was changed in this visual-system pass.
+
 ## Snapshot · 2026-06-04
 
 Status: `main` clean before this documentation pass. Latest checked commit: `defdb88 Merge pull request #27 from Tsukishima168/fix/passport-launch-prep-2026-05-30`.
