@@ -2,7 +2,7 @@
 
 ## Snapshot · 2026-07-16
 
-Status: `Economy v2 Passport adapter 已修正兩輪獨立審查 P1、最終 fresh-context review PASS 並通過本機驗證；本分支尚未 merge／deploy`
+Status: `Economy v2 Passport adapter 已提交至 Draft PR #29；GitHub build 與 Vercel preview checks PASS，尚未 merge／deploy`
 
 - 新增 server-first wallet adapter：登入會員先讀 `economy_get_wallet`，有效的遠端 `0` 不再回退 localStorage；只有 server 明確 `ROLLOUT_DISABLED` 或 RPC 尚不存在，才讀舊的遠端 `profiles.points` 相容路徑。
 - 每日簽到改送不含點數的 `passport.daily_checkin` 事件；只有同畫面先讀到 v2 wallet 才允許寫入。accepted 結果直接採用；shadow／尚未 rollout／legacy wallet 全部 fail closed，不再呼叫 `adjust_points`。UI 日曆與連續天數由遠端歷史推導，server 成功或已處理回覆會立即鎖住當日 CTA，避免 refresh 延遲重開。
@@ -14,6 +14,7 @@ Status: `Economy v2 Passport adapter 已修正兩輪獨立審查 P1、最終 fre
 - 相容期只保留舊遠端餘額讀取；Passport client 已移除 amount-bearing `adjust_points` helper。資料庫端 v1 function 的最終撤權仍屬 shared migration 退役 gate。
 - 第二輪審查後補上 wallet owner key 與跨帳號 in-flight invalidation、strict Economy code／整數 payload 驗證、pending claim terminal allowlist 與 thrown-request UX；可執行 regression 已覆蓋合法遠端 `0`、malformed amount、跨帳號 stale authority 與未知 claim code 保留。
 - 最終 fresh-context reviewer 對 owner binding、malformed envelope、claim retention 與 check-in authority 判定 P0/P1/P2 全為 0；本機 9 路由 preview smoke 皆為 200，最新 Chrome 攻擊／claim／390px QA 仍為 console error 0。
+- Branch `codex/passport-economy-v2-adapter-20260716`：implementation commit `f96c794`，Draft PR `#29`；本 PR 必須等待 Shop Economy v2 migration staging、hosted lint、Auth/RLS/PostgREST 與 shared foundation review 通過後才可升 Ready。
 
 ## Snapshot · 2026-07-15
 
