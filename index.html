@@ -104,9 +104,22 @@
 
     <script>
       (() => {
-        window.__PASSPORT_INITIAL_SEARCH__ = window.location.search;
-
         const url = new URL(window.location.href);
+        const initialSearchForApp = new URLSearchParams(url.search);
+        const economyClaim = initialSearchForApp.get('economy_claim');
+        const economyClaimPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (economyClaim && economyClaimPattern.test(economyClaim)) {
+          try {
+            window.sessionStorage.setItem('kiwimu_passport_pending_economy_claim', economyClaim);
+          } catch {
+            // Session storage is required for deferred claims. Never keep the
+            // credential in a long-lived window global as a fallback.
+          }
+        }
+        initialSearchForApp.delete('economy_claim');
+        const initialSearch = initialSearchForApp.toString();
+        window.__PASSPORT_INITIAL_SEARCH__ = initialSearch ? `?${initialSearch}` : '';
+
         const trackingParams = [
           'utm_source',
           'utm_medium',
@@ -120,14 +133,18 @@
           'entry_surface',
           'destination_type'
         ];
-        const sensitiveParams = ['claim', 'claim_code', 'reward'];
+        const sensitiveParams = ['claim', 'claim_code', 'reward', 'economy_claim'];
         // OAuth callback 一定帶非空 state；用 getAll + trim 同時收斂兩個 edge：
         //   - `?state=%20` 純空白 state 不被當成 OAuth state，reward+code 仍會被清
         //   - `?state=&state=REAL` 重複 state 不會被第一個空值矇騙，誤刪真實 OAuth code
         // 與 App.tsx scrubber、oauthSafety.ts 三邊對齊。
         const hasOAuthState = url.searchParams.getAll('state').some((value) => value.trim().length > 0);
         const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
-        const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
+        const hasLegacyPointPayload = url.searchParams.get('action') === 'add_points';
+        const legacyPointParams = hasLegacyPointPayload ? ['action', 'amount', 'ts'] : [];
+        const paramsToScrub = hasRewardClaimCode
+          ? [...sensitiveParams, ...legacyPointParams, 'code']
+          : [...sensitiveParams, ...legacyPointParams];
         const hasSensitiveClaimParam = paramsToScrub.some((param) => url.searchParams.has(param));
         const hasTrackingParam = trackingParams.some((param) => url.searchParams.has(param));
 

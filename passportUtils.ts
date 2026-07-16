@@ -206,7 +206,9 @@ export function getLocalCheckinStreak(): number {
 }
 
 /**
- * Performs daily check-in — localStorage 即時 + Supabase 持久化雙寫
+ * @deprecated Legacy rollback helper only. The live Passport UI must call
+ * `performPassportCheckin` from `src/api/economy.ts`; do not restore this as an
+ * official balance path.
  * 
  * @returns check-in result
  */
@@ -365,7 +367,9 @@ export function getNextStampInJourney(): typeof STAMPS[number] | null {
 // ─── Points System ───
 
 /**
- * Add points to the passport balance（localStorage + Supabase 雙寫）
+ * @deprecated Local projection helper retained only for legacy rollback and
+ * non-authoritative historical state. Official assets must come from the
+ * Economy v2 wallet or the explicitly gated remote compatibility RPC.
  * 
  * - localStorage 即時更新（主要 UI 來源）
  * - Supabase point_transactions async 寫入（持久化備份）
@@ -503,51 +507,42 @@ export function getPointsHistory(): PointTransaction[] {
  * Handle incoming points sync from Gacha (via URL params)
  * Call this on Passport page load to credit points from Gacha redirect
  */
-export function handleIncomingPointsSync(): { credited: number } | null {
+export function handleIncomingPointsSync(initialSearch?: string): { credited: 0; rejected: true } | null {
     try {
         const SYNC_KEY = 'moonmoon_points_last_sync_ts';
-        const ACK_COOKIE = 'moonmoon_passport_sync_ack_ts';
-        const COOKIE_DOMAIN = '.kiwimu.com';
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(initialSearch ?? window.location.search);
         const action = params.get('action');
         const amount = params.get('amount');
         const source = params.get('source');
         const ts = params.get('ts');
 
-        if (action !== 'add_points' || !amount || !source || !ts) return null;
+        if (action !== 'add_points') return null;
+
+        const visibleUrl = new URL(window.location.href);
+        ['action', 'amount', 'source', 'ts'].forEach((param) => visibleUrl.searchParams.delete(param));
+        const nextSearch = visibleUrl.searchParams.toString();
+        window.history.replaceState(
+            {},
+            '',
+            `${visibleUrl.pathname}${nextSearch ? `?${nextSearch}` : ''}${visibleUrl.hash}`
+        );
+
+        if (!amount || !source || !ts) return { credited: 0, rejected: true };
 
         const pointsAmount = parseInt(amount, 10);
-        if (isNaN(pointsAmount) || pointsAmount <= 0) return null;
+        if (isNaN(pointsAmount) || pointsAmount <= 0) return { credited: 0, rejected: true };
 
-        const writeAckCookie = () => {
-            document.cookie = [
-                `${ACK_COOKIE}=${encodeURIComponent(ts)}`,
-                `domain=${COOKIE_DOMAIN}`,
-                'path=/',
-                'max-age=600',
-                'SameSite=Lax',
-            ].join('; ');
-        };
-
-        // Prevent duplicate sync: check if this timestamp was already processed
+        // This legacy URL carried a caller-controlled amount. It is retained
+        // only as a scrub-and-observe compatibility signal; it can never award
+        // an official or local balance.
         const lastSyncTs = localStorage.getItem(SYNC_KEY);
         if (lastSyncTs === ts) {
-            writeAckCookie();
-            const cleanUrl = window.location.pathname;
-            window.history.replaceState({}, '', cleanUrl);
-            return null; // Already processed
+            return null;
         }
 
-        // Credit points
-        addPassportPoints(pointsAmount, 'gacha_earn', `扭蛋同步 +${pointsAmount} 積分`);
         localStorage.setItem(SYNC_KEY, ts);
-        writeAckCookie();
 
-        // Clean up URL
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, '', cleanUrl);
-
-        return { credited: pointsAmount };
+        return { credited: 0, rejected: true };
     } catch (e) {
         console.error('Failed to process incoming points sync:', e);
         return null;

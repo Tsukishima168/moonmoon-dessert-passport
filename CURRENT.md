@@ -1,5 +1,20 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-07-16
+
+Status: `Economy v2 Passport adapter 已修正兩輪獨立審查 P1、最終 fresh-context review PASS 並通過本機驗證；本分支尚未 merge／deploy`
+
+- 新增 server-first wallet adapter：登入會員先讀 `economy_get_wallet`，有效的遠端 `0` 不再回退 localStorage；只有 server 明確 `ROLLOUT_DISABLED` 或 RPC 尚不存在，才讀舊的遠端 `profiles.points` 相容路徑。
+- 每日簽到改送不含點數的 `passport.daily_checkin` 事件；只有同畫面先讀到 v2 wallet 才允許寫入。accepted 結果直接採用；shadow／尚未 rollout／legacy wallet 全部 fail closed，不再呼叫 `adjust_points`。UI 日曆與連續天數由遠端歷史推導，server 成功或已處理回覆會立即鎖住當日 CTA，避免 refresh 延遲重開。
+- 新增 `economy_claim` session 流程：claim UUID 在 app 啟動前從網址清除，登入後交由 `economy_claim_pending` 核准；過期、跨會員、重播與點數值都不由 client 決定。
+- 舊 Gacha `?action=add_points&amount=...` 只做清除與觀測，不再增加 local 或正式點數；CustomEvent 只觸發重新讀取，不採用 payload balance。
+- 本次審查修正後，`npx tsc --noEmit --pretty false`、`git diff --check`、Vite production build、PWA generateSW 與 OAuth／SSO／service-worker／reward／Economy regression 全數通過。
+- 本機 Chrome QA：偽造 `amount=999999` 僅顯示拒絕通知且未成為餘額；`economy_claim` 從可見 URL 與 initial-search global 清除、只保留於 sessionStorage；signed-out 簽到按鈕可點並導向登入；390px document／body 寬度均為 390，無頁面級水平溢出，console error 為 0。
+- 本輪未改 Supabase production、未開 rollout flag、未寫會員點數、未 merge 或 deploy。Shop Economy v2 Draft PR #17、真實 Supabase staging、hosted lint、Auth/RLS/PostgREST 與獨立簽收仍是 Passport merge 的硬 gate。
+- 相容期只保留舊遠端餘額讀取；Passport client 已移除 amount-bearing `adjust_points` helper。資料庫端 v1 function 的最終撤權仍屬 shared migration 退役 gate。
+- 第二輪審查後補上 wallet owner key 與跨帳號 in-flight invalidation、strict Economy code／整數 payload 驗證、pending claim terminal allowlist 與 thrown-request UX；可執行 regression 已覆蓋合法遠端 `0`、malformed amount、跨帳號 stale authority 與未知 claim code 保留。
+- 最終 fresh-context reviewer 對 owner binding、malformed envelope、claim retention 與 check-in authority 判定 P0/P1/P2 全為 0；本機 9 路由 preview smoke 皆為 200，最新 Chrome 攻擊／claim／390px QA 仍為 console error 0。
+
 ## Snapshot · 2026-07-15
 
 Status: `五站共用視覺語言已完成本機整合與瀏覽器驗證，尚未 commit／push／deploy`

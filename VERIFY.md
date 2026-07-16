@@ -1,6 +1,6 @@
 # Passport Verify
 
-Last updated: 2026-06-04
+Last updated: 2026-07-16
 
 ## Minimum Local Verification
 
@@ -18,6 +18,13 @@ Run the OAuth regression directly when editing auth, service worker, redirect, o
 
 ```bash
 npm test
+```
+
+Economy adapter changes must also pass:
+
+```bash
+npx tsc --noEmit --pretty false
+git diff --check
 ```
 
 ## Preview Smoke
@@ -46,6 +53,14 @@ Check these paths:
 - `/redeem` renders staff form and handles invalid input.
 - `/passport/test-id` and `/join/test-id` render controlled missing-data/error states if fixture data does not exist.
 - PWA manifest loads from `/manifest.json`.
+- Signed-out check-in requests login and does not alter local points.
+- A remote wallet balance of zero displays as zero without local fallback.
+- Switching authenticated accounts invalidates the previous wallet before any
+  check-in write; malformed `OK` payloads render unavailable instead of zero.
+- `?action=add_points&amount=999999&source=gacha&ts=test` is scrubbed and does not change the displayed balance.
+- `?economy_claim=<uuid>` is removed from the visible URL and retained only in session storage until authenticated server validation.
+- Unknown claim codes, malformed success payloads, and thrown claim requests
+  retain the session claim; only the documented terminal allowlist clears it.
 
 ## Production Smoke
 
@@ -64,6 +79,7 @@ Production-only checks:
 - Supabase Auth Redirect URLs include the production callback/return URL.
 - Service worker does not serve stale OAuth callback HTML.
 - LIFF is tested inside LINE only after `VITE_LIFF_ID` is configured.
+- Economy v2 dedicated test user validates wallet, accepted check-in, duplicate check-in, pending claim, and ledger sum after the shared migration staging gate passes.
 
 ## Release Gate
 

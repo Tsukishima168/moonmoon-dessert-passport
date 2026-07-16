@@ -16,9 +16,6 @@ import {
     getUnlockedStampCount,
     calculateUserLevel,
     getVisitedSites,
-    addPassportPoints,
-    canCheckinToday,
-    getLocalCheckinStreak,
 } from './passportUtils';
 import BadgeJourney from './components/BadgeJourney';
 import PassportHomeDashboard from './components/PassportHomeDashboard';
@@ -39,7 +36,15 @@ import {
     loadProfileCenterDraft,
     saveProfileCenterDraftToProfile,
 } from './src/api/profileCenter';
-import { getUserPointsByIdentity } from './src/api/points';
+import {
+    derivePassportCheckinState,
+    getUtcDay,
+    performPassportCheckin,
+    readPassportWallet,
+    submitPassportActivation,
+    type PassportWalletSnapshot,
+} from './src/api/economy';
+import { getWalletOwnerKey } from './src/api/economyContract.js';
 import {
     ProfileCenterDraft,
     ProfileCenterSyncStatus,
@@ -122,8 +127,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
     const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
-    const [canDailyCheckin, setCanDailyCheckin] = useState(canCheckinToday);
-    const [checkinStreak, setCheckinStreak] = useState(getLocalCheckinStreak);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isCheckingLocation, setIsCheckingLocation] = useState(false);
     const [gpsDebug, setGpsDebug] = useState<GpsDebugInfo | null>(null);
@@ -131,7 +134,56 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
     const { isLoggedIn, profile } = useLiff();
     const { user, signInWithGoogle } = useSupabaseAuth();
-    const [points, setPoints] = useState(0);
+    const activeWalletOwnerKey = getWalletOwnerKey({
+        authUserId: user?.id || null,
+        lineUserId: user?.id ? null : profile?.userId || null,
+    });
+    const [wallet, setWallet] = useState<PassportWalletSnapshot>({
+        available: true,
+        source: 'guest',
+        balance: 0,
+        history: [],
+        code: 'AUTH_REQUIRED',
+        ownerKey: null,
+    });
+    const [confirmedCheckinUtcDay, setConfirmedCheckinUtcDay] = useState<string | null>(null);
+    const walletRequestRef = React.useRef(0);
+    const walletOwnerKeyRef = React.useRef<string | null>(activeWalletOwnerKey);
+    walletOwnerKeyRef.current = activeWalletOwnerKey;
+    const walletIsCurrent = wallet.ownerKey === activeWalletOwnerKey;
+    const checkinState = React.useMemo(
+        () => {
+            const currentHistory = walletIsCurrent ? wallet.history : [];
+            if (!confirmedCheckinUtcDay) {
+                return derivePassportCheckinState(currentHistory);
+            }
+
+            const alreadyPresent = currentHistory.some((entry) =>
+                entry.sourceSite === 'passport'
+                && entry.referenceType === 'passport.daily_checkin'
+                && getUtcDay(entry.createdAt) === confirmedCheckinUtcDay
+            );
+            if (alreadyPresent) {
+                return derivePassportCheckinState(currentHistory);
+            }
+
+            return derivePassportCheckinState([
+                {
+                    id: `server-confirmed-${confirmedCheckinUtcDay}`,
+                    delta: 0,
+                    balanceAfter: walletIsCurrent ? wallet.balance : null,
+                    entryType: 'earn',
+                    sourceSite: 'passport',
+                    referenceType: 'passport.daily_checkin',
+                    referenceId: `passport-checkin-${confirmedCheckinUtcDay}`,
+                    createdAt: `${confirmedCheckinUtcDay}T12:00:00.000Z`,
+                },
+                ...currentHistory,
+            ]);
+        },
+        [confirmedCheckinUtcDay, wallet.balance, wallet.history, walletIsCurrent]
+    );
+    const points = walletIsCurrent ? wallet.balance : 0;
     const [hubProfileSnapshot, setHubProfileSnapshot] = useState<{
         mbtiType: string | null;
         visitedSiteCount: number;
@@ -168,79 +220,96 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         });
     }, []);
 
-    const refreshPoints = React.useCallback(async () => {
-        const state = getPassportState();
-        const localPoints = state.points || 0;
+    const refreshWallet = React.useCallback(async () => {
+        const identity = {
+            authUserId: user?.id || null,
+            lineUserId: user?.id ? null : profile?.userId || null,
+        };
+        const expectedOwnerKey = getWalletOwnerKey(identity);
+        const requestId = walletRequestRef.current + 1;
+        walletRequestRef.current = requestId;
+        const nextWallet = await readPassportWallet(identity);
 
-        if (user?.id) {
-            const remotePoints = await getUserPointsByIdentity({ authUserId: user.id });
-            setPoints(remotePoints || localPoints);
-            return;
+        if (
+            walletRequestRef.current === requestId
+            && walletOwnerKeyRef.current === expectedOwnerKey
+            && nextWallet.ownerKey === expectedOwnerKey
+        ) {
+            setWallet(nextWallet);
         }
-
-        if (profile?.userId) {
-            const remotePoints = await getUserPointsByIdentity({ lineUserId: profile.userId });
-            setPoints(remotePoints || localPoints);
-            return;
-        }
-
-        setPoints(localPoints);
     }, [profile?.userId, user?.id]);
+
+    useEffect(() => {
+        walletRequestRef.current += 1;
+        setConfirmedCheckinUtcDay(null);
+        setShowCheckinModal(false);
+        setWallet((current) => {
+            if (current.ownerKey === activeWalletOwnerKey) return current;
+            return {
+                available: activeWalletOwnerKey === null,
+                source: activeWalletOwnerKey === null ? 'guest' : 'unavailable',
+                balance: 0,
+                history: [],
+                code: activeWalletOwnerKey === null ? 'AUTH_REQUIRED' : 'UNAVAILABLE',
+                ownerKey: activeWalletOwnerKey,
+                error: activeWalletOwnerKey === null
+                    ? undefined
+                    : 'Wallet identity changed; awaiting an authority refresh',
+            };
+        });
+    }, [activeWalletOwnerKey]);
 
     useEffect(() => {
         const state = getPassportState();
         setUnlockedCount(getUnlockedStampCount());
         setRedeemedRewards(state.redeemedRewards);
-        setCanDailyCheckin(canCheckinToday());
-        setCheckinStreak(getLocalCheckinStreak());
         const storedMbti = readStoredMbtiResult();
         setHubProfileSnapshot({
             mbtiType: storedMbti?.mbtiType ?? null,
             visitedSiteCount: getVisitedSites().length,
         });
-        void refreshPoints();
+        void refreshWallet();
 
-        // LIFF-4: Listen for cross-site points from Gacha
-        const handleExternalPoints = (e: Event) => {
-            const evt = e as CustomEvent<{ points: number; action: string; description: string }>;
-            if (!evt.detail?.points) return;
-            const newBalance = addPassportPoints(evt.detail.points, evt.detail.action as any, evt.detail.description);
-            setPoints(newBalance);
+        // Client events are refresh hints only. Their payload can never set an
+        // official balance or award points.
+        const handleExternalPoints = () => {
+            void refreshWallet();
         };
 
         const handlePassportMigrated = () => {
             const newState = getPassportState();
             setUnlockedCount(getUnlockedStampCount());
             setRedeemedRewards(newState.redeemedRewards);
-            void refreshPoints();
+            void refreshWallet();
         };
 
-        const handlePointsUpdated = (e: Event) => {
-            const evt = e as CustomEvent<{ balance?: number }>;
-            if (typeof evt.detail?.balance === 'number') {
-                setPoints(evt.detail.balance);
-                return;
-            }
-            void refreshPoints();
+        const handlePointsUpdated = () => {
+            void refreshWallet();
         };
 
         const handleDailyCheckin = () => {
-            setCanDailyCheckin(canCheckinToday());
-            setCheckinStreak(getLocalCheckinStreak());
+            void refreshWallet();
         };
 
         document.addEventListener('kiwimu:points_earned', handleExternalPoints);
         document.addEventListener('kiwimu:passport_migrated', handlePassportMigrated);
         document.addEventListener('passport-points-updated', handlePointsUpdated);
         document.addEventListener('daily-checkin', handleDailyCheckin);
+        document.addEventListener('economy-wallet-updated', handlePointsUpdated);
 
         return () => {
             document.removeEventListener('kiwimu:points_earned', handleExternalPoints);
             document.removeEventListener('kiwimu:passport_migrated', handlePassportMigrated);
             document.removeEventListener('passport-points-updated', handlePointsUpdated);
             document.removeEventListener('daily-checkin', handleDailyCheckin);
+            document.removeEventListener('economy-wallet-updated', handlePointsUpdated);
         };
-    }, [isLoggedIn, profile, refreshPoints, user]);
+    }, [isLoggedIn, profile, refreshWallet, user]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        void submitPassportActivation(user.id);
+    }, [user?.id]);
 
     useEffect(() => {
         let isActive = true;
@@ -444,10 +513,26 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         profile?.displayName ||
         '月島旅人';
     const passportHolder = profileCenterDraft.displayName.trim() || fallbackPassportHolder;
-    const passportMode = user ? '已啟用' : '訪客模式';
+    const passportMode = user
+        ? walletIsCurrent && wallet.source === 'economy_v2'
+            ? '正式帳本'
+            : walletIsCurrent && wallet.source === 'legacy_remote'
+                ? '相容帳本'
+                : '同步待確認'
+        : '訪客模式';
+    const checkinEnabled = Boolean(user?.id)
+        && walletIsCurrent
+        && wallet.source === 'economy_v2';
     const nextRewardTier =
         REWARD_TIERS.find((reward) => !redeemedRewards.includes(reward.id)) || null;
     const handleOpenCheckin = () => {
+        if (!user?.id) {
+            void signInWithGoogle(window.location.href);
+            return;
+        }
+        if (!checkinEnabled) {
+            return;
+        }
         setShowCheckinModal(true);
         trackEvent('checkin_card_tapped', { source: activeTab });
     };
@@ -506,6 +591,12 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         </div>
                     )}
 
+                    {user && !wallet.available && (
+                        <div className="mb-6 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 text-xs font-semibold leading-6 text-amber-800">
+                            正式點數帳本目前無法確認，因此沒有採用 localStorage 餘額。請稍後重新整理再試。
+                        </div>
+                    )}
+
                     {!user && (
                         <KiwimuPanel className="mb-6" padded={false}>
                             <div className="flex flex-col items-center gap-3 p-4 text-center">
@@ -527,7 +618,16 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                     {activeTab === 'journey' && (
                         <div className="space-y-4">
                             {/* ─── Daily Check-in (prominent placement) ─── */}
-                            <CheckinCard onOpen={handleOpenCheckin} />
+                            <CheckinCard
+                                onOpen={handleOpenCheckin}
+                                canCheckin={checkinState.canCheckin}
+                                streak={checkinState.streakCount}
+                                requiresLogin={!user}
+                                disabled={Boolean(user) && !checkinEnabled}
+                                disabledMessage={wallet.source === 'legacy_remote'
+                                    ? '正式簽到尚未開放；相容餘額維持只讀'
+                                    : '正式帳本暫時無法確認'}
+                            />
 
                             {gpsDebug && (
                                 <KiwimuPanel
@@ -634,8 +734,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 mbtiType={hubProfileSnapshot.mbtiType}
                                 hasIdentity={Boolean(user || profile)}
                                 userId={user?.id ?? null}
-                                canCheckin={canDailyCheckin}
-                                checkinStreak={checkinStreak}
+                                checkinEnabled={checkinEnabled}
+                                canCheckin={checkinState.canCheckin}
+                                checkinStreak={checkinState.streakCount}
                                 nextReward={
                                     nextRewardTier
                                         ? {
@@ -682,8 +783,53 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                 {showCheckinModal && (
                     <CheckinModal
                         onClose={() => setShowCheckinModal(false)}
-                        onCheckinComplete={(balance) => {
-                            setPoints(balance);
+                        canCheckin={checkinState.canCheckin}
+                        streak={checkinState.streakCount}
+                        checkedUtcDates={checkinState.checkedUtcDates}
+                        onCheckin={async () => {
+                            const requestedOwnerKey = activeWalletOwnerKey;
+                            const result = await performPassportCheckin(
+                                { authUserId: user?.id || null },
+                                {
+                                    source: wallet.source,
+                                    balance: wallet.balance,
+                                    ownerKey: wallet.ownerKey,
+                                }
+                            );
+                            if (walletOwnerKeyRef.current !== requestedOwnerKey) {
+                                return {
+                                    ok: false,
+                                    code: 'UNAVAILABLE' as const,
+                                    source: 'unavailable' as const,
+                                    pointsAwarded: 0,
+                                    balance: null,
+                                    ownerKey: walletOwnerKeyRef.current,
+                                    error: 'Wallet identity changed while check-in was pending',
+                                };
+                            }
+                            return result;
+                        }}
+                        onCheckinComplete={(result) => {
+                            if (result.ownerKey !== walletOwnerKeyRef.current) {
+                                return;
+                            }
+                            if (
+                                result.ok
+                                || result.code === 'ALREADY_PROCESSED'
+                                || result.code === 'LIMIT_REACHED'
+                            ) {
+                                setConfirmedCheckinUtcDay(getUtcDay(new Date()));
+                            }
+                            if (typeof result.balance === 'number') {
+                                setWallet((current) => ({
+                                    ...current,
+                                    available: true,
+                                    source: result.source === 'unavailable' ? current.source : result.source,
+                                    balance: result.balance ?? current.balance,
+                                    code: result.code,
+                                }));
+                            }
+                            void refreshWallet();
                         }}
                     />
                 )}
