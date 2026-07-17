@@ -5,70 +5,35 @@
  * 點擊後開啟 CheckinModal（完整日曆）
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Calendar, Flame, ChevronRight, CheckCircle } from 'lucide-react';
-import { canCheckinToday, getPassportState } from '../passportUtils';
 
 interface CheckinCardProps {
     onOpen: () => void;
+    canCheckin: boolean;
+    streak: number;
+    requiresLogin?: boolean;
+    disabled?: boolean;
+    disabledMessage?: string;
 }
 
-function getStreakCount(): number {
-    const state = getPassportState();
-    if (!state.pointsHistory) return 0;
-
-    const now = new Date();
-    let streak = 0;
-    let checkDate = new Date(now);
-
-    const checkedDayStrings = new Set(
-        state.pointsHistory
-            .filter(tx => tx.type === 'daily_checkin')
-            .map(tx => {
-                const d = new Date(tx.timestamp);
-                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-            })
-    );
-
-    if (state.lastCheckinAt) {
-        const d = new Date(state.lastCheckinAt);
-        checkedDayStrings.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
-    }
-
-    for (let i = 0; i < 365; i++) {
-        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
-        if (checkedDayStrings.has(key)) {
-            streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-            break;
-        }
-    }
-
-    return streak;
-}
-
-const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
-    const [canCheckin, setCanCheckin] = useState(canCheckinToday());
-    const [streak, setStreak] = useState(getStreakCount());
-
-    // Listen for check-in events (dispatched by performDailyCheckin)
-    useEffect(() => {
-        const handler = () => {
-            setCanCheckin(false);
-            setStreak(getStreakCount());
-        };
-        document.addEventListener('daily-checkin', handler);
-        return () => document.removeEventListener('daily-checkin', handler);
-    }, []);
-
+const CheckinCard: React.FC<CheckinCardProps> = ({
+    onOpen,
+    canCheckin,
+    streak,
+    requiresLogin = false,
+    disabled = false,
+    disabledMessage = '正式簽到暫時無法確認',
+}) => {
     return (
         <button
             onClick={onOpen}
+            disabled={disabled}
             className={`
                 w-full rounded-2xl p-4 border-2 border-brand-black shadow-[4px_4px_0px_black]
                 flex items-center justify-between
                 transition-all active:translate-y-0.5 active:shadow-[2px_2px_0px_black]
+                disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none
                 ${canCheckin
                     ? 'bg-brand-lime hover:bg-brand-lime/90'
                     : 'bg-white hover:bg-gray-50'
@@ -98,7 +63,11 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
                         )}
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium mt-0.5">
-                        {canCheckin
+                        {requiresLogin
+                            ? '登入後由伺服器確認簽到資格'
+                            : disabled
+                            ? disabledMessage
+                            : canCheckin
                             ? '打開護照，領今日積分'
                             : '今日已完成，明天再來'
                         }
@@ -108,7 +77,15 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
 
             {/* Right: CTA / Status */}
             <div className="flex items-center gap-1.5">
-                {canCheckin ? (
+                {requiresLogin ? (
+                    <span className="text-xs font-bold text-brand-black bg-white/70 rounded-lg px-2.5 py-1 border border-brand-black/10">
+                        登入簽到
+                    </span>
+                ) : disabled ? (
+                    <span className="text-xs font-bold text-gray-400">
+                        尚未開放
+                    </span>
+                ) : canCheckin ? (
                     <span className="text-xs font-bold text-brand-black bg-white/70 rounded-lg px-2.5 py-1 border border-brand-black/10">
                         點此簽到
                     </span>

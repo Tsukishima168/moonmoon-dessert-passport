@@ -1,11 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
 const read = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
+const economyContract = await import(
+  pathToFileURL(path.join(repoRoot, 'src/api/economyContract.js')).href
+);
+const economyDay = await import(
+  pathToFileURL(path.join(repoRoot, 'src/api/economyDay.js')).href
+);
 
 function assert(condition, message) {
   if (!condition) {
@@ -25,10 +31,14 @@ function hasNonEmptyState(url) {
 
 function scrubSensitiveClaimParams(input) {
   const url = new URL(input, 'https://passport.kiwimu.com');
-  const sensitiveParams = ['claim', 'claim_code', 'reward'];
+  const sensitiveParams = ['claim', 'claim_code', 'reward', 'economy_claim'];
   const hasOAuthState = hasNonEmptyState(url);
   const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
-  const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
+  const hasLegacyPointPayload = url.searchParams.get('action') === 'add_points';
+  const legacyPointParams = hasLegacyPointPayload ? ['action', 'amount', 'ts'] : [];
+  const paramsToScrub = hasRewardClaimCode
+    ? [...sensitiveParams, ...legacyPointParams, 'code']
+    : [...sensitiveParams, ...legacyPointParams];
   paramsToScrub.forEach((param) => url.searchParams.delete(param));
   return url.search;
 }
@@ -58,6 +68,8 @@ const scrubCases = [
   ['/?state=%20&reward=x&code=y', '?state=+'],
   ['/?state=&state=REAL&code=AUTH&reward=x', '?state=&state=REAL&code=AUTH'],
   ['/?claim_code=X&code=Y', '?code=Y'],
+  ['/?economy_claim=11111111-1111-4111-8111-111111111111&utm_source=kiwimu', '?utm_source=kiwimu'],
+  ['/?action=add_points&amount=999999&source=gacha&ts=123', '?source=gacha'],
   ['/?code=ONLY', '?code=ONLY'],
   ['/?%63ode=Y&reward=x&state=s', '?code=Y&state=s'],
   ['/#code=ABC&state=XYZ', ''],
@@ -84,6 +96,53 @@ for (const [input, expected] of cleanupCases) {
   assertEqual(cleanupOAuthCallbackParams(input), expected, `cleanup ${input}`);
 }
 
+const validZeroEnvelope = economyContract.normalizeEconomyEnvelope({
+  ok: true,
+  code: 'OK',
+  request_id: 'request-zero',
+  data: { balance: 0, history: [] },
+}, 'request-zero');
+assert(validZeroEnvelope?.data.balance === 0, 'A valid remote zero must remain authoritative');
+assert(economyContract.normalizeEconomyEnvelope({
+  ok: true,
+  code: 'OK',
+  request_id: 'request-other',
+  data: { balance: 0, history: [] },
+}, 'request-zero') === null, 'A mismatched Economy request id must fail closed');
+assert(economyContract.normalizeEconomyEnvelope({
+  ok: true,
+  code: 'OK',
+  request_id: 'request-zero',
+  data: { balance: 0, history: [] },
+  amount: 999999,
+}, 'request-zero') === null, 'Unexpected Economy envelope keys must fail closed');
+assert(economyContract.normalizeEconomyEnvelope({ ok: false, code: 'NEW_TEMPORARY_CODE', data: {} }) === null, 'Unknown Economy codes must fail closed');
+assert(economyContract.normalizeEconomyEnvelope({ ok: true, code: 'OK', data: [] }) === null, 'Envelope data must be an object');
+assert(economyContract.readNonNegativeLedgerInteger(0) === 0, 'Ledger zero must be valid');
+for (const malformedAmount of [undefined, null, '0', Number.NaN, -1, 1.5]) {
+  assert(economyContract.readNonNegativeLedgerInteger(malformedAmount) === null, `Malformed ledger amount must fail closed: ${String(malformedAmount)}`);
+}
+assert(economyContract.canUseEconomyWriteAuthority({ source: 'economy_v2', ownerKey: 'auth:user-a' }, 'user-a'), 'Matching v2 owner must permit the adapter write');
+assert(!economyContract.canUseEconomyWriteAuthority({ source: 'economy_v2', ownerKey: 'auth:user-a' }, 'user-b'), 'A stale wallet from another account must not permit a write');
+assert(!economyContract.canUseEconomyWriteAuthority({ source: 'legacy_remote', ownerKey: 'auth:user-a' }, 'user-a'), 'Legacy authority must remain read-only');
+for (const terminalCode of ['NOT_ELIGIBLE', 'LIMIT_REACHED', 'EXPIRED', 'INVALID_PROOF']) {
+  assert(economyContract.isTerminalPendingClaimCode(terminalCode), `${terminalCode} must be a terminal pending-claim code`);
+}
+for (const temporaryCode of ['AUTH_REQUIRED', 'ROLLOUT_DISABLED', 'UNAVAILABLE', 'OUT_OF_STOCK', 'NEW_TEMPORARY_CODE']) {
+  assert(!economyContract.isTerminalPendingClaimCode(temporaryCode), `${temporaryCode} must retain the pending claim`);
+}
+assertEqual(
+  economyDay.getTaipeiDay('2026-07-15T15:59:59.000Z'),
+  '2026-07-15',
+  'Taipei day before midnight',
+);
+assertEqual(
+  economyDay.getTaipeiDay('2026-07-15T16:00:00.000Z'),
+  '2026-07-16',
+  'Taipei day at midnight',
+);
+assertEqual(economyDay.shiftTaipeiDay('2026-07-16', -1), '2026-07-15', 'Taipei previous day');
+
 const stateGuard = "searchParams.getAll('state').some((value) => value.trim().length > 0)";
 const indexHtml = read('index.html');
 const appTsx = read('App.tsx');
@@ -92,9 +151,19 @@ const authContext = read('src/contexts/SupabaseAuthContext.tsx');
 const ssoBroker = read('src/lib/ssoBroker.ts');
 const rewardShop = read('components/RewardShop.tsx');
 const rewardsApi = read('src/api/rewards.ts');
+const redeemPage = read('src/pages/RedeemPage.tsx');
+const economyApi = read('src/api/economy.ts');
+const passportScreen = read('PassportScreen.tsx');
+const checkinModal = read('components/CheckinModal.tsx');
+const checkinCard = read('components/CheckinCard.tsx');
+const pointsApi = read('src/api/points.ts');
+const passportUtils = read('passportUtils.ts');
 const rewardLedgerMigration = read('supabase/migrations/20260621111241_reward_redemption_ledger.sql');
 
-assert(indexHtml.includes("const sensitiveParams = ['claim', 'claim_code', 'reward'];"), 'index.html sensitiveParams changed');
+assert(indexHtml.includes("const sensitiveParams = ['claim', 'claim_code', 'reward', 'economy_claim'];"), 'index.html sensitiveParams changed');
+assert(indexHtml.includes("const hasLegacyPointPayload = url.searchParams.get('action') === 'add_points';"), 'index.html must detect legacy amount payloads before app boot');
+assert(indexHtml.includes("initialSearchForApp.delete('economy_claim');"), 'Economy claim must be removed from the app initial-search global');
+assert(indexHtml.indexOf("initialSearchForApp.delete('economy_claim');") < indexHtml.indexOf('window.__PASSPORT_INITIAL_SEARCH__ ='), 'Economy claim must be removed before publishing initial search');
 assert(indexHtml.includes(stateGuard), 'index.html state guard must use getAll + trim');
 assert(appTsx.includes(stateGuard), 'App.tsx state guard must mirror index.html');
 assert(oauthSafety.includes("url.searchParams.has('code') && url.searchParams.has('state')"), 'oauthSafety must clean code+state residue');
@@ -117,12 +186,40 @@ assert(rewardLedgerMigration.includes('CREATE TABLE IF NOT EXISTS public.reward_
 assert(rewardLedgerMigration.includes('ALTER TABLE public.reward_redemptions ENABLE ROW LEVEL SECURITY;'), 'Reward ledger must enable RLS');
 assert(rewardLedgerMigration.includes('CREATE POLICY reward_redemptions_select_own'), 'Reward ledger must restrict direct reads to owner');
 assert(rewardLedgerMigration.includes('REVOKE ALL ON TABLE public.reward_redemptions FROM anon, authenticated;'), 'Reward ledger must revoke direct client writes');
-assert(rewardLedgerMigration.includes('CREATE OR REPLACE FUNCTION public.redeem_reward_item'), 'Reward redeem RPC must exist');
-assert(rewardLedgerMigration.includes('GRANT EXECUTE ON FUNCTION public.redeem_reward_item(TEXT, INTEGER) TO authenticated;'), 'Reward redeem RPC must be authenticated only');
-assert(rewardLedgerMigration.includes('CREATE OR REPLACE FUNCTION public.fulfill_reward_redemption_staff'), 'Staff reward fulfillment RPC must exist');
 assert(rewardsApi.includes("supabase.rpc('redeem_reward_item'"), 'Rewards API must redeem via RPC');
+assert(rewardsApi.includes(".from('reward_items')"), 'Reward catalog must load from the server-owned reward_items table');
+assert(rewardsApi.includes("supabase.rpc('rotate_reward_redemption_proof'"), 'Members must be able to rotate an active redemption proof');
+assert(rewardsApi.includes("supabase.rpc('fulfill_reward_redemption'"), 'Staff reward fulfillment must use the Auth RPC');
+assert(rewardsApi.includes("supabase.rpc('fulfill_passport_pudding'"), 'Passport pudding fulfillment must use the Auth staff RPC');
+assert(!rewardsApi.includes('p_expected_points_cost'), 'Client must not submit a reward price');
+assert(!rewardsApi.includes('p_staff_password'), 'Client must not submit a shared staff password');
 assert(rewardShop.includes('redeemRewardItem({'), 'RewardShop must call the server redemption RPC');
 assert(!rewardShop.includes('redeemItem(pendingReward.id)'), 'RewardShop must not deduct points locally before server redemption');
+assert(!rewardShop.includes('REDEEMABLE_ITEMS'), 'RewardShop must not use a hard-coded catalog');
+assert(!rewardShop.includes('getPassportPointsBalance'), 'RewardShop must not treat localStorage as a balance authority');
+assert(redeemPage.includes('useSupabaseAuth()'), 'Staff fulfillment page must require a Supabase Auth session');
+assert(!redeemPage.includes('p_staff_password') && !redeemPage.includes('type="password"') && !redeemPage.includes('pwInput'), 'Staff fulfillment page must not retain the shared-password flow');
+assert(passportScreen.includes('<RewardShop currentPoints={points} />'), 'The server-backed point store must be reachable from Passport rewards');
+assert(economyApi.includes("supabase.rpc('economy_get_wallet'"), 'Passport wallet must read Economy v2 through RPC');
+assert(economyApi.includes("supabase.rpc('economy_submit_event'"), 'Passport check-in must submit the canonical event contract');
+assert(economyApi.includes("supabase.rpc('economy_claim_pending'"), 'Passport must claim pending activities through RPC');
+assert(economyApi.includes("envelope?.code !== 'ROLLOUT_DISABLED'"), 'Legacy wallet fallback must require an explicit rollout denial');
+assert(economyApi.includes('canUseEconomyWriteAuthority(authority, identity.authUserId)'), 'Check-in must require matching Economy v2 read authority');
+assert(!economyApi.includes('performLegacyCheckin'), 'Check-in must not fall back to a legacy point write');
+assert(!economyApi.includes('adjustPointsByIdentity'), 'Economy adapter must not call an amount-bearing legacy RPC');
+assert(!pointsApi.includes("supabase.rpc('adjust_points'"), 'Passport client must not ship the legacy amount-bearing adjustment helper');
+assert(!passportScreen.includes('remotePoints || localPoints'), 'A remote zero must never fall back to local points');
+assert(!passportScreen.includes("evt.detail?.balance"), 'Client events must not set an official wallet balance');
+assert(passportScreen.includes('setConfirmedCheckinTaipeiDay(getTaipeiDay(new Date()))'), 'Server-confirmed check-in must lock the current Taipei day before refresh');
+assert(passportScreen.includes('result.ownerKey !== walletOwnerKeyRef.current'), 'Stale check-in results must not update a different account wallet');
+assert(!checkinModal.includes('performDailyCheckin'), 'Check-in UI must not call the local-first legacy helper');
+assert(!checkinModal.includes('adjustPointsByIdentity'), 'Check-in UI must not choose its own point award');
+assert(checkinModal.includes('網路連線中斷'), 'Thrown check-in failures must show a user-visible message');
+assert(checkinCard.includes('requiresLogin'), 'Signed-out check-in must remain clickable and route to login');
+assert(appTsx.includes('isTerminalPendingClaimCode(result.code)'), 'Pending claims must clear only through an explicit terminal allowlist');
+assert(appTsx.includes("'[economy] Pending claim request failed:'"), 'Thrown pending-claim requests must show a handled UX path');
+const incomingSyncBody = passportUtils.slice(passportUtils.indexOf('export function handleIncomingPointsSync'));
+assert(!incomingSyncBody.includes('addPassportPoints(pointsAmount'), 'Legacy URL amounts must not award local points');
 
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
@@ -141,4 +238,4 @@ assert(sw.includes('networkTimeoutSeconds:3'), 'passport-html NetworkFirst timeo
 assert(sw.includes('maxEntries:10'), 'passport-html maxEntries changed');
 assert(!sw.includes('\\bcode='), 'sw.js must not regress to enumerated code denylist');
 
-console.log('OAuth, SSO broker, service-worker, and reward ledger regression checks passed.');
+console.log('OAuth, SSO broker, service-worker, reward ledger, and Economy adapter regression checks passed.');

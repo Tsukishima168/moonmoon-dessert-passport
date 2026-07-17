@@ -6,6 +6,8 @@ import PassportPage from './src/pages/PassportPage';
 import JoinPage from './src/pages/JoinPage';
 import RedeemPage from './src/pages/RedeemPage';
 import KiwimuUniverseRail from './components/KiwimuUniverseRail';
+import { trackEvent } from './analytics';
+import { supabase } from './src/lib/supabase';
 import './styles/kiwimu-universe.css';
 
 const rootElement = document.getElementById('root');
@@ -22,7 +24,11 @@ root.render(
     <SupabaseAuthProvider>
       <LiffProvider>
         <BrowserRouter>
-          <KiwimuUniverseRail currentSite="passport" />
+          <KiwimuUniverseRail
+            currentSite="passport"
+            authClient={supabase}
+            onTrack={trackEvent}
+          />
           <Routes>
             <Route path="/passport/:id" element={<PassportPage />} />
             <Route path="/join/:passportId" element={<JoinPage />} />
