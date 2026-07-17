@@ -11,13 +11,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Flame, Trophy, Calendar, CheckCircle, Sparkles, Medal, Crown, type LucideIcon } from 'lucide-react';
 import type { PassportCheckinResult } from '../src/api/economy';
+import { getTaipeiDay } from '../src/api/economyDay.js';
 import { trackEvent } from '../analytics';
 
 interface CheckinModalProps {
     onClose: () => void;
     canCheckin: boolean;
     streak: number;
-    checkedUtcDates: string[];
+    checkedTaipeiDates: string[];
     onCheckin: () => Promise<PassportCheckinResult>;
     onCheckinComplete?: (result: PassportCheckinResult) => void;
 }
@@ -29,12 +30,11 @@ interface CalendarDay {
     isCurrentMonth: boolean;
 }
 
-function getMonthCalendar(checkedUtcDates: string[]): CalendarDay[] {
+function getMonthCalendar(checkedTaipeiDates: string[]): CalendarDay[] {
     const now = new Date();
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth();
-    const today = now.getUTCDate();
-    const checkinDates = new Set(checkedUtcDates);
+    const [year, monthNumber, today] = getTaipeiDay(now).split('-').map(Number);
+    const month = monthNumber - 1;
+    const checkinDates = new Set(checkedTaipeiDates);
     const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
     const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 
@@ -72,7 +72,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({
     onClose,
     canCheckin,
     streak,
-    checkedUtcDates,
+    checkedTaipeiDates,
     onCheckin,
     onCheckinComplete,
 }) => {
@@ -81,10 +81,14 @@ const CheckinModal: React.FC<CheckinModalProps> = ({
     const [pointsAwarded, setPointsAwarded] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const calendar = useMemo(() => getMonthCalendar(checkedUtcDates), [checkedUtcDates]);
+    const calendar = useMemo(
+        () => getMonthCalendar(checkedTaipeiDates),
+        [checkedTaipeiDates]
+    );
 
     const now = new Date();
-    const monthLabel = MONTH_NAMES[now.getUTCMonth()];
+    const [taipeiYear, taipeiMonth] = getTaipeiDay(now).split('-').map(Number);
+    const monthLabel = MONTH_NAMES[taipeiMonth - 1];
     const nextMilestone = MILESTONES.find(m => m.days > streak);
     const daysToNextMilestone = nextMilestone ? nextMilestone.days - streak : 0;
     const NextMilestoneIcon = nextMilestone?.Icon;
@@ -167,7 +171,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({
                         <Calendar size={18} className="text-brand-lime" />
                         <span className="text-xs font-bold tracking-widest text-brand-lime uppercase">Daily Check-in</span>
                     </div>
-                    <h2 className="text-xl font-bold">{now.getUTCFullYear()} {monthLabel}</h2>
+                    <h2 className="text-xl font-bold">{taipeiYear} {monthLabel}</h2>
 
                     {/* Streak counter */}
                     <div className="mt-3 flex items-center gap-3">
@@ -289,7 +293,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({
                         </div>
                     </div>
                     <p className="mt-3 text-center text-[10px] font-medium text-gray-400">
-                        每日資格依伺服器 UTC 日界判定（台北時間 08:00 更新）。
+                        每日資格依伺服器台北日界判定（台北時間 00:00 更新）。
                     </p>
                 </div>
             </div>

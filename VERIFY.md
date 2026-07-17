@@ -57,6 +57,11 @@ Check these paths:
 - A remote wallet balance of zero displays as zero without local fallback.
 - Switching authenticated accounts invalidates the previous wallet before any
   check-in write; malformed `OK` payloads render unavailable instead of zero.
+- Economy envelopes with an unexpected key or a request ID different from the
+  request sent by this client fail closed.
+- Reward catalog prices come from `reward_items`; the client sends neither an
+  expected price nor a staff password. Switching accounts cannot display the
+  prior account's redemption list.
 - `?action=add_points&amount=999999&source=gacha&ts=test` is scrubbed and does not change the displayed balance.
 - `?economy_claim=<uuid>` is removed from the visible URL and retained only in session storage until authenticated server validation.
 - Unknown claim codes, malformed success payloads, and thrown claim requests
@@ -79,7 +84,9 @@ Production-only checks:
 - Supabase Auth Redirect URLs include the production callback/return URL.
 - Service worker does not serve stale OAuth callback HTML.
 - LIFF is tested inside LINE only after `VITE_LIFF_ID` is configured.
-- Economy v2 dedicated test user validates wallet, accepted check-in, duplicate check-in, pending claim, and ledger sum after the shared migration staging gate passes.
+- Economy v2 dedicated test user validates wallet, Taipei-day accepted and
+  duplicate check-in, pending claim, reward credential rotation, staff
+  fulfillment, and ledger sum after the additive production migration lands.
 
 ## Release Gate
 

@@ -29,7 +29,8 @@ retire the legacy tables.
 ## Daily check-in
 
 `performPassportCheckin` submits `passport.daily_checkin` without a point
-amount. Economy v2 decides eligibility, UTC-day limits, award points, and the
+amount. Economy v2 decides eligibility, `Asia/Taipei` calendar-day limits,
+award points, and the
 resulting balance in one database transaction.
 
 During rollout only:
@@ -97,6 +98,12 @@ Before merge or deploy:
    thrown claim request, forged URL amount, forged CustomEvent, and logout.
 4. Verify the dedicated account ledger sum and wallet balance match.
 5. Keep the Passport PR unmerged while the foundation migration remains Draft.
+
+As of 2026-07-16, the shared foundation has passed the real hosted staging
+apply, Supabase lint, Auth/RLS/PostgREST, concurrency, proof replay, stock
+expiry, and default-off kill-switch checks. Production still has none of the
+six Economy v2 versions, all rollout flags remain absent/off, and merge/deploy
+still require the explicit execution authorization and final PR checks.
 
 Production rollout remains allowlist → 10% → 50% → 100%, with at least 24
 hours and 20 valid events at each level. The legacy wallet read is not removed

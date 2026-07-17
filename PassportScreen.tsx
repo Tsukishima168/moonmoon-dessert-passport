@@ -23,6 +23,7 @@ import MemberHub from './components/MemberHub';
 import ProfileCenter from './components/ProfileCenter';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
+import RewardShop from './components/RewardShop';
 import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
 import { KiwimuAchievementModal } from './components/kiwimu/KiwimuAchievementModal';
 import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
@@ -38,7 +39,7 @@ import {
 } from './src/api/profileCenter';
 import {
     derivePassportCheckinState,
-    getUtcDay,
+    getTaipeiDay,
     performPassportCheckin,
     readPassportWallet,
     submitPassportActivation,
@@ -146,7 +147,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         code: 'AUTH_REQUIRED',
         ownerKey: null,
     });
-    const [confirmedCheckinUtcDay, setConfirmedCheckinUtcDay] = useState<string | null>(null);
+    const [confirmedCheckinTaipeiDay, setConfirmedCheckinTaipeiDay] = useState<string | null>(null);
     const walletRequestRef = React.useRef(0);
     const walletOwnerKeyRef = React.useRef<string | null>(activeWalletOwnerKey);
     walletOwnerKeyRef.current = activeWalletOwnerKey;
@@ -154,14 +155,14 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     const checkinState = React.useMemo(
         () => {
             const currentHistory = walletIsCurrent ? wallet.history : [];
-            if (!confirmedCheckinUtcDay) {
+            if (!confirmedCheckinTaipeiDay) {
                 return derivePassportCheckinState(currentHistory);
             }
 
             const alreadyPresent = currentHistory.some((entry) =>
                 entry.sourceSite === 'passport'
                 && entry.referenceType === 'passport.daily_checkin'
-                && getUtcDay(entry.createdAt) === confirmedCheckinUtcDay
+                && getTaipeiDay(entry.createdAt) === confirmedCheckinTaipeiDay
             );
             if (alreadyPresent) {
                 return derivePassportCheckinState(currentHistory);
@@ -169,19 +170,19 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
             return derivePassportCheckinState([
                 {
-                    id: `server-confirmed-${confirmedCheckinUtcDay}`,
+                    id: `server-confirmed-${confirmedCheckinTaipeiDay}`,
                     delta: 0,
                     balanceAfter: walletIsCurrent ? wallet.balance : null,
                     entryType: 'earn',
                     sourceSite: 'passport',
                     referenceType: 'passport.daily_checkin',
-                    referenceId: `passport-checkin-${confirmedCheckinUtcDay}`,
-                    createdAt: `${confirmedCheckinUtcDay}T12:00:00.000Z`,
+                    referenceId: `passport-checkin-${confirmedCheckinTaipeiDay}`,
+                    createdAt: `${confirmedCheckinTaipeiDay}T12:00:00+08:00`,
                 },
                 ...currentHistory,
             ]);
         },
-        [confirmedCheckinUtcDay, wallet.balance, wallet.history, walletIsCurrent]
+        [confirmedCheckinTaipeiDay, wallet.balance, wallet.history, walletIsCurrent]
     );
     const points = walletIsCurrent ? wallet.balance : 0;
     const [hubProfileSnapshot, setHubProfileSnapshot] = useState<{
@@ -241,7 +242,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
     useEffect(() => {
         walletRequestRef.current += 1;
-        setConfirmedCheckinUtcDay(null);
+        setConfirmedCheckinTaipeiDay(null);
         setShowCheckinModal(false);
         setWallet((current) => {
             if (current.ownerKey === activeWalletOwnerKey) return current;
@@ -716,6 +717,9 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                     />
                                 );
                             })}
+                            <div className="border-t-2 border-brand-black/10 pt-5">
+                                <RewardShop currentPoints={points} />
+                            </div>
                         </div>
                     )}
 
@@ -785,7 +789,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         onClose={() => setShowCheckinModal(false)}
                         canCheckin={checkinState.canCheckin}
                         streak={checkinState.streakCount}
-                        checkedUtcDates={checkinState.checkedUtcDates}
+                        checkedTaipeiDates={checkinState.checkedTaipeiDates}
                         onCheckin={async () => {
                             const requestedOwnerKey = activeWalletOwnerKey;
                             const result = await performPassportCheckin(
@@ -818,7 +822,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 || result.code === 'ALREADY_PROCESSED'
                                 || result.code === 'LIMIT_REACHED'
                             ) {
-                                setConfirmedCheckinUtcDay(getUtcDay(new Date()));
+                                setConfirmedCheckinTaipeiDay(getTaipeiDay(new Date()));
                             }
                             if (typeof result.balance === 'number') {
                                 setWallet((current) => ({

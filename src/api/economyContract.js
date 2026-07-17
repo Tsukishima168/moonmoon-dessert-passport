@@ -13,6 +13,7 @@ export const ECONOMY_CODES = Object.freeze([
 ]);
 
 const ECONOMY_CODE_SET = new Set(ECONOMY_CODES);
+const ECONOMY_ENVELOPE_KEYS = Object.freeze(['ok', 'code', 'request_id', 'data']);
 const TERMINAL_PENDING_CLAIM_CODE_SET = new Set([
   'NOT_ELIGIBLE',
   'LIMIT_REACHED',
@@ -25,12 +26,21 @@ export function isEconomyCode(value) {
   return typeof value === 'string' && ECONOMY_CODE_SET.has(value);
 }
 
-/** @param {unknown} value */
-export function normalizeEconomyEnvelope(value) {
+/**
+ * @param {unknown} value
+ * @param {string} [expectedRequestId]
+ */
+export function normalizeEconomyEnvelope(value, expectedRequestId) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const candidate = value;
+  const keys = Object.keys(candidate);
+  if (
+    keys.length !== ECONOMY_ENVELOPE_KEYS.length
+    || !keys.every((key) => ECONOMY_ENVELOPE_KEYS.includes(key))
+  ) return null;
   if (typeof candidate.ok !== 'boolean' || !isEconomyCode(candidate.code)) return null;
   if (typeof candidate.request_id !== 'string' || candidate.request_id.trim().length === 0) return null;
+  if (expectedRequestId !== undefined && candidate.request_id !== expectedRequestId) return null;
   if (
     !candidate.data
     || typeof candidate.data !== 'object'

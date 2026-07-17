@@ -1,5 +1,5 @@
-import { PassportState, Achievement, PointTransaction, RedeemableItem } from './types';
-import { ACHIEVEMENTS, STAMPS, REDEEMABLE_ITEMS } from './constants';
+import { PassportState, Achievement, PointTransaction } from './types';
+import { ACHIEVEMENTS, STAMPS } from './constants';
 import { performCheckin, recordPointTransaction } from './src/lib/checkinService';
 import { getCheckinPoints } from './types/gamification-types';
 
@@ -416,83 +416,6 @@ export function addPassportPoints(
 export function getPassportPointsBalance(): number {
     const state = getPassportState();
     return state.points || 0;
-}
-
-/**
- * Redeem an item from the points store
- */
-export function redeemItem(itemId: string): { success: boolean; newBalance: number; error?: string } {
-    const item = REDEEMABLE_ITEMS.find(i => i.id === itemId);
-    if (!item) return { success: false, newBalance: getPassportPointsBalance(), error: '找不到此商品' };
-    if (!item.available) return { success: false, newBalance: getPassportPointsBalance(), error: '此商品暫時無法兌換' };
-
-    const state = getPassportState();
-    const currentPoints = state.points || 0;
-
-    if (currentPoints < item.pointsCost) {
-        return { success: false, newBalance: currentPoints, error: '積分不足' };
-    }
-
-    // Deduct points
-    state.points = currentPoints - item.pointsCost;
-    state.lastUpdatedAt = Date.now();
-
-    const tx: PointTransaction = {
-        id: crypto.randomUUID(),
-        type: 'redeem_spend',
-        amount: -item.pointsCost,
-        description: `兌換 ${item.name}`,
-        timestamp: Date.now(),
-    };
-
-    if (!state.pointsHistory) state.pointsHistory = [];
-    state.pointsHistory.push(tx);
-    if (state.pointsHistory.length > 200) {
-        state.pointsHistory.splice(0, state.pointsHistory.length - 200);
-    }
-
-    safeSetItem(STORAGE_KEY, JSON.stringify(state));
-    dispatchPointsUpdated(state.points, -item.pointsCost, `redeem:${item.id}`);
-    return { success: true, newBalance: state.points };
-}
-
-/**
- * Mirror an authoritative server redemption into local passport state.
- * The database RPC has already deducted points and issued the voucher code.
- */
-export function syncRewardRedemptionFromServer(
-    itemId: string,
-    newBalance: number,
-    redemptionCode?: string
-): void {
-    const item = REDEEMABLE_ITEMS.find(i => i.id === itemId);
-    const state = getPassportState();
-
-    state.points = Math.max(0, newBalance);
-    state.lastUpdatedAt = Date.now();
-
-    if (!state.redeemedRewards.includes(itemId)) {
-        state.redeemedRewards.push(itemId);
-    }
-
-    const tx: PointTransaction = {
-        id: redemptionCode || crypto.randomUUID(),
-        type: 'redeem_spend',
-        amount: item ? -item.pointsCost : 0,
-        description: item
-            ? `兌換 ${item.name}${redemptionCode ? `（${redemptionCode}）` : ''}`
-            : `兌換 ${itemId}${redemptionCode ? `（${redemptionCode}）` : ''}`,
-        timestamp: Date.now(),
-    };
-
-    if (!state.pointsHistory) state.pointsHistory = [];
-    state.pointsHistory.push(tx);
-    if (state.pointsHistory.length > 200) {
-        state.pointsHistory.splice(0, state.pointsHistory.length - 200);
-    }
-
-    safeSetItem(STORAGE_KEY, JSON.stringify(state));
-    dispatchPointsUpdated(state.points, tx.amount, `redeem:${itemId}`);
 }
 
 /**

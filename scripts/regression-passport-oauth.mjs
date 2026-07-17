@@ -9,6 +9,9 @@ const read = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath)
 const economyContract = await import(
   pathToFileURL(path.join(repoRoot, 'src/api/economyContract.js')).href
 );
+const economyDay = await import(
+  pathToFileURL(path.join(repoRoot, 'src/api/economyDay.js')).href
+);
 
 function assert(condition, message) {
   if (!condition) {
@@ -98,8 +101,21 @@ const validZeroEnvelope = economyContract.normalizeEconomyEnvelope({
   code: 'OK',
   request_id: 'request-zero',
   data: { balance: 0, history: [] },
-});
+}, 'request-zero');
 assert(validZeroEnvelope?.data.balance === 0, 'A valid remote zero must remain authoritative');
+assert(economyContract.normalizeEconomyEnvelope({
+  ok: true,
+  code: 'OK',
+  request_id: 'request-other',
+  data: { balance: 0, history: [] },
+}, 'request-zero') === null, 'A mismatched Economy request id must fail closed');
+assert(economyContract.normalizeEconomyEnvelope({
+  ok: true,
+  code: 'OK',
+  request_id: 'request-zero',
+  data: { balance: 0, history: [] },
+  amount: 999999,
+}, 'request-zero') === null, 'Unexpected Economy envelope keys must fail closed');
 assert(economyContract.normalizeEconomyEnvelope({ ok: false, code: 'NEW_TEMPORARY_CODE', data: {} }) === null, 'Unknown Economy codes must fail closed');
 assert(economyContract.normalizeEconomyEnvelope({ ok: true, code: 'OK', data: [] }) === null, 'Envelope data must be an object');
 assert(economyContract.readNonNegativeLedgerInteger(0) === 0, 'Ledger zero must be valid');
@@ -115,6 +131,17 @@ for (const terminalCode of ['NOT_ELIGIBLE', 'LIMIT_REACHED', 'EXPIRED', 'INVALID
 for (const temporaryCode of ['AUTH_REQUIRED', 'ROLLOUT_DISABLED', 'UNAVAILABLE', 'OUT_OF_STOCK', 'NEW_TEMPORARY_CODE']) {
   assert(!economyContract.isTerminalPendingClaimCode(temporaryCode), `${temporaryCode} must retain the pending claim`);
 }
+assertEqual(
+  economyDay.getTaipeiDay('2026-07-15T15:59:59.000Z'),
+  '2026-07-15',
+  'Taipei day before midnight',
+);
+assertEqual(
+  economyDay.getTaipeiDay('2026-07-15T16:00:00.000Z'),
+  '2026-07-16',
+  'Taipei day at midnight',
+);
+assertEqual(economyDay.shiftTaipeiDay('2026-07-16', -1), '2026-07-15', 'Taipei previous day');
 
 const stateGuard = "searchParams.getAll('state').some((value) => value.trim().length > 0)";
 const indexHtml = read('index.html');
@@ -124,6 +151,7 @@ const authContext = read('src/contexts/SupabaseAuthContext.tsx');
 const ssoBroker = read('src/lib/ssoBroker.ts');
 const rewardShop = read('components/RewardShop.tsx');
 const rewardsApi = read('src/api/rewards.ts');
+const redeemPage = read('src/pages/RedeemPage.tsx');
 const economyApi = read('src/api/economy.ts');
 const passportScreen = read('PassportScreen.tsx');
 const checkinModal = read('components/CheckinModal.tsx');
@@ -158,12 +186,20 @@ assert(rewardLedgerMigration.includes('CREATE TABLE IF NOT EXISTS public.reward_
 assert(rewardLedgerMigration.includes('ALTER TABLE public.reward_redemptions ENABLE ROW LEVEL SECURITY;'), 'Reward ledger must enable RLS');
 assert(rewardLedgerMigration.includes('CREATE POLICY reward_redemptions_select_own'), 'Reward ledger must restrict direct reads to owner');
 assert(rewardLedgerMigration.includes('REVOKE ALL ON TABLE public.reward_redemptions FROM anon, authenticated;'), 'Reward ledger must revoke direct client writes');
-assert(rewardLedgerMigration.includes('CREATE OR REPLACE FUNCTION public.redeem_reward_item'), 'Reward redeem RPC must exist');
-assert(rewardLedgerMigration.includes('GRANT EXECUTE ON FUNCTION public.redeem_reward_item(TEXT, INTEGER) TO authenticated;'), 'Reward redeem RPC must be authenticated only');
-assert(rewardLedgerMigration.includes('CREATE OR REPLACE FUNCTION public.fulfill_reward_redemption_staff'), 'Staff reward fulfillment RPC must exist');
 assert(rewardsApi.includes("supabase.rpc('redeem_reward_item'"), 'Rewards API must redeem via RPC');
+assert(rewardsApi.includes(".from('reward_items')"), 'Reward catalog must load from the server-owned reward_items table');
+assert(rewardsApi.includes("supabase.rpc('rotate_reward_redemption_proof'"), 'Members must be able to rotate an active redemption proof');
+assert(rewardsApi.includes("supabase.rpc('fulfill_reward_redemption'"), 'Staff reward fulfillment must use the Auth RPC');
+assert(rewardsApi.includes("supabase.rpc('fulfill_passport_pudding'"), 'Passport pudding fulfillment must use the Auth staff RPC');
+assert(!rewardsApi.includes('p_expected_points_cost'), 'Client must not submit a reward price');
+assert(!rewardsApi.includes('p_staff_password'), 'Client must not submit a shared staff password');
 assert(rewardShop.includes('redeemRewardItem({'), 'RewardShop must call the server redemption RPC');
 assert(!rewardShop.includes('redeemItem(pendingReward.id)'), 'RewardShop must not deduct points locally before server redemption');
+assert(!rewardShop.includes('REDEEMABLE_ITEMS'), 'RewardShop must not use a hard-coded catalog');
+assert(!rewardShop.includes('getPassportPointsBalance'), 'RewardShop must not treat localStorage as a balance authority');
+assert(redeemPage.includes('useSupabaseAuth()'), 'Staff fulfillment page must require a Supabase Auth session');
+assert(!redeemPage.includes('p_staff_password') && !redeemPage.includes('type="password"') && !redeemPage.includes('pwInput'), 'Staff fulfillment page must not retain the shared-password flow');
+assert(passportScreen.includes('<RewardShop currentPoints={points} />'), 'The server-backed point store must be reachable from Passport rewards');
 assert(economyApi.includes("supabase.rpc('economy_get_wallet'"), 'Passport wallet must read Economy v2 through RPC');
 assert(economyApi.includes("supabase.rpc('economy_submit_event'"), 'Passport check-in must submit the canonical event contract');
 assert(economyApi.includes("supabase.rpc('economy_claim_pending'"), 'Passport must claim pending activities through RPC');
@@ -174,7 +210,7 @@ assert(!economyApi.includes('adjustPointsByIdentity'), 'Economy adapter must not
 assert(!pointsApi.includes("supabase.rpc('adjust_points'"), 'Passport client must not ship the legacy amount-bearing adjustment helper');
 assert(!passportScreen.includes('remotePoints || localPoints'), 'A remote zero must never fall back to local points');
 assert(!passportScreen.includes("evt.detail?.balance"), 'Client events must not set an official wallet balance');
-assert(passportScreen.includes('setConfirmedCheckinUtcDay(getUtcDay(new Date()))'), 'Server-confirmed check-in must lock the current UTC day before refresh');
+assert(passportScreen.includes('setConfirmedCheckinTaipeiDay(getTaipeiDay(new Date()))'), 'Server-confirmed check-in must lock the current Taipei day before refresh');
 assert(passportScreen.includes('result.ownerKey !== walletOwnerKeyRef.current'), 'Stale check-in results must not update a different account wallet');
 assert(!checkinModal.includes('performDailyCheckin'), 'Check-in UI must not call the local-first legacy helper');
 assert(!checkinModal.includes('adjustPointsByIdentity'), 'Check-in UI must not choose its own point award');

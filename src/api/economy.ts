@@ -10,6 +10,7 @@ import {
     readLedgerInteger,
     readNonNegativeLedgerInteger,
 } from './economyContract.js';
+import { getTaipeiDay, shiftTaipeiDay } from './economyDay.js';
 
 export type EconomyCode =
     | 'OK'
@@ -79,7 +80,7 @@ export interface PassportWalletSnapshot {
 export interface PassportCheckinState {
     canCheckin: boolean;
     streakCount: number;
-    checkedUtcDates: string[];
+    checkedTaipeiDates: string[];
 }
 
 export interface PassportCheckinResult {
@@ -124,19 +125,11 @@ function isMissingEconomyRpc(error: { code?: string; message?: string } | null):
         || /could not find the function/i.test(error.message || '');
 }
 
-function normalizeEnvelope<T>(value: unknown): EconomyEnvelope<T> | null {
-    return normalizeEconomyEnvelope(value) as EconomyEnvelope<T> | null;
+function normalizeEnvelope<T>(value: unknown, requestId: string): EconomyEnvelope<T> | null {
+    return normalizeEconomyEnvelope(value, requestId) as EconomyEnvelope<T> | null;
 }
 
-export function getUtcDay(value: Date | string | number): string {
-    return new Date(value).toISOString().slice(0, 10);
-}
-
-function shiftUtcDay(day: string, offset: number): string {
-    const date = new Date(`${day}T00:00:00.000Z`);
-    date.setUTCDate(date.getUTCDate() + offset);
-    return getUtcDay(date);
-}
+export { getTaipeiDay } from './economyDay.js';
 
 function isPassportCheckinEntry(entry: PassportWalletEntry): boolean {
     return entry.sourceSite === 'passport'
@@ -151,21 +144,21 @@ export function derivePassportCheckinState(
     const checkedDays = new Set(
         history
             .filter(isPassportCheckinEntry)
-            .map((entry) => getUtcDay(entry.createdAt))
+            .map((entry) => getTaipeiDay(entry.createdAt))
     );
-    const today = getUtcDay(now);
-    let cursor = checkedDays.has(today) ? today : shiftUtcDay(today, -1);
+    const today = getTaipeiDay(now);
+    let cursor = checkedDays.has(today) ? today : shiftTaipeiDay(today, -1);
     let streakCount = 0;
 
     while (checkedDays.has(cursor) && streakCount < 3650) {
         streakCount += 1;
-        cursor = shiftUtcDay(cursor, -1);
+        cursor = shiftTaipeiDay(cursor, -1);
     }
 
     return {
         canCheckin: !checkedDays.has(today),
         streakCount,
-        checkedUtcDates: Array.from(checkedDays).sort(),
+        checkedTaipeiDates: Array.from(checkedDays).sort(),
     };
 }
 
@@ -287,7 +280,7 @@ export async function readPassportWallet(identity: PointIdentity): Promise<Passp
         });
 
         if (!error) {
-            const envelope = normalizeEnvelope<EconomyWalletData>(data);
+            const envelope = normalizeEnvelope<EconomyWalletData>(data, requestId);
             if (envelope?.ok && envelope.code === 'OK') {
                 const balance = readNonNegativeLedgerInteger(envelope.data.balance);
                 const history = normalizeV2History(envelope.data.history);
@@ -358,7 +351,7 @@ async function submitPassportEvent(
     }
 
     return {
-        envelope: normalizeEnvelope<EconomyEventData>(data),
+        envelope: normalizeEnvelope<EconomyEventData>(data, requestId),
         missing: false,
     };
 }
@@ -412,7 +405,7 @@ export async function performPassportCheckin(
     const eventResult = await submitPassportEvent(
         identity.authUserId,
         'passport.daily_checkin',
-        `passport-checkin-${getUtcDay(new Date())}`,
+        `passport-checkin-${getTaipeiDay(new Date())}`,
         { surface: 'passport_checkin' }
     );
 
@@ -535,7 +528,7 @@ export async function claimPendingEconomyActivity(
         };
     }
 
-    return normalizeEnvelope<EconomyEventData>(data) || {
+    return normalizeEnvelope<EconomyEventData>(data, requestId) || {
         ok: false,
         code: 'UNAVAILABLE',
         request_id: requestId,
