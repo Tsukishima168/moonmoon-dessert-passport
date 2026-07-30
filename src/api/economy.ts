@@ -9,6 +9,7 @@ import {
     normalizeEconomyEnvelope,
     readLedgerInteger,
     readNonNegativeLedgerInteger,
+    UUID_PATTERN,
 } from './economyContract.js';
 import { getTaipeiDay, shiftTaipeiDay } from './economyDay.js';
 
@@ -23,6 +24,10 @@ export type EconomyCode =
     | 'ALREADY_PROCESSED'
     | 'INVALID_PROOF'
     | 'ROLLOUT_DISABLED'
+    // Client-only synthesized state (missing Supabase config, network error,
+    // malformed/unparseable envelope). The server never returns this code —
+    // it must never be accepted by economyContract.js's ECONOMY_CODES
+    // whitelist or normalizeEconomyEnvelope().
     | 'UNAVAILABLE';
 
 export interface EconomyEnvelope<T = Record<string, unknown>> {
@@ -99,8 +104,6 @@ export interface PassportCheckinAuthority {
     balance: number;
     ownerKey: string | null;
 }
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function unavailableSnapshot(
     error: string,

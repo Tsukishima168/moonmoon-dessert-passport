@@ -13,6 +13,10 @@ dist-ssr
 *.local
 .env
 .env.*
+# 環境變數「基準文件」必須進版控（只有變數名與註解，不含任何值）
+# 其他三站（map / kiwimu / gacha）早就有這行否決規則，本站原本漏掉，
+# 導致 .env.example 被 .env.* 一起擋掉。
+!.env.example
 
 # Editor directories and files
 .vscode/*

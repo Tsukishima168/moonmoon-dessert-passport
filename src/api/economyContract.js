@@ -1,3 +1,14 @@
+// Server response code whitelist. Must stay byte-for-byte aligned with the
+// other three sites' baseline contract (map-kiwimu-com/lib/economyContract.ts,
+// kiwimu-com/shared/economy.ts). Only codes the economy_v2 RPCs can actually
+// return belong here.
+//
+// NOTE: 'UNAVAILABLE' is intentionally NOT included. The server never emits
+// it — it is a client-only synthesized sentinel used by economy.ts and
+// rewards.ts to represent local failures (missing Supabase config, network
+// error, malformed/unparseable payload). Accepting it here would let a
+// forged envelope masquerade as a legitimate server response and pass
+// normalizeEconomyEnvelope() below.
 export const ECONOMY_CODES = Object.freeze([
   'OK',
   'AUTH_REQUIRED',
@@ -9,11 +20,26 @@ export const ECONOMY_CODES = Object.freeze([
   'ALREADY_PROCESSED',
   'INVALID_PROOF',
   'ROLLOUT_DISABLED',
-  'UNAVAILABLE',
 ]);
 
 const ECONOMY_CODE_SET = new Set(ECONOMY_CODES);
 const ECONOMY_ENVELOPE_KEYS = Object.freeze(['ok', 'code', 'request_id', 'data']);
+
+// Single source of truth for request_id / entity id UUID validation across
+// this repo (economy.ts, rewards.ts both import this instead of redefining
+// their own pattern). Literal is aligned with the map/kiwimu baseline: UUID
+// versions 1-8, RFC 4122 variant (8/9/a/b).
+export const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+export function isUuid(value) {
+  return typeof value === 'string' && UUID_PATTERN.test(value);
+}
+
 const TERMINAL_PENDING_CLAIM_CODE_SET = new Set([
   'NOT_ELIGIBLE',
   'LIMIT_REACHED',
@@ -21,7 +47,10 @@ const TERMINAL_PENDING_CLAIM_CODE_SET = new Set([
   'INVALID_PROOF',
 ]);
 
-/** @param {unknown} value */
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
 export function isEconomyCode(value) {
   return typeof value === 'string' && ECONOMY_CODE_SET.has(value);
 }
@@ -39,7 +68,7 @@ export function normalizeEconomyEnvelope(value, expectedRequestId) {
     || !keys.every((key) => ECONOMY_ENVELOPE_KEYS.includes(key))
   ) return null;
   if (typeof candidate.ok !== 'boolean' || !isEconomyCode(candidate.code)) return null;
-  if (typeof candidate.request_id !== 'string' || candidate.request_id.trim().length === 0) return null;
+  if (!isUuid(candidate.request_id)) return null;
   if (expectedRequestId !== undefined && candidate.request_id !== expectedRequestId) return null;
   if (
     !candidate.data

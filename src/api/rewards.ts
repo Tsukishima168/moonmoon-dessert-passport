@@ -1,5 +1,6 @@
 import type { RedeemableItem } from '../../types';
 import { supabase } from '../lib/supabase';
+import { isEconomyCode, isUuid } from './economyContract.js';
 
 export type RewardCategory = 'drink' | 'dessert' | 'merch';
 export type RewardRedemptionStatus = 'issued' | 'fulfilled' | 'cancelled' | 'expired';
@@ -15,6 +16,9 @@ type EconomyCode =
   | 'ALREADY_PROCESSED'
   | 'INVALID_PROOF'
   | 'ROLLOUT_DISABLED'
+  // Client-only synthesized state — see economyContract.js's ECONOMY_CODES
+  // comment. The server never returns this code; isEconomyCode() below
+  // (shared with economy.ts) rejects it if a forged envelope tries to send it.
   | 'UNAVAILABLE';
 
 interface EconomyEnvelope {
@@ -100,19 +104,6 @@ const STAFF_PUDDING_DATA_KEYS = [
   'fulfilled_by',
   'fulfilled_at',
 ] as const;
-const ECONOMY_CODES = new Set<EconomyCode>([
-  'OK',
-  'AUTH_REQUIRED',
-  'NOT_ELIGIBLE',
-  'LIMIT_REACHED',
-  'INSUFFICIENT_POINTS',
-  'OUT_OF_STOCK',
-  'EXPIRED',
-  'ALREADY_PROCESSED',
-  'INVALID_PROOF',
-  'ROLLOUT_DISABLED',
-]);
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REWARD_CREDENTIAL_PATTERN = /^R2-[0-9A-F]{16}\.[0-9a-f]{48}$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -126,10 +117,6 @@ function isExactRecord(
   if (!isRecord(value)) return false;
   const keys = Object.keys(value);
   return keys.length === expectedKeys.length && keys.every((key) => expectedKeys.includes(key));
-}
-
-function isUuid(value: unknown): value is string {
-  return typeof value === 'string' && UUID_PATTERN.test(value);
 }
 
 function isNonNegativeInteger(value: unknown): value is number {
@@ -151,7 +138,7 @@ function economyError(code: EconomyCode): Error {
 function normalizeEnvelope(value: unknown, requestId: string): EconomyEnvelope | null {
   if (!isExactRecord(value, ENVELOPE_KEYS)) return null;
   if (typeof value.ok !== 'boolean') return null;
-  if (typeof value.code !== 'string' || !ECONOMY_CODES.has(value.code as EconomyCode)) return null;
+  if (typeof value.code !== 'string' || !isEconomyCode(value.code)) return null;
   if (value.request_id !== requestId || !isRecord(value.data)) return null;
   return value as unknown as EconomyEnvelope;
 }
