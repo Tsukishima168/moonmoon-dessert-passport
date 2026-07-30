@@ -96,26 +96,48 @@ for (const [input, expected] of cleanupCases) {
   assertEqual(cleanupOAuthCallbackParams(input), expected, `cleanup ${input}`);
 }
 
+// request_id 測資必須是合法 UUID：生產路徑一律用 crypto.randomUUID()，
+// 而 normalizeEconomyEnvelope 已收緊為只接受 v1-8 UUID（與 map/kiwimu 基準一致）。
+// 舊測資用的 'request-zero' 這類字串不是伺服器會回的形狀。
+const REQUEST_ID_ZERO = '5f9c2d18-3a4b-4c6d-8e9f-0a1b2c3d4e5f';
+const REQUEST_ID_OTHER = '7c1e4b90-2d3f-4a5b-9c8d-1e2f3a4b5c6d';
+
 const validZeroEnvelope = economyContract.normalizeEconomyEnvelope({
   ok: true,
   code: 'OK',
-  request_id: 'request-zero',
+  request_id: REQUEST_ID_ZERO,
   data: { balance: 0, history: [] },
-}, 'request-zero');
+}, REQUEST_ID_ZERO);
 assert(validZeroEnvelope?.data.balance === 0, 'A valid remote zero must remain authoritative');
 assert(economyContract.normalizeEconomyEnvelope({
   ok: true,
   code: 'OK',
-  request_id: 'request-other',
+  request_id: REQUEST_ID_OTHER,
   data: { balance: 0, history: [] },
-}, 'request-zero') === null, 'A mismatched Economy request id must fail closed');
+}, REQUEST_ID_ZERO) === null, 'A mismatched Economy request id must fail closed');
 assert(economyContract.normalizeEconomyEnvelope({
   ok: true,
   code: 'OK',
-  request_id: 'request-zero',
+  request_id: REQUEST_ID_ZERO,
   data: { balance: 0, history: [] },
   amount: 999999,
-}, 'request-zero') === null, 'Unexpected Economy envelope keys must fail closed');
+}, REQUEST_ID_ZERO) === null, 'Unexpected Economy envelope keys must fail closed');
+// 鎖住收緊後的行為：非 UUID 形狀的 request_id 一律 fail closed
+for (const malformedRequestId of ['request-zero', '', '   ', '5f9c2d18-3a4b-0c6d-8e9f-0a1b2c3d4e5f']) {
+  assert(economyContract.normalizeEconomyEnvelope({
+    ok: true,
+    code: 'OK',
+    request_id: malformedRequestId,
+    data: { balance: 0, history: [] },
+  }, malformedRequestId) === null, `Non-UUID Economy request id must fail closed: ${JSON.stringify(malformedRequestId)}`);
+}
+// 鎖住 UNAVAILABLE 不得被當成伺服器回應碼（它只是 client 端合成的本地失敗 sentinel）
+assert(economyContract.normalizeEconomyEnvelope({
+  ok: false,
+  code: 'UNAVAILABLE',
+  request_id: REQUEST_ID_ZERO,
+  data: {},
+}, REQUEST_ID_ZERO) === null, 'UNAVAILABLE must never be accepted as a server response code');
 assert(economyContract.normalizeEconomyEnvelope({ ok: false, code: 'NEW_TEMPORARY_CODE', data: {} }) === null, 'Unknown Economy codes must fail closed');
 assert(economyContract.normalizeEconomyEnvelope({ ok: true, code: 'OK', data: [] }) === null, 'Envelope data must be an object');
 assert(economyContract.readNonNegativeLedgerInteger(0) === 0, 'Ledger zero must be valid');
