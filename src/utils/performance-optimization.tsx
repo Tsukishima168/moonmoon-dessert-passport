@@ -123,15 +123,39 @@ export function createOptimizedLiffProvider() {
       }));
     };
 
+    // 與正式的 LiffProvider 保持同一份契約：好友狀態問不到就回 null（不知道），
+    // 身分憑證一律走 ID token，不得改用 profile.userId。
+    const getFriendship = async (): Promise<boolean | null> => {
+      if (!liff.isLoggedIn()) return null;
+      try {
+        const friendship = await liff.getFriendship();
+        return Boolean(friendship?.friendFlag);
+      } catch {
+        return null;
+      }
+    };
+
+    const getIdToken = (): string | null => {
+      if (!liff.isLoggedIn()) return null;
+      try {
+        return liff.getIDToken();
+      } catch {
+        return null;
+      }
+    };
+
     return (
       <LiffContext.Provider
         value={{
           liff,
+          isReady: true,
           isLoggedIn: state.isLoggedIn,
           profile: state.profile,
           error: null,
           login,
           logout,
+          getFriendship,
+          getIdToken,
         }}
       >
         {children}
