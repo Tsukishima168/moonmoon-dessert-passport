@@ -16,6 +16,11 @@ import {
 } from './passportUtils';
 import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
+import { claimPendingEconomyActivity } from './src/api/economy';
+import {
+  isTerminalPendingClaimCode,
+  readNonNegativeLedgerInteger,
+} from './src/api/economyContract.js';
 import { trackUserEvent } from './src/lib/eventTracker';
 import { saveStoredMbtiResult } from './src/lib/mbtiResult';
 import {
@@ -43,6 +48,8 @@ const getInitialUrlSearch = () => {
 const getInitialUrlParams = () => new URLSearchParams(getInitialUrlSearch());
 
 const PENDING_REWARD_CLAIM_KEY = 'kiwimu_passport_pending_reward_claim';
+const PENDING_ECONOMY_CLAIM_KEY = 'kiwimu_passport_pending_economy_claim';
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TRACKING_ENTRY_PARAMS = new Set([
   'utm_source',
   'utm_medium',
@@ -103,6 +110,34 @@ const clearPendingRewardClaim = () => {
   }
 };
 
+const readPendingEconomyClaim = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const value = window.sessionStorage.getItem(PENDING_ECONOMY_CLAIM_KEY);
+    return value && UUID_PATTERN.test(value) ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+const savePendingEconomyClaim = (claimId: string) => {
+  if (!UUID_PATTERN.test(claimId)) return false;
+  try {
+    window.sessionStorage.setItem(PENDING_ECONOMY_CLAIM_KEY, claimId);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const clearPendingEconomyClaim = () => {
+  try {
+    window.sessionStorage.removeItem(PENDING_ECONOMY_CLAIM_KEY);
+  } catch {
+    // no-op
+  }
+};
+
 const scrubSensitiveClaimParamsFromUrl = () => {
   if (typeof window === 'undefined') {
     return;
@@ -116,8 +151,8 @@ const scrubSensitiveClaimParamsFromUrl = () => {
   const hasOAuthState = url.searchParams.getAll('state').some((value) => value.trim().length > 0);
   const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
   const paramsToScrub = hasRewardClaimCode
-    ? ['claim', 'claim_code', 'reward', 'code']
-    : ['claim', 'claim_code', 'reward'];
+    ? ['claim', 'claim_code', 'reward', 'economy_claim', 'code']
+    : ['claim', 'claim_code', 'reward', 'economy_claim'];
   let changed = false;
 
   paramsToScrub.forEach((param) => {
@@ -164,6 +199,7 @@ const getInitialScreen = (): Screen => {
     params.has('stamp') ||
     params.has('unlock') ||
     params.has('claim') ||
+    params.has('economy_claim') ||
     params.has('claim_code') ||
     (params.has('reward') && params.has('code')) ||
     params.has('reward') ||
@@ -171,7 +207,8 @@ const getInitialScreen = (): Screen => {
     params.get('action') === 'add_points' ||
     params.has('amount') ||
     params.has('utm_source') ||
-    params.has('from');
+    params.has('from') ||
+    Boolean(readPendingEconomyClaim());
 
   return opensPassport ? 'passport' : 'landing';
 };
@@ -432,27 +469,24 @@ function App() {
     window.history.replaceState({}, '', nextUrl);
   }, [passportTab, screen]);
 
-  // Handle cross-site points sync from Gacha redirect URL
+  // Legacy Gacha redirects carried a caller-controlled amount. Keep only the
+  // navigation signal while the Gacha adapter is being rolled out; never apply
+  // the amount to localStorage or the official wallet.
   useEffect(() => {
-    const result = handleIncomingPointsSync();
-    if (!result?.credited) return;
+    const result = handleIncomingPointsSync(getInitialUrlSearch());
+    if (!result?.rejected) return;
 
-    trackEvent('points_sync_received', {
+    trackEvent('legacy_points_sync_rejected', {
       source: 'gacha',
-      points: result.credited,
     });
+    document.dispatchEvent(new Event('economy-wallet-updated'));
 
-    document.dispatchEvent(new CustomEvent('kiwimu:points_earned', {
-      detail: {
-        points: result.credited,
-        action: 'gacha_earn',
-        description: `扭蛋同步 +${result.credited} 積分`,
-      },
-    }));
-
-    // Open passport directly so users can immediately see updated points
     setPassportTab('hub');
     setScreen('passport');
+    setAppNotice({
+      tone: 'error',
+      message: '舊版網址帶入的點數已被忽略；正式點數只採用伺服器帳本結果。',
+    });
   }, []);
 
   const goHome = () => {
@@ -479,6 +513,7 @@ function App() {
     const stampParam = params.get('stamp');
     const unlockParam = params.get('unlock');
     const claimParam = params.get('claim');
+    const economyClaimParam = params.get('economy_claim') || readPendingEconomyClaim();
     const pendingRewardClaim = readPendingRewardClaim();
     const rewardParam = params.get('reward') || pendingRewardClaim?.rewardId || null;
     const claimCodeParam = getRewardClaimCodeParam(params) || pendingRewardClaim?.code || null;
@@ -486,18 +521,32 @@ function App() {
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
-    const hasSensitiveClaimParam = Boolean(claimParam || params.get('claim_code') || rewardParam);
+    const hasSensitiveClaimParam = Boolean(
+      claimParam || economyClaimParam || params.get('claim_code') || rewardParam
+    );
 
     if (hasSensitiveClaimParam) {
       scrubSensitiveClaimParamsFromUrl();
     }
 
-    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !claimCodeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
+    if (!stampParam && !unlockParam && !claimParam && !economyClaimParam && (!rewardParam || !claimCodeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
       return;
     }
 
     void (async () => {
       let stampUnlocked = false;
+
+      if (economyClaimParam) {
+        const saved = savePendingEconomyClaim(economyClaimParam);
+        setPassportTab('hub');
+        setScreen('passport');
+        setAppNotice({
+          tone: 'error',
+          message: saved
+            ? '待認領活動已安全保留。登入後會由伺服器核對資格與點數。'
+            : '待認領活動格式無效，未變更任何會員資產。',
+        });
+      }
 
       // Debug mode: unlock all stamps
       if (debugParam === '1') {
@@ -721,6 +770,83 @@ function App() {
       window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!supabaseUser?.id) return;
+    const claimId = readPendingEconomyClaim();
+    if (!claimId) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await claimPendingEconomyActivity(claimId);
+        if (cancelled) return;
+
+        if (result.ok && result.code === 'OK') {
+          const awardedPoints = readNonNegativeLedgerInteger(result.data.awarded_points);
+          if (awardedPoints === null) {
+            setAppNotice({
+              tone: 'error',
+              message: '伺服器回覆格式暫時無法確認；認領憑證仍保留，未採用未知點數結果。',
+            });
+            return;
+          }
+
+          clearPendingEconomyClaim();
+          document.dispatchEvent(new Event('economy-wallet-updated'));
+          setPassportTab('hub');
+          setScreen('passport');
+          setAppNotice({
+            tone: 'success',
+            message: `活動認領成功，伺服器已核准 ${awardedPoints} 點。`,
+          });
+          return;
+        }
+
+        if (result.code === 'ALREADY_PROCESSED') {
+          clearPendingEconomyClaim();
+          document.dispatchEvent(new Event('economy-wallet-updated'));
+          setPassportTab('hub');
+          setScreen('passport');
+          setAppNotice({
+            tone: 'success',
+            message: '這筆活動先前已完成認領，正式帳本不會重複發點。',
+          });
+          return;
+        }
+
+        if (isTerminalPendingClaimCode(result.code)) {
+          clearPendingEconomyClaim();
+          setAppNotice({
+            tone: 'error',
+            message: result.code === 'EXPIRED'
+              ? '這筆活動認領憑證已過期，未變更任何點數。'
+              : '伺服器判定這筆活動不符合認領資格，未變更任何點數。',
+          });
+          return;
+        }
+
+        setAppNotice({
+          tone: 'error',
+          message: '正式認領服務尚未開放或暫時無法確認；憑證仍保留在本次瀏覽器工作階段，未變更任何點數。',
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error(
+          '[economy] Pending claim request failed:',
+          error instanceof Error ? error.message : 'unknown error'
+        );
+        setAppNotice({
+          tone: 'error',
+          message: '認領服務連線失敗；憑證仍保留在本次瀏覽器工作階段，未變更任何點數。',
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabaseUser?.id]);
 
   const openPassport = () => {
     if (screen !== 'passport') {

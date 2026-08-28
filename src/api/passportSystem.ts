@@ -62,22 +62,3 @@ export async function createInvitationPublic(params: {
   if (!result.ok) return { data: null, error: new Error(result.error ?? 'Unknown error') }
   return { data: { invitation_id: result.invitation_id! }, error: null }
 }
-
-// ── RPC: redeem_pudding_staff ──
-export async function redeemPuddingStaff(params: {
-  passport_number: number
-  staff_password: string
-}): Promise<{ data: { passport_number: number; holder_name: string } | null; error: Error | null }> {
-  if (!supabase) return { data: null, error: new Error('Supabase not configured') }
-  const { data, error } = await supabase.rpc('redeem_pudding_staff', {
-    p_passport_number: params.passport_number,
-    p_staff_password: params.staff_password,
-  })
-  if (error) return { data: null, error: error as Error }
-  const result = data as RpcResult
-  if (!result.ok) return { data: null, error: new Error(result.error ?? 'Unknown error') }
-  return {
-    data: { passport_number: result.passport_number!, holder_name: result.holder_name! },
-    error: null,
-  }
-}

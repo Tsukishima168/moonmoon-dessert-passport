@@ -9,6 +9,11 @@ import {
 } from 'lucide-react';
 import { PUBLIC_MOONMOON_SITES } from '../constants';
 import { buildUtmUrl, trackEvent, trackOutboundNavigation } from '../analytics';
+import {
+  createKiwimuUniverseNavigationDetails,
+  type KiwimuUniverseSiteId,
+} from './KiwimuUniverseRail';
+import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 
 const IconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   BrainCircuit,
@@ -24,17 +29,37 @@ interface KiwimuUniverseNavProps {
   compact?: boolean;
 }
 
+const UNIVERSE_SITE_ID_BY_LEGACY_ID: Record<string, KiwimuUniverseSiteId> = {
+  kiwimu_mbti: 'kiwimu',
+  passport: 'passport',
+  moon_map: 'map',
+  gacha: 'gacha',
+  dessert_booking: 'shop',
+};
+
 export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
   currentSiteId = 'passport',
   surface,
   compact = false,
 }) => {
+  const { user, loading } = useSupabaseAuth();
+
   const handleClick = (siteId: string, href: string) => {
+    const sourceSite = UNIVERSE_SITE_ID_BY_LEGACY_ID[currentSiteId] || 'passport';
+    const targetSite = UNIVERSE_SITE_ID_BY_LEGACY_ID[siteId];
+
     trackOutboundNavigation(href, `universe_nav_${surface}_${siteId}`);
-    trackEvent('universe_nav_click', {
-      surface,
-      target_site_id: siteId,
-    });
+    if (targetSite) {
+      trackEvent(
+        'universe_nav_click',
+        createKiwimuUniverseNavigationDetails(
+          sourceSite,
+          targetSite,
+          loading ? 'unknown' : user ? 'authenticated' : 'anonymous',
+          surface,
+        ),
+      );
+    }
   };
 
   return (

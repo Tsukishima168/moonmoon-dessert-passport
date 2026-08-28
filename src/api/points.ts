@@ -14,6 +14,13 @@ export interface PointIdentity {
     lineUserId?: string | null;
 }
 
+export interface LegacyWalletSnapshot {
+    ok: boolean;
+    balance: number;
+    history: PointLog[];
+    error?: string;
+}
+
 interface ProfilePointRecord {
     id: string;
     points: number;
@@ -135,54 +142,42 @@ export async function getUserPointLogs(userId: string, isLineId: boolean = false
     }
 }
 
-export async function addPoints(
-    userId: string,
-    amount: number,
-    reason: string,
-    isLineId: boolean = true
-): Promise<{ ok: boolean; error?: string }> {
-    return adjustPointsByIdentity(
-        isLineId ? { lineUserId: userId } : { authUserId: userId },
-        amount,
-        reason
-    );
-}
-
-export async function adjustPointsByIdentity(
-    identity: PointIdentity,
-    amount: number,
-    reason: string
-): Promise<{ ok: boolean; balance?: number; error?: string }> {
-    if (!supabase) return { ok: false, error: 'Supabase not configured' };
-
-    try {
-        // RPC adjust_points 依賴 auth.uid()，需要 Supabase session
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData?.session) {
-            // LIFF-only 使用者沒有 Supabase session，無法走 RPC
-            // 安全設計：不再允許無 auth session 的點數操作
-            console.warn(
-                '[points] No Supabase session — skipping adjust_points.',
-                'LIFF-only users must link Supabase auth to sync points.'
-            );
-            return { ok: false, error: 'Supabase auth session required' };
-        }
-
-        // 透過 RPC 原子操作加減點數（解決 race condition）
-        const { data, error } = await supabase.rpc('adjust_points', {
-            p_amount: amount,
-            p_reason: reason,
-        });
-
-        if (error) {
-            console.error('[points] RPC adjust_points failed:', error);
-            return { ok: false, error: error.message };
-        }
-
-        const result = data as { ok: boolean; balance?: number; error?: string };
-        return result;
-    } catch (error) {
-        console.error('Error adjusting points by identity:', error);
-        return { ok: false, error: String(error) };
+/**
+ * Transitional server-backed read used while Economy v2 rollout is disabled.
+ * A real remote zero remains zero; callers must never replace it with a local
+ * balance. This compatibility path can be removed after the v2 read rollout is
+ * at 100% and the observation gate has passed.
+ */
+export async function getLegacyWalletByIdentity(identity: PointIdentity): Promise<LegacyWalletSnapshot> {
+    if (!supabase) {
+        return { ok: false, balance: 0, history: [], error: 'Supabase not configured' };
     }
+
+    const profile = await resolveProfile(identity);
+    if (!profile) {
+        return { ok: false, balance: 0, history: [], error: 'Remote profile unavailable' };
+    }
+
+    const { data: historyData, error: historyError } = await supabase
+        .from('point_transactions')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+    if (historyError) {
+        console.error('[points] Failed to fetch legacy wallet history:', historyError);
+        return {
+            ok: false,
+            balance: 0,
+            history: [],
+            error: historyError.message,
+        };
+    }
+
+    return {
+        ok: true,
+        balance: profile.points,
+        history: (historyData as PointLog[]) || [],
+    };
 }

@@ -1,4 +1,4 @@
-import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement, MoonSite, RedeemableItem } from './types';
+import { Question, DessertRecommendation, StickerReward, Stamp, RewardTier, Achievement, MoonSite } from './types';
 
 // Configuration URLs
 export const LINKS = {
@@ -227,55 +227,6 @@ export const MOONMOON_SITES: MoonSite[] = [
 export const PUBLIC_MOONMOON_SITES = MOONMOON_SITES.filter(
   (site) => site.id !== 'dessert_booking'
 );
-
-// ─── Points Redemption Store ───
-export const REDEEMABLE_ITEMS: RedeemableItem[] = [
-  // 飲品 (低門檻)
-  {
-    id: 'tea_buckwheat', name: '蕎麥茶', description: '清爽回甘的日式蕎麥茶',
-    pointsCost: 50, category: 'drink', available: true, redemptionMethod: 'show-screen',
-  },
-  {
-    id: 'coffee_iced', name: '冰美式咖啡', description: '經典冰美式，黑咖啡的純粹力量',
-    pointsCost: 80, category: 'drink', available: true, redemptionMethod: 'show-screen',
-  },
-  {
-    id: 'coffee_sicily', name: '西西里咖啡', description: '檸檬與咖啡的完美碰撞',
-    pointsCost: 100, category: 'drink', available: true, redemptionMethod: 'show-screen',
-  },
-  {
-    id: 'latte_matcha', name: '抹茶拿鐵', description: '小山園抹茶 × 北海道鮮奶',
-    pointsCost: 120, category: 'drink', available: true, redemptionMethod: 'show-screen',
-  },
-  // 甜點 (中門檻)
-  {
-    id: 'second_half', name: '第二杯半價券', description: '任一飲品第二杯享半價',
-    pointsCost: 150, category: 'dessert', available: true, redemptionMethod: 'show-screen',
-  },
-  {
-    id: 'pudding_classic', name: '經典烤布丁', description: '招牌十勝鮮奶烤布丁',
-    pointsCost: 200, category: 'dessert', available: true, redemptionMethod: 'show-screen',
-    imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
-  },
-  {
-    id: 'chiffon_slice', name: '戚風蛋糕切片', description: '當日限定口味戚風蛋糕一片',
-    pointsCost: 300, category: 'dessert', available: true, redemptionMethod: 'show-screen',
-  },
-  {
-    id: 'seasonal_fruit', name: '季節鮮果甜點', description: '季節限定鮮果甜點一份',
-    pointsCost: 350, category: 'dessert', available: true, redemptionMethod: 'show-screen',
-  },
-  // 周邊 (高門檻)
-  {
-    id: 'sticker_set', name: 'Kiwimu 限量貼紙組', description: '四款 Kiwimu 角色貼紙',
-    pointsCost: 100, category: 'merch', available: true, redemptionMethod: 'show-screen',
-  },
-  {
-    id: 'cooler_bag', name: '品牌保冷提袋', description: '月島專屬環保保冷提袋',
-    pointsCost: 500, category: 'merch', available: true, redemptionMethod: 'show-screen',
-  },
-];
-
 
 // --- STICKER REWARDS ---
 export const STICKERS: StickerReward[] = [

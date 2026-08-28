@@ -1,10 +1,10 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { Copy, Sparkles } from 'lucide-react';
 
 interface KiwimuRewardSuccessDialogProps {
   rewardName: string;
   category: 'drink' | 'dessert' | 'merch';
-  redemptionCode?: string;
+  redemptionCredential?: string;
   expiresAt?: string;
   balance?: number;
   onClose: () => void;
@@ -13,7 +13,7 @@ interface KiwimuRewardSuccessDialogProps {
 export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps> = ({
   rewardName,
   category,
-  redemptionCode,
+  redemptionCredential,
   expiresAt,
   balance,
   onClose,
@@ -39,12 +39,20 @@ export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps>
           已成功兌換
         </p>
 
-        {redemptionCode && (
+        {redemptionCredential && (
           <div className="mb-5 rounded-2xl border-2 border-dashed border-[#f0c070] bg-white p-4">
-            <p className="mb-2 text-xs font-bold tracking-[0.18em] text-[#8a6d1f]">兌換碼</p>
-            <p className="font-mono text-2xl font-black tracking-[0.16em] text-[#3d2c00]">
-              {redemptionCode}
+            <p className="mb-2 text-xs font-bold tracking-[0.18em] text-[#8a6d1f]">完整核銷憑證</p>
+            <p className="break-all font-mono text-xs font-black leading-relaxed text-[#3d2c00]">
+              {redemptionCredential}
             </p>
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(redemptionCredential)}
+              className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#f0c070] bg-[#fff9f0] px-3 py-1.5 text-xs font-bold text-[#5d4037]"
+            >
+              <Copy size={13} />
+              複製憑證
+            </button>
             {expiresLabel && (
               <p className="mt-2 text-xs font-semibold text-[#8a6d1f]">
                 有效期限：{expiresLabel}
