@@ -315,97 +315,97 @@ export const DESSERTS: DessertRecommendation[] = [
     id: 'INTJ', mbti: 'INTJ', name: '北海道經典巴斯克', series: '巴斯克', style: '經典',
     hook: '極致的濃度直達靈魂核心，是理智與感官的完美角力。',
     drink_stable: '美式咖啡', drink_sensitive: '經典拿鐵', replacement: '檸檬巴斯克;茶香巴斯克',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/BASQUE_CLASSIC_c6fb92.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282899/dessert/menu_item_d120a328-3222-4618-8aed-9a547f7b386a.webp'
   },
   {
     id: 'INTP', mbti: 'INTP', name: '檸檬柚子千層蛋糕', series: '千層', style: '亮色',
     hook: '結構細膩且層次分明，適合在深度思考中尋求一絲清亮。',
     drink_stable: '日本柚子美式', drink_sensitive: '薄荷茶', replacement: '蜜香紅茶千層;草莓莓果千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/MILLE_CREPE_LEMON_dcxrgr.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282898/dessert/menu_item_c0820442-bab4-4c47-a4a8-60ef88da22d9.webp'
   },
   {
     id: 'ENTJ', mbti: 'ENTJ', name: '奶酒提拉米蘇', series: '提拉米蘇', style: '深色',
     hook: '微醺的權力展演，苦甜之間盡是掌控局勢的餘韻。',
     drink_stable: '美式咖啡', drink_sensitive: '焙茶拿鐵', replacement: '經典提拉米蘇;抹茶提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/TIRAMISU_BAILEYS_vkzkxr.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282893/dessert/menu_item_63cd7340-1b89-47a6-b49a-1ee0c1eb86fe.webp'
   },
   {
     id: 'ENTP', mbti: 'ENTP', name: '柚子蘋果提拉米蘇', series: '提拉米蘇', style: '亮色',
     hook: '打破常規的驚喜風味，在每一次味覺挑戰中看見邊界。',
     drink_stable: '日本柚子美式', drink_sensitive: '烤布丁拿鐵', replacement: '奶酒提拉米蘇;抹茶提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866456/TIRAMISU_YUZU_pu1r82.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282902/dessert/menu_item_ed08801b-55f5-4d51-9db4-37cc03688bef.webp'
   },
   {
-    id: 'INFJ', mbti: 'INFJ', name: '茶香巴斯克', series: '巴斯克', style: '深色',
+    id: 'INFJ', mbti: 'INFJ', name: '蜜香紅茶千層', series: '千層', style: '深色',
     hook: '沈穩的茶韻撫平外界的嘈雜，帶你潛入最深的內在宇宙。',
     drink_stable: '博士茶', drink_sensitive: '抹茶拿鐵', replacement: '北海道經典巴斯克;檸檬巴斯克',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/BASQUE_TEA_izkwws.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282900/dessert/menu_item_e58bac5a-eb09-4a7d-b5ad-47e8491e63c0.webp'
   },
   {
-    id: 'INFP', mbti: 'INFP', name: '北海道十勝戚風蛋糕', series: '戚風', style: '經典',
+    id: 'INFP', mbti: 'INFP', name: '焦糖烤布丁戚風', series: '戚風', style: '經典',
     hook: '輕盈柔軟的著陸點，在銳利的世界裡提供一場溫柔的安放。',
     drink_stable: '博士茶', drink_sensitive: '花草茶', replacement: '檸檬蘋果戚風;莓果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923719/dessert/menu_item_8e59b833-853a-4164-b747-6382c4bd7658.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282895/dessert/menu_item_8e59b833-853a-4164-b747-6382c4bd7658.webp'
   },
   {
-    id: 'ENFJ', mbti: 'ENFJ', name: '檸檬蘋果戚風蛋糕', series: '戚風', style: '亮色',
-    hook: '明亮如陽光的清新力量，溫緩並照亮每一個被遺忘的角落。',
-    drink_stable: '西西里美式', drink_sensitive: '抹茶拿鐵', replacement: '北海道十勝戚風;莓果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/CHIFFON_LEMON_ppn6t3.webp'
+    id: 'ENFJ', mbti: 'ENFJ', name: '摩卡焦糖提拉米蘇', series: '提拉米蘇', style: '深色',
+    hook: '烤焦糖與摩卡的層次包覆，像把照顧人的能量收回來好好安放。',
+    drink_stable: '西西里美式', drink_sensitive: '抹茶拿鐵', replacement: '經典提拉米蘇;抹茶提拉米蘇',
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282893/dessert/menu_item_63cd7340-1b89-47a6-b49a-1ee0c1eb86fe.webp'
   },
   {
-    id: 'ENFP', mbti: 'ENFP', name: '草莓莓果千層蛋糕', series: '千層', style: '果香',
+    id: 'ENFP', mbti: 'ENFP', name: '十勝水果派對千層', series: '千層', style: '果香',
     hook: '層次繽紛且富有生命力，裝滿奇奇怪怪且閃亮的靈感碎片。',
     drink_stable: '日本柚子美式', drink_sensitive: '花草茶', replacement: '檸檬柚子千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866455/MILLE_CREPE_STRAWBERRY_s6bf22.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282903/dessert/menu_item_f5c62e8d-59df-44c5-bcd6-d6473097b32b.webp'
   },
   {
     id: 'ISTJ', mbti: 'ISTJ', name: '經典十勝原味千層', series: '千層', style: '經典',
     hook: '結構的絕對精準與對承諾的執著，最值得信賴的味覺基石。',
     drink_stable: '美式咖啡', drink_sensitive: '經典拿鐵', replacement: '巧克力布朗尼千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/MILLE_CREPE_CLASSIC_ofjcvq.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282901/dessert/menu_item_e9fa32e1-d48a-4cbc-8663-f9888c18c3e2.webp'
   },
   {
     id: 'ISFJ', mbti: 'ISFJ', name: '經典烤布丁', series: '單品', style: '經典',
     hook: '安全感的終極錨點，最純粹、最直接的溫柔安撫與回歸。',
     drink_stable: '蕎麥茶', drink_sensitive: '烤布丁拿鐵', replacement: '本口味目前為最佳配對',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866453/PUDDING_CLASSIC_fm8hng.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282892/dessert/menu_item_5fc488d8-c1dd-45c6-aa4f-e164b6d793ab.webp'
   },
   {
     id: 'ESTJ', mbti: 'ESTJ', name: '鹹蛋黃巴斯克', series: '巴斯克', style: '深色',
     hook: '鋼鐵意志與濃郁核心的結合，穩健中帶有不容忽視的力量。',
     drink_stable: '美式咖啡', drink_sensitive: '焙茶拿鐵', replacement: '北海道經典巴斯克;茶香巴斯克',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866453/BASQUE_SALTED_EGG_cwc3ah.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282894/dessert/menu_item_7bb2e59f-934e-44a3-af13-d52c5c43853c.webp'
   },
   {
     id: 'ESFJ', mbti: 'ESFJ', name: '莓果戚風蛋糕', series: '戚風', style: '果香',
     hook: '溫和友善的包覆感，與摯愛分享這份純粹快樂的本質。',
     drink_stable: '日本柚子美式', drink_sensitive: '經典拿鐵', replacement: '綜合水果戚風;檸檬蘋果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/CHIFFON_BERRY_wlmqgd.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923761/dessert/menu_item_e3a60ea8-aa3e-40f3-ad8e-3cc4dd12ec02.webp'
   },
   {
     id: 'ISTP', mbti: 'ISTP', name: '經典提拉米蘇', series: '提拉米蘇', style: '經典',
     hook: '冷靜大膽的口感平衡，無需多言的硬派實力展現。',
     drink_stable: '美式咖啡', drink_sensitive: '焙茶拿鐵', replacement: '抹茶提拉米蘇;柚子蘋果提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866454/TIRAMISU_CLASSIC_puzwyg.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282853/dessert/menu_item_fdf76c2c-121e-4069-bdf0-5662c214c622.webp'
   },
   {
     id: 'ISFP', mbti: 'ISFP', name: '抹茶提拉米蘇', series: '提拉米蘇', style: '深色',
     hook: '細膩美感的微苦回甘，用最溫柔的方式對抗世界的喧囂。',
     drink_stable: '日本柚子美式', drink_sensitive: '花草茶', replacement: '經典提拉米蘇;奶酒提拉米蘇',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923727/dessert/menu_item_212f556e-502a-4e5a-90bb-e77e7b92f7ba.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282897/dessert/menu_item_a9a834ed-39ca-4524-8f03-2183db366d1f.webp'
   },
   {
     id: 'ESTP', mbti: 'ESTP', name: '巧克力布朗尼千層', series: '千層', style: '深色',
     hook: '極致感官的爆發體驗，追求速度與最直白的生命熱情。',
     drink_stable: '西西里美式', drink_sensitive: '焙茶拿鐵', replacement: '經典十勝原味千層;蜜香紅茶千層',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1771923691/dessert/menu_item_d323bd72-12ff-4bbb-9533-16fac4d08bba.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789289016/dessert/menu_item_d323bd72-12ff-4bbb-9533-16fac4d08bba.webp'
   },
   {
-    id: 'ESFP', mbti: 'ESFP', name: '綜合水果戚風蛋糕', series: '戚風', style: '果香',
+    id: 'ESFP', mbti: 'ESFP', name: '檸檬巴斯克', series: '巴斯克', style: '亮色',
     hook: '點亮全場的色彩盛宴，將每一刻都轉化為永恆的快樂慶典。',
     drink_stable: '日本柚子美式', drink_sensitive: '烤布丁拿鐵', replacement: '莓果戚風;檸檬蘋果戚風',
-    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1767866453/CHIFFON_FRUIT_fswhqh.webp'
+    imageUrl: 'https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_320/v1789282850/dessert/menu_item_0a76fe1d-0302-4bff-8997-236d4a004b0b.webp'
   },
 ];
 
