@@ -35,6 +35,7 @@ interface PassportHomeDashboardProps {
   mbtiType: string | null;
   hasIdentity: boolean;
   userId: string | null;
+  checkinEnabled: boolean;
   canCheckin: boolean;
   checkinStreak: number;
   nextReward: NextRewardSummary | null;
@@ -91,6 +92,7 @@ export default function PassportHomeDashboard({
   mbtiType,
   hasIdentity,
   userId,
+  checkinEnabled,
   canCheckin,
   checkinStreak,
   nextReward,
@@ -170,7 +172,7 @@ export default function PassportHomeDashboard({
   };
 
   const nextAction = useMemo(() => {
-    if (!hasIdentity) {
+    if (!userId) {
       return {
         id: 'login',
         eyebrow: 'Identity',
@@ -179,6 +181,18 @@ export default function PassportHomeDashboard({
         label: '登入同步',
         icon: <ReceiptText size={15} />,
         run: () => void onLogin(),
+      };
+    }
+
+    if (!checkinEnabled) {
+      return {
+        id: 'wallet_wait',
+        eyebrow: 'Economy v2',
+        title: '正式簽到正在安全分批開放',
+        description: '目前只顯示遠端相容餘額，不會透過舊介面新增正式點數。',
+        label: '查看會員旅程',
+        icon: <BookOpen size={15} />,
+        run: onGoJourney,
       };
     }
 
@@ -229,6 +243,7 @@ export default function PassportHomeDashboard({
     };
   }, [
     canCheckin,
+    checkinEnabled,
     checkinStreak,
     hasIdentity,
     latestOrder,
@@ -238,6 +253,7 @@ export default function PassportHomeDashboard({
     onLogin,
     onOpenCheckin,
     statusLabel,
+    userId,
   ]);
 
   const handleNextAction = () => {
@@ -328,7 +344,14 @@ export default function PassportHomeDashboard({
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <CheckinCard onOpen={onOpenCheckin} />
+          <CheckinCard
+            onOpen={onOpenCheckin}
+            canCheckin={canCheckin}
+            streak={checkinStreak}
+            requiresLogin={!userId}
+            disabled={Boolean(userId) && !checkinEnabled}
+            disabledMessage="正式簽到尚未開放；相容餘額維持只讀"
+          />
 
           <KiwimuPanel padded={false}>
             <div className="border-b-2 border-brand-black bg-brand-lime px-4 py-3 text-brand-black">

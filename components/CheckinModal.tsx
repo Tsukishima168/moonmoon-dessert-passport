@@ -8,17 +8,19 @@
  * - 簽到成功后的動畫效果
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Flame, Trophy, Calendar, CheckCircle, Sparkles, Medal, Crown, type LucideIcon } from 'lucide-react';
-import { getPassportState, canCheckinToday, performDailyCheckin } from '../passportUtils';
-import { adjustPointsByIdentity } from '../src/api/points';
-import { useLiff } from '../src/contexts/LiffContext';
-import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
+import type { PassportCheckinResult } from '../src/api/economy';
+import { getTaipeiDay } from '../src/api/economyDay.js';
 import { trackEvent } from '../analytics';
 
 interface CheckinModalProps {
     onClose: () => void;
-    onCheckinComplete?: (balance: number) => void;
+    canCheckin: boolean;
+    streak: number;
+    checkedTaipeiDates: string[];
+    onCheckin: () => Promise<PassportCheckinResult>;
+    onCheckinComplete?: (result: PassportCheckinResult) => void;
 }
 
 interface CalendarDay {
@@ -28,34 +30,13 @@ interface CalendarDay {
     isCurrentMonth: boolean;
 }
 
-function getMonthCalendar(): CalendarDay[] {
+function getMonthCalendar(checkedTaipeiDates: string[]): CalendarDay[] {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const today = now.getDate();
-
-    // Get check-in dates from pointsHistory
-    const state = getPassportState();
-    const checkinDates = new Set<string>();
-    (state.pointsHistory || [])
-        .filter(tx => tx.type === 'daily_checkin')
-        .forEach(tx => {
-            const d = new Date(tx.timestamp);
-            if (d.getFullYear() === year && d.getMonth() === month) {
-                checkinDates.add(d.getDate().toString());
-            }
-        });
-
-    // Also check lastCheckinAt for today
-    if (state.lastCheckinAt) {
-        const lastDate = new Date(state.lastCheckinAt);
-        if (lastDate.getFullYear() === year && lastDate.getMonth() === month) {
-            checkinDates.add(lastDate.getDate().toString());
-        }
-    }
-
-    const firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const [year, monthNumber, today] = getTaipeiDay(now).split('-').map(Number);
+    const month = monthNumber - 1;
+    const checkinDates = new Set(checkedTaipeiDates);
+    const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 
     const calendar: CalendarDay[] = [];
 
@@ -67,49 +48,15 @@ function getMonthCalendar(): CalendarDay[] {
     for (let d = 1; d <= daysInMonth; d++) {
         calendar.push({
             day: d,
-            isCheckedIn: checkinDates.has(d.toString()),
+            isCheckedIn: checkinDates.has(
+                `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+            ),
             isToday: d === today,
             isCurrentMonth: true,
         });
     }
 
     return calendar;
-}
-
-function getStreak(): number {
-    const state = getPassportState();
-    if (!state.pointsHistory) return 0;
-
-    const now = new Date();
-    let streak = 0;
-    let checkDate = new Date(now);
-
-    const checkedDayStrings = new Set(
-        state.pointsHistory
-            .filter(tx => tx.type === 'daily_checkin')
-            .map(tx => {
-                const d = new Date(tx.timestamp);
-                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-            })
-    );
-
-    // Also add lastCheckinAt
-    if (state.lastCheckinAt) {
-        const d = new Date(state.lastCheckinAt);
-        checkedDayStrings.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
-    }
-
-    for (let i = 0; i < 365; i++) {
-        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
-        if (checkedDayStrings.has(key)) {
-            streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-            break;
-        }
-    }
-
-    return streak;
 }
 
 const MILESTONES: Array<{ days: number; label: string; Icon: LucideIcon }> = [
@@ -121,19 +68,27 @@ const MILESTONES: Array<{ days: number; label: string; Icon: LucideIcon }> = [
 
 const MONTH_NAMES = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
 
-const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete }) => {
-    const { profile } = useLiff();
-    const { user } = useSupabaseAuth();
-    const [canCheckin, setCanCheckin] = useState(canCheckinToday());
+const CheckinModal: React.FC<CheckinModalProps> = ({
+    onClose,
+    canCheckin,
+    streak,
+    checkedTaipeiDates,
+    onCheckin,
+    onCheckinComplete,
+}) => {
     const [checking, setChecking] = useState(false);
     const [justCheckedIn, setJustCheckedIn] = useState(false);
     const [pointsAwarded, setPointsAwarded] = useState(0);
-    const [calendar, setCalendar] = useState<CalendarDay[]>(getMonthCalendar());
-    const [streak, setStreak] = useState(getStreak());
     const [showConfetti, setShowConfetti] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const calendar = useMemo(
+        () => getMonthCalendar(checkedTaipeiDates),
+        [checkedTaipeiDates]
+    );
 
     const now = new Date();
-    const monthLabel = MONTH_NAMES[now.getMonth()];
+    const [taipeiYear, taipeiMonth] = getTaipeiDay(now).split('-').map(Number);
+    const monthLabel = MONTH_NAMES[taipeiMonth - 1];
     const nextMilestone = MILESTONES.find(m => m.days > streak);
     const daysToNextMilestone = nextMilestone ? nextMilestone.days - streak : 0;
     const NextMilestoneIcon = nextMilestone?.Icon;
@@ -141,54 +96,48 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
     const handleCheckin = useCallback(async () => {
         if (!canCheckin || checking) return;
         setChecking(true);
+        setErrorMessage(null);
 
         try {
-            const result = performDailyCheckin();
+            const result = await onCheckin();
+            onCheckinComplete?.(result);
 
-            if (result.pointsAwarded > 0 && (user?.id || profile?.userId)) {
-                await adjustPointsByIdentity(
-                    {
-                        authUserId: user?.id,
-                        lineUserId: profile?.userId,
-                    },
-                    result.pointsAwarded,
-                    `daily_checkin_day_${result.streakCount}`
-                ).catch(err =>
-                    console.warn('[CheckinModal] Profile point sync failed:', err)
-                );
+            if (!result.ok) {
+                if (result.code === 'ALREADY_PROCESSED' || result.code === 'LIMIT_REACHED') {
+                    setErrorMessage('今天的簽到已由伺服器確認完成。');
+                } else if (result.code === 'AUTH_REQUIRED') {
+                    setErrorMessage('請先登入會員帳號，再進行每日簽到。');
+                } else {
+                    setErrorMessage('簽到服務暫時無法確認，未變更任何正式點數。請稍後再試。');
+                }
+                return;
             }
 
-            // Update UI
             setJustCheckedIn(true);
-            setCanCheckin(false);
             setPointsAwarded(result.pointsAwarded);
-            setCalendar(getMonthCalendar());
-            setStreak(result.streakCount);
             setShowConfetti(true);
-            onCheckinComplete?.(result.newBalance);
 
-            trackEvent('passport_checkin', { location: 'daily_online' });
+            trackEvent('passport_checkin', {
+                location: 'daily_online',
+                authority: result.source,
+                points_awarded: result.pointsAwarded,
+            });
 
             // Hide confetti after animation
             setTimeout(() => setShowConfetti(false), 2500);
         } catch (err) {
             console.error('[CheckinModal] Checkin failed:', err);
+            setErrorMessage('網路連線中斷，伺服器尚未確認簽到；未變更任何正式點數。請稍後再試。');
         } finally {
             setChecking(false);
         }
-    }, [canCheckin, checking, onCheckinComplete, profile?.userId, user?.id]);
+    }, [canCheckin, checking, onCheckin, onCheckinComplete]);
 
-    // Listen for external checkin events (e.g. from BadgeJourney)
     useEffect(() => {
-        const handler = (e: Event) => {
-            const evt = e as CustomEvent<{ streakCount?: number }>;
-            setCanCheckin(false);
-            setCalendar(getMonthCalendar());
-            setStreak(evt.detail?.streakCount ?? getStreak());
-        };
-        document.addEventListener('daily-checkin', handler);
-        return () => document.removeEventListener('daily-checkin', handler);
-    }, []);
+        if (!canCheckin && !justCheckedIn) {
+            setPointsAwarded(0);
+        }
+    }, [canCheckin, justCheckedIn]);
 
     return (
         <div
@@ -222,7 +171,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                         <Calendar size={18} className="text-brand-lime" />
                         <span className="text-xs font-bold tracking-widest text-brand-lime uppercase">Daily Check-in</span>
                     </div>
-                    <h2 className="text-xl font-bold">{now.getFullYear()} {monthLabel}</h2>
+                    <h2 className="text-xl font-bold">{taipeiYear} {monthLabel}</h2>
 
                     {/* Streak counter */}
                     <div className="mt-3 flex items-center gap-3">
@@ -299,6 +248,11 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
 
                 {/* CTA Section */}
                 <div className="px-4 pb-5">
+                    {errorMessage && (
+                        <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold leading-5 text-red-700">
+                            {errorMessage}
+                        </div>
+                    )}
                     {justCheckedIn ? (
                         <div className="flex items-center justify-center gap-2 py-3 bg-brand-lime rounded-2xl border-2 border-brand-black shadow-[3px_3px_0px_black]">
                             <Sparkles size={18} className="text-brand-black" />
@@ -338,6 +292,9 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                             <span>今日</span>
                         </div>
                     </div>
+                    <p className="mt-3 text-center text-[10px] font-medium text-gray-400">
+                        每日資格依伺服器台北日界判定（台北時間 00:00 更新）。
+                    </p>
                 </div>
             </div>
         </div>

@@ -6,7 +6,6 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  const geminiKey = env.GEMINI_API_KEY ?? process.env.GEMINI_API_KEY ?? '';
   const disablePwa = (env.VITE_DISABLE_PWA ?? '').toLowerCase() === '1' ||
     (env.VITE_DISABLE_PWA ?? '').toLowerCase() === 'true';
   return {
@@ -113,10 +112,9 @@ export default defineConfig(({ mode }) => {
         },
       })] : []),
     ],
-    define: {
-      'process.env.API_KEY': JSON.stringify(geminiKey),
-      'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey)
-    },
+    // 不設 define 注入任何金鑰：原本這裡把 GEMINI_API_KEY 內聯進 client bundle，
+    // 但 src/ 內從未使用，屬死代碼；一旦有人在 Vercel 設了該變數就會直接外洩。
+    // 若日後真的需要 Gemini，改走 server 端 api/ 代理，不要回到 define 注入。
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

@@ -1,11 +1,8 @@
 /**
- * checkinService.ts — 每日簽到服務（Supabase + localStorage 雙寫）
+ * checkinService.ts — 舊版每日簽到相容服務
  * 
- * 設計原則：
- * - localStorage 是「即時 UI」的主要來源（不等網路）
- * - Supabase 是「持久化備份」（async，失敗不影響 UX）
- * - device_id 對應 passportUtils 的 moonmoon_device_id
- * - streak_count 從 Supabase 計算（跨裝置正確），offline 用 localStorage
+ * 目前正式 UI 已改由 `src/api/economy.ts` 的 server-authoritative adapter
+ * 處理。此模組只為 rollback 相容保留，不得再作為正式點數來源。
  */
 
 import { supabase } from './supabase';
