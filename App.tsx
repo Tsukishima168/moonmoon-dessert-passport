@@ -18,6 +18,7 @@ import { consumeMbtiClaim } from './mbtiClaim';
 import { consumeRewardClaim, resolveRewardClaimTarget } from './rewardClaim';
 import { trackUserEvent } from './src/lib/eventTracker';
 import { saveStoredMbtiResult } from './src/lib/mbtiResult';
+import { syncAttributionFromUrl } from './src/lib/attribution';
 import {
   trackEvent,
   trackDessertView,
@@ -463,6 +464,9 @@ function App() {
   // GA4：記錄進入來源（所有 UTM 皆發送 entrance_scan），方便依放置位置分析
   useEffect(() => {
     const initialSearch = getInitialUrlSearch();
+    // R4: 同步 kw_attr 第一接觸歸因 cookie（from／utm_source），供 R3 的 source_site 判定
+    // 在 OAuth 整頁導覽之後仍讀得到（見 analytics.ts trackAuthConversion）。
+    syncAttributionFromUrl(initialSearch);
     trackUtmLanding(initialSearch);
     const params = new URLSearchParams(initialSearch);
     const utmSource = params.get('utm_source');

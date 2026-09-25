@@ -67,7 +67,10 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
         if (stamp.externalLink) {
             setExternalPending(stamp.id);
             trackEvent('stamp_external_started', { stamp_id: stamp.id });
-            trackOutboundNavigation(stamp.externalLink, 'badge_journey');
+            trackOutboundNavigation(stamp.externalLink, `badge_journey_${stamp.id}`, {
+                entrySurface: 'passport_badge_journey',
+                destinationType: 'external',
+            });
             window.open(stamp.externalLink, '_blank');
         }
     };

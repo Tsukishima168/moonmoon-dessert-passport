@@ -1,8 +1,10 @@
 /**
  * Google Analytics 4 (GA4) Utilities
- * 
+ *
  * This module provides type-safe event tracking for the MoonMoon Dessert Passport app.
  */
+
+import { readKwAttr } from './src/lib/attribution';
 
 const SITE_ID = 'passport';
 const DEFAULT_UTM_SOURCE = 'passport';
@@ -16,6 +18,60 @@ const TARGET_SITE_BY_HOST: Record<string, string> = {
   'dessert-booking.vercel.app': 'dessert_booking',
   'gacha.kiwimu.com': 'gacha',
 };
+
+// R3: 站內跨站連結（from=<來源站>_<位置>）的「來源站」前綴 → site_id 對照表。
+// 'hub' 對應 kiwimu.com 首頁／導覽（與 mbti 測驗同站，沿用既有 TARGET_SITE_BY_HOST 的 mbti_lab 命名）。
+const FROM_PREFIX_TO_SITE: Record<string, string> = {
+  mbti: 'mbti_lab',
+  hub: 'mbti_lab',
+  map: 'moon_map',
+  shop: 'dessert_booking',
+  gacha: 'gacha',
+  passport: 'passport',
+};
+
+/**
+ * R3：判定 source_site（sign_up/login 歸因用，source_site=mbti_lab 是測驗簽到的計數依據）。
+ * 優先序：`from`（新格式） → 舊版 `utm_source` → null（呼叫端再 fallback 到 redirect_to 的 hostname）。
+ * `from`／`utm_source` 只要是 'mbti' 或以 'mbti_' 開頭都視為 mbti_lab（相容舊連結 from=mbti、
+ * utm_source=mbti-lab，以及未來 from=mbti_claim 等新值）。
+ */
+function resolveSourceSiteFromParams(params: URLSearchParams): string | null {
+  const fromParam = params.get('from');
+  if (fromParam) {
+    const normalized = fromParam.toLowerCase();
+    if (normalized === 'mbti' || normalized.startsWith('mbti_')) return 'mbti_lab';
+    const prefix = normalized.split('_')[0];
+    if (FROM_PREFIX_TO_SITE[prefix]) return FROM_PREFIX_TO_SITE[prefix];
+    return null;
+  }
+
+  const utmSource = params.get('utm_source');
+  if (utmSource) {
+    const normalized = utmSource.toLowerCase().replace(/-/g, '_');
+    if (normalized === 'mbti' || normalized.startsWith('mbti_')) return 'mbti_lab';
+    const prefix = normalized.split('_')[0];
+    if (FROM_PREFIX_TO_SITE[prefix]) return FROM_PREFIX_TO_SITE[prefix];
+  }
+
+  return null;
+}
+
+/**
+ * R3：同上，但讀 kw_attr cookie 裡的 `from`／`src`。cookie 會在 Google OAuth 整頁導覽
+ * 導出導回之間存活，比存在 JS 記憶體裡的初始網址參數更可靠（見 src/lib/attribution.ts）。
+ */
+function resolveSourceSiteFromKwAttr(): string | null {
+  try {
+    const attr = readKwAttr();
+    const fakeParams = new URLSearchParams();
+    if (attr.from) fakeParams.set('from', attr.from);
+    else if (attr.src) fakeParams.set('utm_source', attr.src);
+    return resolveSourceSiteFromParams(fakeParams);
+  } catch {
+    return null;
+  }
+}
 
 const withSiteId = (params?: Record<string, any>) => ({
   site_id: SITE_ID,
@@ -139,6 +195,30 @@ export const buildUtmUrl = (
   return url.toString();
 };
 
+// R3: 站內跨站連結（指向其他 *.kiwimu.com 站）不用 utm_*，改用單一參數
+// from=<來源站>_<位置>（只小寫英數與底線）。
+const FROM_PARAM_PATTERN = /^[a-z0-9_]+$/;
+
+export const buildFromUrl = (
+  baseUrl: string,
+  from: string,
+  additionalParams?: Record<string, string>,
+): string => {
+  const url = new URL(baseUrl);
+
+  if (FROM_PARAM_PATTERN.test(from)) {
+    url.searchParams.set('from', from);
+  }
+
+  if (additionalParams) {
+    Object.entries(additionalParams).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
+  }
+
+  return url.toString();
+};
+
 export const trackUtmLanding = (input?: string) => {
   const initialSearch = input || (typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ : undefined);
   const utmParams = getUtmParamsFromUrl(initialSearch);
@@ -151,18 +231,31 @@ export const trackUtmLanding = (input?: string) => {
  * Track an SSO auth conversion. Passport is the 5-site identity provider, so a
  * sign-in here is the ecosystem's login/sign_up conversion. Fires the GA4
  * recommended `sign_up` (first-time) or `login` (returning) event, tagged with
- * the originating site (source_site, resolved from the cross-site redirect_to
- * target) and any preserved utm.
+ * the originating site (source_site) and any preserved utm.
+ *
+ * R3 source_site 判定優先序：
+ *   1. kw_attr cookie 的 from／utm_source（存活過 OAuth 整頁導覽，mbti_lab 測驗簽到計數靠這個）
+ *   2. 目前這次載入網址上的 from／utm_source（cookie 還沒寫入時的備援，例如非 kiwimu.com 網域）
+ *   3. 跨站 SSO broker 的 redirect_to 目標網域（既有行為，沒有 from/utm 時的備援）
+ *   4. 'passport'（都沒有時的預設值）
  */
 export const trackAuthConversion = (isNewUser: boolean, sourceUrl?: string) => {
-  let sourceSite = 'passport';
-  if (sourceUrl) {
+  const initialParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ || window.location.search : '',
+  );
+
+  let sourceSite = resolveSourceSiteFromKwAttr() || resolveSourceSiteFromParams(initialParams);
+
+  if (!sourceSite && sourceUrl) {
     try {
       sourceSite = TARGET_SITE_BY_HOST[new URL(sourceUrl).hostname] || 'external';
     } catch {
       sourceSite = 'external';
     }
   }
+
+  if (!sourceSite) sourceSite = 'passport';
+
   const utmParams = compactUtmParams(
     getUtmParamsFromUrl(typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ : undefined),
   );
@@ -249,9 +342,16 @@ export const trackButtonClick = (buttonName: string, location: string) => {
 };
 
 /**
- * Track outbound link navigation
+ * Track outbound link navigation.
+ * R5: outbound_click 參數固定帶 target_site、link_name、entry_surface、destination_type，
+ * transport_type: 'beacon'（點擊後常常立刻跳頁，beacon 確保事件送得出去）。
+ * `label` 沿用作 link_name，維持既有呼叫端相容；entrySurface/destinationType 為新增選填參數。
  */
-export const trackOutboundNavigation = (url: string, label: string) => {
+export const trackOutboundNavigation = (
+  url: string,
+  label: string,
+  options?: { entrySurface?: string; destinationType?: string },
+) => {
   let targetSite = 'external';
   try {
     const host = new URL(url).hostname;
@@ -261,13 +361,18 @@ export const trackOutboundNavigation = (url: string, label: string) => {
   }
 
   const utmParams = compactUtmParams(getUtmParamsFromUrl(url));
+  const destinationType = options?.destinationType || (targetSite === 'external' ? 'external' : 'internal');
 
   trackEvent('outbound_click', {
     source_site: SITE_ID,
     target_site: targetSite,
+    link_name: label,
+    entry_surface: options?.entrySurface,
+    destination_type: destinationType,
     label: label,
     url: url,
     ...utmParams,
+    transport_type: 'beacon',
   });
   // Optional: open window here if we wanted to control navigation, but usually we just track before click propagates or use separate handler
 };

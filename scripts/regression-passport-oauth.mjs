@@ -25,7 +25,7 @@ function hasNonEmptyState(url) {
 
 function scrubSensitiveClaimParams(input) {
   const url = new URL(input, 'https://passport.kiwimu.com');
-  const sensitiveParams = ['claim', 'claim_code', 'reward'];
+  const sensitiveParams = ['claim', 'claim_code', 'reward', 'email'];
   const hasOAuthState = hasNonEmptyState(url);
   const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
   const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
@@ -61,6 +61,8 @@ const scrubCases = [
   ['/?code=ONLY', '?code=ONLY'],
   ['/?%63ode=Y&reward=x&state=s', '?code=Y&state=s'],
   ['/#code=ABC&state=XYZ', ''],
+  ['/?email=foo%40bar.com', ''],
+  ['/?email=foo%40bar.com&code=ONLY', '?code=ONLY'],
 ];
 
 const cleanupCases = [
@@ -94,7 +96,7 @@ const rewardShop = read('components/RewardShop.tsx');
 const rewardsApi = read('src/api/rewards.ts');
 const rewardLedgerMigration = read('supabase/migrations/20260621111241_reward_redemption_ledger.sql');
 
-assert(indexHtml.includes("const sensitiveParams = ['claim', 'claim_code', 'reward'];"), 'index.html sensitiveParams changed');
+assert(indexHtml.includes("const sensitiveParams = ['claim', 'claim_code', 'reward', 'email'];"), 'index.html sensitiveParams changed');
 assert(indexHtml.includes(stateGuard), 'index.html state guard must use getAll + trim');
 assert(appTsx.includes(stateGuard), 'App.tsx state guard must mirror index.html');
 assert(oauthSafety.includes("url.searchParams.has('code') && url.searchParams.has('state')"), 'oauthSafety must clean code+state residue');

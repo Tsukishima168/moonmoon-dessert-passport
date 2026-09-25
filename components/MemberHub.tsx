@@ -149,16 +149,20 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
     const handleSiteClick = (siteId: string, url: string) => {
         // If user clicks a site from the passport, we track and potentially mark
         // Although visit is usually confirmed when they come BACK from that site
-        trackOutboundNavigation(url, `member_hub_${siteId}`);
+        trackOutboundNavigation(url, `member_hub_${siteId}`, {
+            entrySurface: 'passport_member_hub',
+            destinationType: 'internal',
+        });
         trackEvent('moon_site_click', { site_id: siteId });
 
         if (profile?.userId) {
             // Activity tracking removed
         }
 
-        // Add ?from=passport to ensure the other site can detect it if needed
+        // R3: 站內跨站連結不用 utm_*，改用單一參數 from=<來源站>_<位置>，
+        // 讓目標站可辨識來源（例如 passport 的 source_site 判定）。
         const outboundUrl = new URL(url);
-        outboundUrl.searchParams.set('from', 'passport');
+        outboundUrl.searchParams.set('from', 'passport_member_hub');
         window.open(outboundUrl.toString(), '_blank');
     };
 

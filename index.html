@@ -120,7 +120,8 @@
           'entry_surface',
           'destination_type'
         ];
-        const sensitiveParams = ['claim', 'claim_code', 'reward'];
+        // R6: 'email' 一律視為敏感參數清掉（不論是誰帶進來的），避免個資殘留在網址列讓 GA 記到。
+        const sensitiveParams = ['claim', 'claim_code', 'reward', 'email'];
         // OAuth callback 一定帶非空 state；用 getAll + trim 同時收斂兩個 edge：
         //   - `?state=%20` 純空白 state 不被當成 OAuth state，reward+code 仍會被清
         //   - `?state=&state=REAL` 重複 state 不會被第一個空值矇騙，誤刪真實 OAuth code
@@ -150,24 +151,32 @@
       })();
     </script>
 
+    <!-- Google Analytics 4 -->
+    <!-- R1: 只在正式網域（kiwimu.com 或其子網域）載入／送資料；localhost、127.0.0.1、
+         *.vercel.app 預覽網址一律不載入 gtag，避免污染正式流量數據。 -->
     <script type="module">
-      const gaId = import.meta.env.VITE_GA4_ID || 'G-DM6F27KL8B';
-      window.__GA4_ID__ = gaId;
+      const __hostname = window.location.hostname;
+      const __isProdKiwimuHost = __hostname === 'kiwimu.com' || __hostname.endsWith('.kiwimu.com');
 
-      setTimeout(() => {
-        const s = document.createElement('script');
-        s.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
-        s.async = true;
-        document.head.appendChild(s);
+      if (__isProdKiwimuHost) {
+        const gaId = import.meta.env.VITE_GA4_ID || 'G-DM6F27KL8B';
+        window.__GA4_ID__ = gaId;
 
-        window.dataLayer = window.dataLayer || [];
-        function gtag() {
-          window.dataLayer.push(arguments);
-        }
-        window.gtag = gtag;
-        gtag('js', new Date());
-        gtag('config', gaId, { send_page_view: true });
-      }, 500);
+        setTimeout(() => {
+          const s = document.createElement('script');
+          s.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+          s.async = true;
+          document.head.appendChild(s);
+
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            window.dataLayer.push(arguments);
+          }
+          window.gtag = gtag;
+          gtag('js', new Date());
+          gtag('config', gaId, { send_page_view: true });
+        }, 500);
+      }
     </script>
   </head>
   <body>
