@@ -156,7 +156,12 @@
          *.vercel.app 預覽網址一律不載入 gtag，避免污染正式流量數據。 -->
     <script type="module">
       const __hostname = window.location.hostname;
-      const __isProdKiwimuHost = __hostname === 'kiwimu.com' || __hostname.endsWith('.kiwimu.com');
+      // v1.1: 舊正式別名（moonmoon-dessert-passport.vercel.app）上有真實使用者流量，一併放行；
+      // 其餘 *.vercel.app 預覽網址與 localhost 仍不送資料。
+      const __isProdKiwimuHost =
+        __hostname === 'kiwimu.com' ||
+        __hostname.endsWith('.kiwimu.com') ||
+        __hostname === 'moonmoon-dessert-passport.vercel.app';
 
       if (__isProdKiwimuHost) {
         const gaId = import.meta.env.VITE_GA4_ID || 'G-DM6F27KL8B';

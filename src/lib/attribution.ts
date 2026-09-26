@@ -87,6 +87,25 @@ function writeKwAttr(attr: KwAttr): void {
  * 頁面載入時呼叫一次：依 R4 規則同步 kw_attr cookie。
  * 只在 *.kiwimu.com 正式網域寫入；其他環境（localhost、預覽網址）不寫入。
  */
+// v1.1 R4 補：寫入端每個值上限 64 字；from 必須符合 ^[a-z0-9_]+$（否則視為沒有這個值，
+// 不寫壞資料進跨站共用 cookie）。UTM 欄位整組寫入（見下方 writeKwAttr 呼叫），不逐欄混拼。
+const MAX_VALUE_LEN = 64;
+const FROM_PATTERN = /^[a-z0-9_]+$/;
+
+function capValue(value: string): string {
+  return value.slice(0, MAX_VALUE_LEN);
+}
+
+function capOrUndefined(value: string | null): string | undefined {
+  return value ? capValue(value) : undefined;
+}
+
+function sanitizeFrom(value: string | null): string | undefined {
+  if (!value) return undefined;
+  const capped = capValue(value);
+  return FROM_PATTERN.test(capped) ? capped : undefined;
+}
+
 export function syncAttributionFromUrl(search?: string): void {
   if (typeof window === 'undefined') return;
   if (!isProdKiwimuHost(window.location.hostname)) return;
@@ -98,7 +117,7 @@ export function syncAttributionFromUrl(search?: string): void {
     return;
   }
 
-  const fromParam = params.get('from');
+  const fromParam = sanitizeFrom(params.get('from'));
   const utmSource = params.get('utm_source');
   const now = Date.now();
   const current = readKwAttr();
@@ -115,12 +134,12 @@ export function syncAttributionFromUrl(search?: string): void {
     if (!current.src || isStale) {
       writeKwAttr({
         ...current,
-        src: utmSource,
-        med: params.get('utm_medium') || undefined,
-        cmp: params.get('utm_campaign') || undefined,
-        cnt: params.get('utm_content') || undefined,
-        trm: params.get('utm_term') || undefined,
-        land: window.location.hostname,
+        src: capValue(utmSource),
+        med: capOrUndefined(params.get('utm_medium')),
+        cmp: capOrUndefined(params.get('utm_campaign')),
+        cnt: capOrUndefined(params.get('utm_content')),
+        trm: capOrUndefined(params.get('utm_term')),
+        land: capValue(window.location.hostname),
         ts: now,
       });
     }

@@ -58,16 +58,18 @@
                     "value": "noindex, nofollow"
                 }
             ]
-        }
-    ],
-    "redirects": [
+        },
         {
             "source": "/:path*",
             "has": [
                 { "type": "host", "value": "moonmoon-dessert-passport.vercel.app" }
             ],
-            "destination": "https://passport.kiwimu.com/:path*",
-            "permanent": true
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex"
+                }
+            ]
         }
     ],
     "rewrites": [

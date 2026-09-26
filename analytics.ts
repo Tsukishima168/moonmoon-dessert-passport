@@ -57,17 +57,46 @@ function resolveSourceSiteFromParams(params: URLSearchParams): string | null {
   return null;
 }
 
+// v1.1 BLOCKER 修：kw_attr 的 `from` 是「上一個跳轉來源」，不是長期行銷歸因欄位——
+// 30 天都採信會蓋掉更即時、更明確的訊號（例如 passport→kiwimu 測驗→再回來登入，
+// 這時該算 mbti_lab，不該被幾天前寫入的 from=passport_xxx 蓋掉）。只在 2 小時內才採信。
+const FROM_COOKIE_FRESH_MS = 2 * 60 * 60 * 1000; // 2 小時
+
 /**
- * R3：同上，但讀 kw_attr cookie 裡的 `from`／`src`。cookie 會在 Google OAuth 整頁導覽
- * 導出導回之間存活，比存在 JS 記憶體裡的初始網址參數更可靠（見 src/lib/attribution.ts）。
+ * R3：讀 kw_attr cookie 裡的 `from`（cookie 會在 Google OAuth 整頁導覽導出導回之間存活，
+ * 見 src/lib/attribution.ts），但只在 `from_ts` 是 2 小時內才採信，避免陳舊值蓋掉更即時的訊號。
+ * 不讀 cookie 的 `src`（utm_source）：那是刻意 30 天不覆蓋的長期第一接觸行銷歸因，
+ * 拿來判定「這次登入」的 source_site 語意不對，交給 resolveSourceSiteFromParams 走目前這次
+ * 載入的網址即可。
  */
-function resolveSourceSiteFromKwAttr(): string | null {
+function resolveSourceSiteFromFreshKwAttrFrom(): string | null {
   try {
     const attr = readKwAttr();
+    if (!attr.from || !attr.from_ts) return null;
+    if (Date.now() - attr.from_ts > FROM_COOKIE_FRESH_MS) return null;
     const fakeParams = new URLSearchParams();
-    if (attr.from) fakeParams.set('from', attr.from);
-    else if (attr.src) fakeParams.set('utm_source', attr.src);
+    fakeParams.set('from', attr.from);
     return resolveSourceSiteFromParams(fakeParams);
+  } catch {
+    return null;
+  }
+}
+
+// passport 自己的網域／舊別名：redirect_to 指回這裡代表「使用者原本就在 passport 上」，
+// 不是跨站訊號，遇到要當作沒有 redirect_to 一樣繼續往下 fallback。
+const PASSPORT_SELF_HOSTS = new Set(['passport.kiwimu.com', 'moonmoon-dessert-passport.vercel.app']);
+
+/**
+ * R3：跨站 SSO broker 的 redirect_to 目標網域 → source_site。這是「哪一站發起了這次登入」
+ * 最明確、最即時的訊號（例如 shop 的登入按鈕把使用者導來 passport，redirect_to 的 host 就是
+ * shop.kiwimu.com），優先權應該最高——比任何 cookie 都更能代表「這一次」登入的來源。
+ */
+function resolveSourceSiteFromRedirectHost(sourceUrl?: string): string | null {
+  if (!sourceUrl) return null;
+  try {
+    const hostname = new URL(sourceUrl).hostname;
+    if (PASSPORT_SELF_HOSTS.has(hostname)) return null;
+    return TARGET_SITE_BY_HOST[hostname] || 'external';
   } catch {
     return null;
   }
@@ -233,26 +262,23 @@ export const trackUtmLanding = (input?: string) => {
  * recommended `sign_up` (first-time) or `login` (returning) event, tagged with
  * the originating site (source_site) and any preserved utm.
  *
- * R3 source_site 判定優先序：
- *   1. kw_attr cookie 的 from／utm_source（存活過 OAuth 整頁導覽，mbti_lab 測驗簽到計數靠這個）
- *   2. 目前這次載入網址上的 from／utm_source（cookie 還沒寫入時的備援，例如非 kiwimu.com 網域）
- *   3. 跨站 SSO broker 的 redirect_to 目標網域（既有行為，沒有 from/utm 時的備援）
+ * v1.1 修 BLOCKER：source_site 判定優先序改為——
+ *   1. 跨站 SSO broker 的 redirect_to 目標網域（哪一站發起這次登入，最明確、最即時）
+ *   2. 目前這次載入網址上的 from／utm_source（這次 pageload 自己的訊號）
+ *   3. kw_attr cookie 的 from，且僅在 2 小時內才採信（避免陳舊 from 蓋掉上面兩層）
  *   4. 'passport'（都沒有時的預設值）
+ * 舊版曾經讓 cookie 優先於 redirect_to，會讓「passport → kiwimu 測驗 → 回來登入」這種
+ * 案例被幾天前的 from 蓋成 source_site=passport，而不是正確的 mbti_lab。
  */
 export const trackAuthConversion = (isNewUser: boolean, sourceUrl?: string) => {
   const initialParams = new URLSearchParams(
     typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ || window.location.search : '',
   );
 
-  let sourceSite = resolveSourceSiteFromKwAttr() || resolveSourceSiteFromParams(initialParams);
-
-  if (!sourceSite && sourceUrl) {
-    try {
-      sourceSite = TARGET_SITE_BY_HOST[new URL(sourceUrl).hostname] || 'external';
-    } catch {
-      sourceSite = 'external';
-    }
-  }
+  let sourceSite =
+    resolveSourceSiteFromRedirectHost(sourceUrl) ||
+    resolveSourceSiteFromParams(initialParams) ||
+    resolveSourceSiteFromFreshKwAttrFrom();
 
   if (!sourceSite) sourceSite = 'passport';
 
