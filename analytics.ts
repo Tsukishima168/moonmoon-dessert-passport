@@ -16,7 +16,9 @@ const TARGET_SITE_BY_HOST: Record<string, string> = {
   'moon-map-original.vercel.app': 'moon_map',
   'shop.kiwimu.com': 'dessert_booking',
   'dessert-booking.vercel.app': 'dessert_booking',
+  'moon-dessert-booking.vercel.app': 'dessert_booking',
   'gacha.kiwimu.com': 'gacha',
+  'moonmoon-gacha.vercel.app': 'gacha',
 };
 
 // R3: 站內跨站連結（from=<來源站>_<位置>）的「來源站」前綴 → site_id 對照表。

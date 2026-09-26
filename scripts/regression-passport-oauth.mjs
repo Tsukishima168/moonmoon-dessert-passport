@@ -96,7 +96,9 @@ const TARGET_SITE_BY_HOST = {
   'moon-map-original.vercel.app': 'moon_map',
   'shop.kiwimu.com': 'dessert_booking',
   'dessert-booking.vercel.app': 'dessert_booking',
+  'moon-dessert-booking.vercel.app': 'dessert_booking',
   'gacha.kiwimu.com': 'gacha',
+  'moonmoon-gacha.vercel.app': 'gacha',
 };
 const FROM_PREFIX_TO_SITE = {
   mbti: 'mbti_lab',
