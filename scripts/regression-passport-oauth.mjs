@@ -25,7 +25,7 @@ function hasNonEmptyState(url) {
 
 function scrubSensitiveClaimParams(input) {
   const url = new URL(input, 'https://passport.kiwimu.com');
-  const sensitiveParams = ['claim', 'claim_code', 'reward'];
+  const sensitiveParams = ['claim', 'claim_code', 'reward', 'email'];
   const hasOAuthState = hasNonEmptyState(url);
   const hasRewardClaimCode = !hasOAuthState && url.searchParams.has('code') && url.searchParams.has('reward');
   const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
@@ -61,6 +61,8 @@ const scrubCases = [
   ['/?code=ONLY', '?code=ONLY'],
   ['/?%63ode=Y&reward=x&state=s', '?code=Y&state=s'],
   ['/#code=ABC&state=XYZ', ''],
+  ['/?email=foo%40bar.com', ''],
+  ['/?email=foo%40bar.com&code=ONLY', '?code=ONLY'],
 ];
 
 const cleanupCases = [
@@ -84,6 +86,146 @@ for (const [input, expected] of cleanupCases) {
   assertEqual(cleanupOAuthCallbackParams(input), expected, `cleanup ${input}`);
 }
 
+// v1.1 BLOCKER regression: source_site 判定優先序必須是
+// redirect_to host -> 目前網址 from/utm_source -> kw_attr cookie 的 from（僅 2 小時內）-> 'passport'。
+// 這裡鏡射 analytics.ts 的 resolveSourceSite* 邏輯做真的執行測試，不只是字串比對。
+const TARGET_SITE_BY_HOST = {
+  'kiwimu.com': 'mbti_lab',
+  'kiwimu-mbti.vercel.app': 'mbti_lab',
+  'map.kiwimu.com': 'moon_map',
+  'moon-map-original.vercel.app': 'moon_map',
+  'shop.kiwimu.com': 'dessert_booking',
+  'dessert-booking.vercel.app': 'dessert_booking',
+  'moon-dessert-booking.vercel.app': 'dessert_booking',
+  'gacha.kiwimu.com': 'gacha',
+  'moonmoon-gacha.vercel.app': 'gacha',
+};
+const FROM_PREFIX_TO_SITE = {
+  mbti: 'mbti_lab',
+  hub: 'mbti_lab',
+  map: 'moon_map',
+  shop: 'dessert_booking',
+  gacha: 'gacha',
+  passport: 'passport',
+};
+const PASSPORT_SELF_HOSTS = new Set(['passport.kiwimu.com', 'moonmoon-dessert-passport.vercel.app']);
+const FROM_COOKIE_FRESH_MS = 2 * 60 * 60 * 1000;
+
+function resolveSourceSiteFromParamsModel(params) {
+  const fromParam = params.get('from');
+  if (fromParam) {
+    const normalized = fromParam.toLowerCase();
+    if (normalized === 'mbti' || normalized.startsWith('mbti_')) return 'mbti_lab';
+    const prefix = normalized.split('_')[0];
+    if (FROM_PREFIX_TO_SITE[prefix]) return FROM_PREFIX_TO_SITE[prefix];
+    return null;
+  }
+  const utmSource = params.get('utm_source');
+  if (utmSource) {
+    const normalized = utmSource.toLowerCase().replace(/-/g, '_');
+    if (normalized === 'mbti' || normalized.startsWith('mbti_')) return 'mbti_lab';
+    const prefix = normalized.split('_')[0];
+    if (FROM_PREFIX_TO_SITE[prefix]) return FROM_PREFIX_TO_SITE[prefix];
+  }
+  return null;
+}
+
+function resolveSourceSiteFromRedirectHostModel(sourceUrl) {
+  if (!sourceUrl) return null;
+  try {
+    const hostname = new URL(sourceUrl).hostname;
+    if (PASSPORT_SELF_HOSTS.has(hostname)) return null;
+    return TARGET_SITE_BY_HOST[hostname] || 'external';
+  } catch {
+    return null;
+  }
+}
+
+function resolveSourceSiteFromFreshKwAttrFromModel(attr, now) {
+  if (!attr.from || !attr.from_ts) return null;
+  if (now - attr.from_ts > FROM_COOKIE_FRESH_MS) return null;
+  return resolveSourceSiteFromParamsModel(new URLSearchParams({ from: attr.from }));
+}
+
+function resolveSourceSiteModel({ sourceUrl, initialSearch, kwAttr, now }) {
+  const initialParams = new URLSearchParams(initialSearch || '');
+  return (
+    resolveSourceSiteFromRedirectHostModel(sourceUrl) ||
+    resolveSourceSiteFromParamsModel(initialParams) ||
+    resolveSourceSiteFromFreshKwAttrFromModel(kwAttr || {}, now) ||
+    'passport'
+  );
+}
+
+const NOW = Date.now();
+const sourceSiteCases = [
+  {
+    label: 'BLOCKER 案例：redirect_to 指回 kiwimu.com 必須贏過幾天前的陳舊 cookie from',
+    input: {
+      sourceUrl: 'https://kiwimu.com/?redirect_to_marker=1',
+      initialSearch: '',
+      kwAttr: { from: 'passport_member_hub', from_ts: NOW - 3 * 24 * 60 * 60 * 1000 },
+      now: NOW,
+    },
+    expected: 'mbti_lab',
+  },
+  {
+    label: '沒有 redirect_to，這次網址帶 from=mbti_claim 直接採用',
+    input: { sourceUrl: undefined, initialSearch: '?from=mbti_claim', kwAttr: {}, now: NOW },
+    expected: 'mbti_lab',
+  },
+  {
+    label: '沒有 redirect_to、沒有網址參數，2 小時內的 cookie from 才採信',
+    input: {
+      sourceUrl: undefined,
+      initialSearch: '',
+      kwAttr: { from: 'mbti_result', from_ts: NOW - 30 * 60 * 1000 },
+      now: NOW,
+    },
+    expected: 'mbti_lab',
+  },
+  {
+    label: '超過 2 小時的 cookie from 不採信，落回預設 passport',
+    input: {
+      sourceUrl: undefined,
+      initialSearch: '',
+      kwAttr: { from: 'mbti_result', from_ts: NOW - 3 * 60 * 60 * 1000 },
+      now: NOW,
+    },
+    expected: 'passport',
+  },
+  {
+    label: 'redirect_to 指回 passport 自己（非跨站訊號）要略過，改看網址 from',
+    input: {
+      sourceUrl: 'https://passport.kiwimu.com/?foo=1',
+      initialSearch: '?from=gacha_store',
+      kwAttr: {},
+      now: NOW,
+    },
+    expected: 'gacha',
+  },
+  {
+    label: '都沒有任何訊號時預設 passport',
+    input: { sourceUrl: undefined, initialSearch: '', kwAttr: {}, now: NOW },
+    expected: 'passport',
+  },
+];
+
+for (const { label, input, expected } of sourceSiteCases) {
+  assertEqual(resolveSourceSiteModel(input), expected, label);
+}
+
+const analyticsTs = read('analytics.ts');
+assert(analyticsTs.includes('function resolveSourceSiteFromRedirectHost('), 'analytics.ts must resolve source_site from redirect_to host');
+assert(analyticsTs.includes('function resolveSourceSiteFromFreshKwAttrFrom('), 'analytics.ts must gate cookie from by freshness');
+assert(analyticsTs.includes('FROM_COOKIE_FRESH_MS = 2 * 60 * 60 * 1000'), 'analytics.ts cookie from freshness window changed from 2 hours');
+assert(
+  analyticsTs.includes(
+    'resolveSourceSiteFromRedirectHost(sourceUrl) ||\n    resolveSourceSiteFromParams(initialParams) ||\n    resolveSourceSiteFromFreshKwAttrFrom();',
+  ),
+  'trackAuthConversion source_site priority order changed (must be redirect_to host -> URL from/utm -> fresh cookie from -> passport)',
+);
+
 const stateGuard = "searchParams.getAll('state').some((value) => value.trim().length > 0)";
 const indexHtml = read('index.html');
 const appTsx = read('App.tsx');
@@ -94,7 +236,7 @@ const rewardShop = read('components/RewardShop.tsx');
 const rewardsApi = read('src/api/rewards.ts');
 const rewardLedgerMigration = read('supabase/migrations/20260621111241_reward_redemption_ledger.sql');
 
-assert(indexHtml.includes("const sensitiveParams = ['claim', 'claim_code', 'reward'];"), 'index.html sensitiveParams changed');
+assert(indexHtml.includes("const sensitiveParams = ['claim', 'claim_code', 'reward', 'email'];"), 'index.html sensitiveParams changed');
 assert(indexHtml.includes(stateGuard), 'index.html state guard must use getAll + trim');
 assert(appTsx.includes(stateGuard), 'App.tsx state guard must mirror index.html');
 assert(oauthSafety.includes("url.searchParams.has('code') && url.searchParams.has('state')"), 'oauthSafety must clean code+state residue');

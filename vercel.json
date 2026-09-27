@@ -58,6 +58,18 @@
                     "value": "noindex, nofollow"
                 }
             ]
+        },
+        {
+            "source": "/:path*",
+            "has": [
+                { "type": "host", "value": "moonmoon-dessert-passport.vercel.app" }
+            ],
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex"
+                }
+            ]
         }
     ],
     "rewrites": [

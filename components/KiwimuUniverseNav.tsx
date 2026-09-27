@@ -8,7 +8,7 @@ import {
   Map,
 } from 'lucide-react';
 import { PUBLIC_MOONMOON_SITES } from '../constants';
-import { buildUtmUrl, trackEvent, trackOutboundNavigation } from '../analytics';
+import { buildFromUrl, trackEvent, trackOutboundNavigation } from '../analytics';
 
 const IconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   BrainCircuit,
@@ -30,7 +30,10 @@ export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
   compact = false,
 }) => {
   const handleClick = (siteId: string, href: string) => {
-    trackOutboundNavigation(href, `universe_nav_${surface}_${siteId}`);
+    trackOutboundNavigation(href, `universe_nav_${surface}_${siteId}`, {
+      entrySurface: surface,
+      destinationType: 'internal',
+    });
     trackEvent('universe_nav_click', {
       surface,
       target_site_id: siteId,
@@ -62,12 +65,8 @@ export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
         {PUBLIC_MOONMOON_SITES.map((site) => {
           const isCurrent = site.id === currentSiteId;
           const Icon = IconMap[site.iconType] || BrainCircuit;
-          const href = buildUtmUrl(site.url, {
-            medium: 'passport_universe_nav',
-            campaign: 'kiwimu_universe',
-            content: site.id,
-            additionalParams: { from: 'passport' },
-          });
+          // R3: 站內跨站連結不用 utm_*，改用單一參數 from=<來源站>_<位置>
+          const href = buildFromUrl(site.url, surface);
 
           if (isCurrent) {
             return (
