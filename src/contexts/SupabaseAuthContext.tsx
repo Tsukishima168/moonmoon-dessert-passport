@@ -33,6 +33,7 @@ import {
   saveSsoBrokerMode,
 } from '../lib/ssoBroker';
 import { trackAuthConversion } from '../../analytics';
+import { runAfterPendingDelivery } from '../lib/deliveryGate';
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -108,7 +109,10 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (notifySsoBrokerComplete(pendingRedirect)) {
           return;
         }
-        window.location.href = pendingRedirect;
+        // 導頁前先等 sign_up／login 事件送完（最久 1500ms），見 src/lib/deliveryGate.ts。
+        runAfterPendingDelivery(() => {
+          window.location.href = pendingRedirect;
+        });
         return;
       }
 
@@ -117,7 +121,9 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (notifySsoBrokerComplete(redirectTo)) {
           return;
         }
-        window.location.href = redirectTo;
+        runAfterPendingDelivery(() => {
+          window.location.href = redirectTo;
+        });
         return;
       }
 

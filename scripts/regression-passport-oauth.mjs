@@ -275,12 +275,13 @@ assert(!rewardShop.includes('redeemItem(pendingReward.id)'), 'RewardShop must no
 
 // 把真正的 src/lib/pointsSyncGuard.ts 轉譯後實跑（Node 20 CI 也能跑，不依賴原生 TS 支援；
 // 該檔刻意零 import，所以可以直接當 data: module 載入）。
-async function loadTsModule(relativePath) {
+async function loadTsModule(relativePath, instanceSalt = '') {
   const ts = require('typescript');
   const { outputText } = ts.transpileModule(read(relativePath), {
     compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
   });
-  return import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+  // instanceSalt 讓同一支檔案能載入成互不共用模組狀態的獨立實例（deliveryGate 有模組層級的 pending 集合）。
+  return import(`data:text/javascript;base64,${Buffer.from(`${outputText}\n// ${instanceSalt}`).toString('base64')}`);
 }
 
 const guard = await loadTsModule('src/lib/pointsSyncGuard.ts');
@@ -529,6 +530,84 @@ assertEqual(guard.stripPointsSyncParams(syncQuery()), '?from=gacha_store', 'stri
 assertEqual(guard.stripPointsSyncParams('?action=add_points&amount=5&source=gacha&ts=1&device_id=x'), '', 'stripPointsSyncParams of a sync-only query is empty');
 assertEqual(guard.stripPointsSyncParams(''), '', 'stripPointsSyncParams of an empty query is empty');
 
+// 8c) GA4 sign_up／login 送達閘門：關 popup／導頁前要等事件送完，最久 maxWait，不會卡住使用者
+{
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const runGate = async (gate, { maxWaitMs, before }) => {
+    const startedAt = Date.now();
+    const runs = [];
+    before?.();
+    gate.runAfterPendingDelivery(() => runs.push(Date.now() - startedAt), maxWaitMs);
+    return { runs, startedAt, sleep };
+  };
+
+  assertEqual(String((await loadTsModule('src/lib/deliveryGate.ts', 'const')).DELIVERY_MAX_WAIT_MS), '1500', 'delivery gate max wait must stay 1500ms');
+
+  // (a) 沒有 pending：不延遲（只讓出一個 tick），且是非同步執行
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'a');
+    const { runs } = await runGate(gate, { maxWaitMs: 500 });
+    assertEqual(String(runs.length), '0', 'gate must not run synchronously');
+    await sleep(60);
+    assertEqual(String(runs.length), '1', 'gate with nothing pending must run right away');
+    assert(runs[0] < 50, `gate with nothing pending ran too late (${runs[0]}ms)`);
+  }
+
+  // (b) pending 在 maxWait 之前完成：等到完成才執行，且只執行一次
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'b');
+    const { runs } = await runGate(gate, { maxWaitMs: 800, before: () => gate.registerPendingDelivery(sleep(150)) });
+    await sleep(60);
+    assertEqual(String(runs.length), '0', 'gate must wait while a delivery is in flight');
+    await sleep(250);
+    assertEqual(String(runs.length), '1', 'gate must run exactly once after the delivery completes');
+    assert(runs[0] >= 140 && runs[0] < 600, `gate should run when the delivery completes, not at the timeout (${runs[0]}ms)`);
+  }
+
+  // (c) pending 永遠不完成：到 maxWait 照樣執行
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'c');
+    const { runs } = await runGate(gate, { maxWaitMs: 200, before: () => gate.registerPendingDelivery(new Promise(() => {})) });
+    await sleep(120);
+    assertEqual(String(runs.length), '0', 'gate must still be waiting before the timeout');
+    await sleep(250);
+    assertEqual(String(runs.length), '1', 'gate must give up and run at the timeout');
+    assert(runs[0] >= 190 && runs[0] < 600, `gate should run at the timeout (${runs[0]}ms)`);
+  }
+
+  // (d) 模擬 supabase-js 的順序：導頁決策先排隊，SIGNED_IN（註冊 pending）在 setTimeout(0) 才發生，
+  //     閘門仍要等到那筆 pending 完成
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'd');
+    const { runs } = await runGate(gate, {
+      maxWaitMs: 800,
+      before: () => setTimeout(() => gate.registerPendingDelivery(sleep(150)), 0),
+    });
+    await sleep(80);
+    assertEqual(String(runs.length), '0', 'a delivery registered one tick later must still hold the redirect');
+    await sleep(250);
+    assertEqual(String(runs.length), '1', 'redirect must run once after the late-registered delivery completes');
+  }
+
+  // (e) pending 失敗（reject）也算完成，不能卡住也不能產生 unhandled rejection
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'e');
+    let unhandled = 0;
+    const onUnhandled = () => {
+      unhandled += 1;
+    };
+    process.on('unhandledRejection', onUnhandled);
+    const { runs } = await runGate(gate, {
+      maxWaitMs: 800,
+      before: () => gate.registerPendingDelivery(sleep(30).then(() => Promise.reject(new Error('boom')))),
+    });
+    await sleep(200);
+    process.off('unhandledRejection', onUnhandled);
+    assertEqual(String(runs.length), '1', 'a failed delivery must release the gate');
+    assertEqual(String(unhandled), '0', 'a failed delivery must not leak an unhandled rejection');
+  }
+}
+
 // 9) 原始碼層面的鎖：debug 只在 DEV、同步讀原始 query、拒絕事件不帶金額
 assert(
   appTsx.includes("const isDebugAllStamps = import.meta.env.DEV && params.get('debug') === '1';"),
@@ -550,6 +629,29 @@ assert(
 );
 assert(!appTsx.includes("dispatchEvent(new CustomEvent('kiwimu:points_earned'"), 'App must not re-dispatch kiwimu:points_earned after a sync (PassportScreen would credit it a second time)');
 assert(!passportUtilsTs.includes("params.get('amount')"), 'passportUtils must not parse the amount outside the guard');
+// sign_up／login 必須「真的送到」才能離開頁面
+const analyticsSource = read('analytics.ts');
+const authReliable = analyticsSource.slice(analyticsSource.indexOf('export const trackAuthConversion'));
+assert(authReliable.includes("trackEventReliably(isNewUser ? 'sign_up' : 'login', {"), 'trackAuthConversion must send sign_up/login through the reliable path');
+assert(authReliable.includes('registerPendingDelivery(delivery);'), 'trackAuthConversion must register its delivery with the gate');
+assert(analyticsSource.includes("transport_type: 'beacon',") && analyticsSource.includes('event_callback: finish,'), 'reliable events must use beacon transport and event_callback');
+assert(analyticsSource.includes('DELIVERY_MAX_WAIT_MS') && analyticsSource.includes('const cap = window.setTimeout(finish, maxWaitMs);'), 'reliable events must cap their wait');
+assert(
+  ssoBroker.indexOf('runAfterPendingDelivery(() => {') > 0 &&
+    ssoBroker.indexOf('runAfterPendingDelivery(() => {') < ssoBroker.indexOf('window.close();'),
+  'SSO popup close must wait for the pending GA4 delivery',
+);
+assert(
+  (authContext.match(/runAfterPendingDelivery\(\(\) => \{/g) || []).length === 2 &&
+    authContext.includes('window.location.href = pendingRedirect;') &&
+    authContext.includes('window.location.href = redirectTo;'),
+  'both post-login redirects must wait for the pending GA4 delivery',
+);
+assert(
+  authContext.indexOf('trackAuthConversion(isNewUser, getPendingRedirectTo() ?? undefined);') <
+    authContext.indexOf('handleSignedInUser(currentUser);\n\n      if (currentUser) {'),
+  'auth conversion must still be tracked before the SIGNED_IN handler may redirect',
+);
 assert(
   indexHtml.includes("const pointsSyncParams = ['amount', 'device_id', 'ts'];") &&
     indexHtml.includes("pointsSyncParams.push('action')") &&

@@ -1,3 +1,5 @@
+import { runAfterPendingDelivery } from './deliveryGate';
+
 export const SSO_BROKER_MODE_KEY = 'kiwimu_sso_broker_mode';
 export const SSO_BROKER_MODE_POPUP = 'popup';
 export const SSO_BROKER_MESSAGE_TYPE = 'kiwimu:sso:complete';
@@ -81,8 +83,11 @@ export function notifySsoBrokerComplete(
   clearSsoBrokerMode();
 
   window.setTimeout(() => {
-    window.close();
-    window.location.replace(redirectTo);
+    // 關窗前先等進行中的 GA4 sign_up／login 送完（最久 1500ms），否則 popup 一關事件就沒了。
+    runAfterPendingDelivery(() => {
+      window.close();
+      window.location.replace(redirectTo);
+    });
   }, 120);
 
   return true;
