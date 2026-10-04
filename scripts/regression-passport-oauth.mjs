@@ -660,6 +660,23 @@ assert(
 );
 assert(indexHtml.includes("'source',"), 'index.html trackingParams must keep scrubbing source');
 
+// adjust_points 鎖定 migration（草稿，尚未套用；套用由 coordinator 決定）：關鍵條款不得被改掉
+const adjustPointsMigration = read('supabase/migrations/20261004150000_adjust_points_lockdown.sql');
+for (const [needle, label] of [
+  ['create or replace function public.adjust_points(p_amount integer, p_reason text)', 'same signature'],
+  ['set search_path = public', 'pinned search_path'],
+  ["p_reason !~ '^daily_checkin_day_[0-9]+$'", 'reason allowlist'],
+  ['p_amount < 1 or p_amount > c_max_daily_award', 'amount bounds'],
+  ['c_max_daily_award constant integer := 5;', 'max award matches STREAK_BONUS_TABLE (Day 7 = 5)'],
+  ["'Asia/Taipei'", 'Taipei calendar day'],
+  ['for update', 'per-user serialization'],
+  ['revoke execute on function public.adjust_points(integer, text) from public, anon;', 'revoke public/anon'],
+  ['grant execute on function public.adjust_points(integer, text) to authenticated, service_role;', 'grant authenticated/service_role'],
+]) {
+  assert(adjustPointsMigration.includes(needle), `adjust_points migration lost clause: ${label}`);
+}
+assert(read('types/gamification-types.ts').includes('7: 5, // Day 7 大獎'), 'STREAK_BONUS_TABLE max changed: update c_max_daily_award in the adjust_points migration');
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
