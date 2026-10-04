@@ -5,6 +5,7 @@
  */
 
 import { readKwAttr } from './src/lib/attribution';
+import { DELIVERY_MAX_WAIT_MS, registerPendingDelivery } from './src/lib/deliveryGate';
 
 const SITE_ID = 'passport';
 const DEFAULT_UTM_SOURCE = 'passport';
@@ -142,6 +143,90 @@ export const trackEvent = (
   }
 };
 
+const GTAG_POLL_MS = 100;
+
+/** index.html 只在正式網域才設 __GA4_ID__ 並載入 gtag；其他網域（localhost／預覽）永遠不會有 gtag。 */
+const isGaExpected = () => typeof window !== 'undefined' && Boolean(window.__GA4_ID__);
+
+/**
+ * gtag 就緒就執行 run；index.html 會延遲 500ms 才定義 gtag，所以短暫輪詢。
+ * 這個網域根本不載入 GA、或等超過 maxWaitMs，就呼叫 giveUp（不會再回頭）。
+ */
+const whenGtagReady = (run: () => void, giveUp: () => void, maxWaitMs: number) => {
+  if (window.gtag) {
+    run();
+    return;
+  }
+  if (!isGaExpected()) {
+    giveUp();
+    return;
+  }
+
+  const startedAt = Date.now();
+  const timer = window.setInterval(() => {
+    if (window.gtag) {
+      window.clearInterval(timer);
+      run();
+    } else if (Date.now() - startedAt >= maxWaitMs) {
+      window.clearInterval(timer);
+      giveUp();
+    }
+  }, GTAG_POLL_MS);
+};
+
+/**
+ * 與 trackEvent 相同，但 gtag 還沒就緒時改成短暫輪詢，而不是直接丟掉事件。
+ * 給「App 一掛載就觸發」的事件用（例如 points_sync_rejected）。逾時（預設 8 秒）就靜默放棄。
+ */
+export const trackEventWhenReady = (
+  eventName: string,
+  eventParams?: Record<string, any>,
+  maxWaitMs = 8000
+) => {
+  if (typeof window === 'undefined') return;
+  whenGtagReady(() => trackEvent(eventName, eventParams), () => {}, maxWaitMs);
+};
+
+/**
+ * 「頁面馬上要離開」也要送到的事件：等 gtag 就緒 -> 以 beacon 傳輸送出 -> 收到 gtag 的
+ * event_callback 才 resolve。maxWaitMs（預設 1500ms）內無論如何都會 resolve（gtag 被擋、
+ * 非正式網域、網路慢），所以呼叫端可以安全地「await 它再關視窗／導頁」而不會卡住。
+ */
+export const trackEventReliably = (
+  eventName: string,
+  eventParams?: Record<string, any>,
+  maxWaitMs = DELIVERY_MAX_WAIT_MS
+): Promise<void> =>
+  new Promise<void>((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve();
+      return;
+    }
+
+    const startedAt = Date.now();
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(cap);
+      resolve();
+    };
+    const cap = window.setTimeout(finish, maxWaitMs);
+
+    whenGtagReady(
+      () => {
+        window.gtag!('event', eventName, withSiteId({
+          ...eventParams,
+          transport_type: 'beacon',
+          event_callback: finish,
+          event_timeout: Math.max(0, maxWaitMs - (Date.now() - startedAt)),
+        }));
+      },
+      finish,
+      maxWaitMs,
+    );
+  });
+
 export type UtmParams = {
   utm_source?: string;
   utm_medium?: string;
@@ -272,7 +357,7 @@ export const trackUtmLanding = (input?: string) => {
  * 舊版曾經讓 cookie 優先於 redirect_to，會讓「passport → kiwimu 測驗 → 回來登入」這種
  * 案例被幾天前的 from 蓋成 source_site=passport，而不是正確的 mbti_lab。
  */
-export const trackAuthConversion = (isNewUser: boolean, sourceUrl?: string) => {
+export const trackAuthConversion = (isNewUser: boolean, sourceUrl?: string): Promise<void> => {
   const initialParams = new URLSearchParams(
     typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ || window.location.search : '',
   );
@@ -287,11 +372,16 @@ export const trackAuthConversion = (isNewUser: boolean, sourceUrl?: string) => {
   const utmParams = compactUtmParams(
     getUtmParamsFromUrl(typeof window !== 'undefined' ? window.__PASSPORT_INITIAL_SEARCH__ : undefined),
   );
-  trackEvent(isNewUser ? 'sign_up' : 'login', {
+  // 登入完成後頁面會立刻關閉（SSO popup）或導頁，gtag 又要 500ms 才就緒：改走 ready-aware + beacon +
+  // event_callback，並註冊成 pending delivery，讓 ssoBroker／handleSignedInUser 在關窗／導頁前
+  // 等它送完（最久 1500ms，見 src/lib/deliveryGate.ts）。
+  const delivery = trackEventReliably(isNewUser ? 'sign_up' : 'login', {
     method: 'google',
     source_site: sourceSite,
     ...utmParams,
   });
+  registerPendingDelivery(delivery);
+  return delivery;
 };
 
 /**

@@ -1,3 +1,5 @@
+import { runAfterPendingDelivery } from './deliveryGate';
+
 export const SSO_BROKER_MODE_KEY = 'kiwimu_sso_broker_mode';
 export const SSO_BROKER_MODE_POPUP = 'popup';
 export const SSO_BROKER_MESSAGE_TYPE = 'kiwimu:sso:complete';
@@ -77,13 +79,17 @@ export function notifySsoBrokerComplete(
     ...(message ? { message } : {}),
   };
 
-  window.opener.postMessage(payload, targetOrigin);
-  clearSsoBrokerMode();
-
-  window.setTimeout(() => {
-    window.close();
-    window.location.replace(redirectTo);
-  }, 120);
+  // 來源站收到完成訊息就可能關閉 popup；訊息本身也必須等登入事件送出。
+  runAfterPendingDelivery(() => {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(payload, targetOrigin);
+    }
+    clearSsoBrokerMode();
+    window.setTimeout(() => {
+      window.close();
+      window.location.replace(redirectTo);
+    }, 120);
+  });
 
   return true;
 }

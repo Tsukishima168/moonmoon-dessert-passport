@@ -122,6 +122,15 @@
         ];
         // R6: 'email' 一律視為敏感參數清掉（不論是誰帶進來的），避免個資殘留在網址列讓 GA 記到。
         const sensitiveParams = ['claim', 'claim_code', 'reward', 'email'];
+        // Gacha → Passport 積分同步參數（?action=add_points&amount=&source=&ts=&device_id=）：
+        // 金額、時間戳、device_id 都不該進 GA4 page_location。`source` 已在上面 trackingParams；
+        // `amount`／`device_id`／`ts` 在本站沒有其他用途，一律清；`action` 只在值為 add_points 時清。
+        // App 端仍讀得到：上面已把清理前的原始 query 存進 window.__PASSPORT_INITIAL_SEARCH__，
+        // passportUtils.handleIncomingPointsSync 與 App.tsx 都從那裡讀，不讀被清過的 location.search。
+        const pointsSyncParams = ['amount', 'device_id', 'ts'];
+        if (url.searchParams.get('action') === 'add_points') {
+          pointsSyncParams.push('action');
+        }
         // OAuth callback 一定帶非空 state；用 getAll + trim 同時收斂兩個 edge：
         //   - `?state=%20` 純空白 state 不被當成 OAuth state，reward+code 仍會被清
         //   - `?state=&state=REAL` 重複 state 不會被第一個空值矇騙，誤刪真實 OAuth code
@@ -131,9 +140,11 @@
         const paramsToScrub = hasRewardClaimCode ? [...sensitiveParams, 'code'] : sensitiveParams;
         const hasSensitiveClaimParam = paramsToScrub.some((param) => url.searchParams.has(param));
         const hasTrackingParam = trackingParams.some((param) => url.searchParams.has(param));
+        const hasPointsSyncParam = pointsSyncParams.some((param) => url.searchParams.has(param));
 
-        if (hasSensitiveClaimParam || hasTrackingParam) {
+        if (hasSensitiveClaimParam || hasTrackingParam || hasPointsSyncParam) {
           trackingParams.forEach((param) => url.searchParams.delete(param));
+          pointsSyncParams.forEach((param) => url.searchParams.delete(param));
           paramsToScrub.forEach((param) => url.searchParams.delete(param));
           const nextSearch = url.searchParams.toString();
           window.history.replaceState({}, '', `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`);

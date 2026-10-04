@@ -21,6 +21,7 @@ import { saveStoredMbtiResult } from './src/lib/mbtiResult';
 import { syncAttributionFromUrl } from './src/lib/attribution';
 import {
   trackEvent,
+  trackEventWhenReady,
   trackDessertView,
   trackButtonClick,
   trackTimeSpent,
@@ -436,20 +437,26 @@ function App() {
   // Handle cross-site points sync from Gacha redirect URL
   useEffect(() => {
     const result = handleIncomingPointsSync();
-    if (!result?.credited) return;
+    if (!result) return;
 
-    trackEvent('points_sync_received', {
-      source: 'gacha',
-      points: result.credited,
-    });
+    if ('rejected' in result) {
+      // 只送原因代碼，不帶 amount／device_id／ts 等任何可識別或可重放的值。
+      trackEventWhenReady('points_sync_rejected', { reason: result.rejected });
+      return;
+    }
 
-    document.dispatchEvent(new CustomEvent('kiwimu:points_earned', {
-      detail: {
-        points: result.credited,
-        action: 'gacha_earn',
-        description: `扭蛋同步 +${result.credited} 積分`,
-      },
-    }));
+    // 不帶金額或任何 id；被截斷（超過單次／日額度，多的作廢）時只標 capped。
+    trackEventWhenReady(
+      'points_sync_received',
+      result.capped ? { source: 'gacha', capped: true } : { source: 'gacha', points: result.credited, capped: false },
+    );
+
+    // 額度用完的同步入帳 0：不需要開護照。
+    if (result.credited <= 0) return;
+
+    // 注意：這裡不能再 dispatch 'kiwimu:points_earned'。handleIncomingPointsSync 已經入帳
+    // （並發出 passport-points-updated 更新畫面），而 PassportScreen 掛載時（網址帶 add_points 會直接
+    // 開護照）會監聽 kiwimu:points_earned 並再呼叫 addPassportPoints，等於同一筆同步被入帳兩次。
 
     // Open passport directly so users can immediately see updated points
     setPassportTab('hub');
@@ -486,7 +493,9 @@ function App() {
     const pendingRewardClaim = readPendingRewardClaim();
     const rewardParam = params.get('reward') || pendingRewardClaim?.rewardId || null;
     const claimCodeParam = getRewardClaimCodeParam(params) || pendingRewardClaim?.code || null;
-    const debugParam = params.get('debug');
+    // Debug 後門只存在於開發建置：正式站 import.meta.env.DEV 為 false，?debug=1 完全是 no-op
+    // （不改 localStorage、不送事件），整段在 production bundle 內會被 tree-shake 掉。
+    const isDebugAllStamps = import.meta.env.DEV && params.get('debug') === '1';
     const mbtiType = params.get('mbti_type');
     const autoUnlock = params.get('auto_unlock');
     const variant = params.get('variant');
@@ -496,15 +505,15 @@ function App() {
       scrubSensitiveClaimParamsFromUrl();
     }
 
-    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !claimCodeParam) && debugParam !== '1' && !(autoUnlock === 'true' && mbtiType)) {
+    if (!stampParam && !unlockParam && !claimParam && (!rewardParam || !claimCodeParam) && !isDebugAllStamps && !(autoUnlock === 'true' && mbtiType)) {
       return;
     }
 
     void (async () => {
       let stampUnlocked = false;
 
-      // Debug mode: unlock all stamps
-      if (debugParam === '1') {
+      // Debug mode: unlock all stamps（僅開發建置；見上方 isDebugAllStamps）
+      if (isDebugAllStamps) {
         try {
           localStorage.setItem('moonmoon_passport', JSON.stringify({
             unlockedStamps: [

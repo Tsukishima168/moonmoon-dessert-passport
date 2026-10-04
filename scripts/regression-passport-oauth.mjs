@@ -1,11 +1,14 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
 const read = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
+const require = createRequire(import.meta.url);
 
 function assert(condition, message) {
   if (!condition) {
@@ -266,6 +269,469 @@ assert(rewardsApi.includes("supabase.rpc('redeem_reward_item'"), 'Rewards API mu
 assert(rewardShop.includes('redeemRewardItem({'), 'RewardShop must call the server redemption RPC');
 assert(!rewardShop.includes('redeemItem(pendingReward.id)'), 'RewardShop must not deduct points locally before server redemption');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 安全回歸：debug=1 後門 / add_points 憑空加分 / 同步參數洩漏進 GA4
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 把真正的 src/lib/pointsSyncGuard.ts 轉譯後實跑（Node 20 CI 也能跑，不依賴原生 TS 支援；
+// 該檔刻意零 import，所以可以直接當 data: module 載入）。
+async function loadTsModule(relativePath, instanceSalt = '') {
+  const ts = require('typescript');
+  const { outputText } = ts.transpileModule(read(relativePath), {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  });
+  // instanceSalt 讓同一支檔案能載入成互不共用模組狀態的獨立實例（deliveryGate 有模組層級的 pending 集合）。
+  return import(`data:text/javascript;base64,${Buffer.from(`${outputText}\n// ${instanceSalt}`).toString('base64')}`);
+}
+
+const guard = await loadTsModule('src/lib/pointsSyncGuard.ts');
+const { MAX_PER_SYNC, MAX_PER_DAY, POINTS_SYNC_WINDOW_MS, POINTS_SYNC_LEDGER_KEY, POINTS_SYNC_LAST_TS_KEY } = guard;
+
+assert(Number.isInteger(MAX_PER_SYNC) && MAX_PER_SYNC > 0, 'MAX_PER_SYNC must be a positive integer');
+assert(Number.isInteger(MAX_PER_DAY) && MAX_PER_DAY >= MAX_PER_SYNC, 'MAX_PER_DAY must be >= MAX_PER_SYNC');
+// Gacha 單抽最高 200（月光球）。上限若被誤調到單抽最高值以下，合法同步會被擋；若放太高則失去意義。
+assert(MAX_PER_SYNC >= 200 && MAX_PER_SYNC <= 1000, 'MAX_PER_SYNC outside the sane band for Gacha (single draw max is 200)');
+assert(MAX_PER_DAY <= 2000, 'MAX_PER_DAY too high to be a meaningful abuse cap');
+
+const GACHA_REFERRER = 'https://gacha.kiwimu.com/';
+// vercel 別名讀不到 .kiwimu.com 的 ACK cookie（Gacha 游標不會前進、會被無限重複入帳），所以不在允許清單內。
+const GACHA_ALIAS_REFERRER = 'https://moonmoon-gacha.vercel.app/some/path?x=1';
+const T0 = Date.UTC(2026, 9, 4, 12, 0, 0);
+
+function makeSyncHarness() {
+  const store = new Map();
+  const harness = {
+    credited: [],
+    acks: [],
+    cleaned: 0,
+    searchCleared: 0,
+    storage: {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, value) => void store.set(key, String(value)),
+    },
+    run({ query, referrer = GACHA_REFERRER, now = T0 }) {
+      return guard.processIncomingPointsSync({
+        search: query,
+        referrer,
+        now,
+        storage: harness.storage,
+        credit: (amount) => harness.credited.push(amount),
+        writeAck: (ts) => harness.acks.push(ts),
+        cleanUrl: () => {
+          harness.cleaned += 1;
+        },
+        clearInitialSearch: () => {
+          harness.searchCleared += 1;
+        },
+      });
+    },
+  };
+  return harness;
+}
+
+const syncQuery = ({ amount = '50', ts = '1790000000000', source = 'gacha', action = 'add_points' } = {}) =>
+  `?action=${action}&amount=${amount}&source=${source}&device_id=11111111-2222-3333-4444-555555555555&ts=${ts}&from=gacha_store`;
+
+// 1) 合法的 Gacha 同步要能入帳（正式站與 vercel 別名都算），並寫 ACK、清網址、記流水
+for (const referrer of [GACHA_REFERRER, 'https://gacha.kiwimu.com', 'https://gacha.kiwimu.com/some/path?x=1']) {
+  const h = makeSyncHarness();
+  const result = h.run({ query: syncQuery(), referrer });
+  assertEqual(JSON.stringify(result), '{"credited":50,"capped":false}', `valid gacha sync from ${referrer} must credit 50`);
+  assertEqual(JSON.stringify(h.credited), '[50]', `credit calls for ${referrer}`);
+  assertEqual(JSON.stringify(h.acks), '["1790000000000"]', `ACK for accepted sync ${referrer}`);
+  assertEqual(String(h.cleaned), '1', `URL cleaned for accepted sync ${referrer}`);
+  assertEqual(String(h.searchCleared), '1', `initial search cleared for accepted sync ${referrer}`);
+  assertEqual(h.storage.getItem(POINTS_SYNC_LAST_TS_KEY), '1790000000000', 'accepted sync must remember ts');
+  assertEqual(String(guard.parseSyncLedger(h.storage.getItem(POINTS_SYNC_LEDGER_KEY)).length), '1', 'accepted sync must add a ledger entry');
+}
+
+// 2) 沒有 referrer／外站 referrer／長得像但不是 gacha 的 referrer 一律拒絕，且不入帳、不寫 ACK
+const badReferrers = [
+  '',
+  GACHA_ALIAS_REFERRER,
+  'https://evil.example/',
+  'https://gacha.kiwimu.com.evil.example/',
+  'https://evil.example/?next=https://gacha.kiwimu.com/',
+  'https://gacha.kiwimu.com@evil.example/',
+  'http://gacha.kiwimu.com/',
+  'https://gacha.kiwimu.com:8443/',
+  'https://shop.kiwimu.com/',
+  'https://passport.kiwimu.com/',
+  'https://kiwimu.com/',
+  'not a url',
+];
+for (const referrer of badReferrers) {
+  const h = makeSyncHarness();
+  const result = h.run({ query: syncQuery(), referrer });
+  assertEqual(JSON.stringify(result), '{"rejected":"referrer"}', `referrer ${JSON.stringify(referrer)} must be rejected`);
+  assertEqual(JSON.stringify(h.credited), '[]', `no credit for referrer ${JSON.stringify(referrer)}`);
+  assertEqual(JSON.stringify(h.acks), '[]', `no ACK for rejected referrer ${JSON.stringify(referrer)}`);
+  assertEqual(String(h.cleaned), '1', `URL still cleaned for rejected referrer ${JSON.stringify(referrer)}`);
+  assertEqual(String(h.searchCleared), '1', `initial search still cleared for rejected referrer ${JSON.stringify(referrer)}`);
+  assertEqual(String(h.storage.getItem(POINTS_SYNC_LAST_TS_KEY)), 'null', 'rejected sync must not record ts');
+  assertEqual(String(h.storage.getItem(POINTS_SYNC_LEDGER_KEY)), 'null', 'rejected sync must not touch the ledger');
+}
+
+// 3) 金額：嚴格整數 1..MAX_PER_SYNC
+for (const amount of ['0', '-5', '1.5', '1e3', '+5', '12abc', '%205', '05', 'NaN', 'Infinity', '0x10']) {
+  const h = makeSyncHarness();
+  const result = h.run({ query: syncQuery({ amount }) });
+  assertEqual(JSON.stringify(result), '{"rejected":"amount_invalid"}', `amount ${amount} must be invalid`);
+  assertEqual(JSON.stringify(h.credited), '[]', `no credit for amount ${amount}`);
+}
+// 超過單次上限不是拒絕：入帳 MAX_PER_SYNC、視為同步完成（寫 ACK，多的作廢）、事件標 capped
+for (const amount of [String(MAX_PER_SYNC + 1), '99999999', '9'.repeat(400)]) {
+  const h = makeSyncHarness();
+  const result = h.run({ query: syncQuery({ amount }) });
+  assertEqual(JSON.stringify(result), `{"credited":${MAX_PER_SYNC},"capped":true}`, `amount ${amount.slice(0, 12)} must be truncated to the per-sync cap`);
+  assertEqual(JSON.stringify(h.credited), `[${MAX_PER_SYNC}]`, 'over-cap sync must credit exactly the cap');
+  assertEqual(JSON.stringify(h.acks), '["1790000000000"]', 'over-cap sync must still write the ACK (excess is forfeited)');
+  assertEqual(h.storage.getItem(POINTS_SYNC_LAST_TS_KEY), '1790000000000', 'over-cap sync must record ts');
+}
+for (const amount of ['1', String(MAX_PER_SYNC)]) {
+  const h = makeSyncHarness();
+  const result = h.run({ query: syncQuery({ amount }) });
+  assertEqual(JSON.stringify(result), `{"credited":${amount},"capped":false}`, `boundary amount ${amount} must be accepted untruncated`);
+}
+
+// 4) 缺參數／ts 格式不對 = params_invalid；不是 add_points = 完全不碰（null 且不清網址）
+for (const query of [
+  '?action=add_points&source=gacha&ts=1790000000000',
+  '?action=add_points&amount=50&ts=1790000000000',
+  '?action=add_points&amount=50&source=gacha',
+  '?action=add_points&amount=50&source=gacha&ts=abc',
+  '?action=add_points&amount=50&source=gacha&ts=-1',
+  '?action=add_points&amount=50&source=gacha&ts=12345678901234567',
+]) {
+  const h = makeSyncHarness();
+  assertEqual(JSON.stringify(h.run({ query })), '{"rejected":"params_invalid"}', `params must be invalid: ${query}`);
+  assertEqual(JSON.stringify(h.credited), '[]', `no credit for ${query}`);
+}
+{
+  const h = makeSyncHarness();
+  assertEqual(String(h.run({ query: '?action=something_else&amount=50&source=gacha&ts=1' })), 'null', 'non add_points action must be ignored');
+  assertEqual(String(h.run({ query: '' })), 'null', 'empty query must be ignored');
+  assertEqual(String(h.cleaned), '0', 'ignored queries must not touch the URL');
+}
+
+// 5) 滾動 24 小時總量：入帳量截斷到剩餘額度（額度用完入帳 0 但仍寫 ACK），視窗過去後恢復
+{
+  const h = makeSyncHarness();
+  let ts = 1790000000000;
+  const attempt = (amount, now) => h.run({ query: syncQuery({ amount: String(amount), ts: String(ts++) }), now });
+  let total = 0;
+  while (total + MAX_PER_SYNC <= MAX_PER_DAY) {
+    assertEqual(JSON.stringify(attempt(MAX_PER_SYNC, T0)), `{"credited":${MAX_PER_SYNC},"capped":false}`, 'sync within day cap must be accepted');
+    total += MAX_PER_SYNC;
+  }
+  const remaining = MAX_PER_DAY - total;
+  if (remaining > 0) {
+    assertEqual(JSON.stringify(attempt(remaining + 1, T0)), `{"credited":${remaining},"capped":true}`, 'sync that overflows the day cap must credit only the remaining allowance');
+    total += remaining;
+    assertEqual(String(h.acks.length), String(ts - 1790000000000), 'every truncated sync must still write an ACK');
+  }
+  assertEqual(String(total), String(MAX_PER_DAY), 'accepted total must equal MAX_PER_DAY');
+  const creditsBeforeExhausted = h.credited.length;
+  const ackBeforeExhausted = h.acks.length;
+  assertEqual(JSON.stringify(attempt(50, T0)), '{"credited":0,"capped":true}', 'once the allowance is exhausted a sync credits 0 but completes');
+  assertEqual(String(h.credited.length), String(creditsBeforeExhausted), 'exhausted allowance must not call credit');
+  assertEqual(String(h.acks.length), String(ackBeforeExhausted + 1), 'exhausted allowance must still write the ACK so Gacha moves its cursor');
+  assertEqual(JSON.stringify(attempt(50, T0 + POINTS_SYNC_WINDOW_MS - 1)), '{"credited":0,"capped":true}', 'still exhausted 1ms before the window closes');
+  assertEqual(JSON.stringify(attempt(50, T0 + POINTS_SYNC_WINDOW_MS)), '{"credited":50,"capped":false}', 'allowance must come back once the 24h window has passed');
+  assertEqual(String(h.credited.reduce((a, b) => a + b, 0)), String(total + 50), 'total credited must match what was actually credited');
+}
+
+// 6) 重複 ts：沿用舊行為（補 ACK、清網址、回 null、不重複入帳）；但外站 referrer 的重複請求不能拿到 ACK
+{
+  const h = makeSyncHarness();
+  assertEqual(JSON.stringify(h.run({ query: syncQuery() })), '{"credited":50,"capped":false}', 'first sync credits');
+  assertEqual(String(h.run({ query: syncQuery() })), 'null', 'duplicate ts must return null');
+  assertEqual(JSON.stringify(h.credited), '[50]', 'duplicate ts must not credit twice');
+  assertEqual(JSON.stringify(h.acks), '["1790000000000","1790000000000"]', 'duplicate ts must re-write the ACK');
+  assertEqual(
+    JSON.stringify(h.run({ query: syncQuery(), referrer: 'https://evil.example/' })),
+    '{"rejected":"referrer"}',
+    'duplicate ts from a foreign referrer must still be rejected',
+  );
+  assertEqual(String(h.acks.length), '2', 'foreign duplicate must not write an ACK');
+}
+
+// 7) 被拒絕不會「毒化」之後的合法同步；壞掉的流水資料視為空
+{
+  const h = makeSyncHarness();
+  h.run({ query: syncQuery(), referrer: '' });
+  assertEqual(JSON.stringify(h.run({ query: syncQuery() })), '{"credited":50,"capped":false}', 'valid sync after a rejected one must still credit');
+
+  const corrupt = makeSyncHarness();
+  corrupt.storage.setItem(POINTS_SYNC_LEDGER_KEY, '{not json');
+  assertEqual(JSON.stringify(corrupt.run({ query: syncQuery() })), '{"credited":50,"capped":false}', 'corrupt ledger must be treated as empty');
+  corrupt.storage.setItem(POINTS_SYNC_LEDGER_KEY, JSON.stringify([{ at: 'x', amount: 'y' }, null, 5, { at: T0, amount: -100 }]));
+  assertEqual(JSON.stringify(corrupt.run({ query: syncQuery({ ts: '1790000000001' }) })), '{"credited":50,"capped":false}', 'malformed ledger entries must be ignored, not trusted');
+}
+
+// 8) 真的執行 index.html 的早期 scrubber：同步參數不得留在網址（GA4 page_location 來源），
+//    但原始 query 要保留在 window.__PASSPORT_INITIAL_SEARCH__ 給 App 讀；OAuth／claim 邏輯不能被誤傷
+function runEarlyScrubber(href) {
+  const code = [...indexHtml.matchAll(/<script>\s*([\s\S]*?)<\/script>/g)]
+    .map((match) => match[1])
+    .find((body) => body.includes('__PASSPORT_INITIAL_SEARCH__'));
+  assert(code, 'index.html early scrubber script not found');
+
+  const location = new URL(href);
+  const replaced = [];
+  const meta = { setAttribute() {} };
+  const windowStub = {
+    location,
+    history: { replaceState: (_state, _title, next) => replaced.push(next) },
+  };
+  const documentStub = {
+    head: { appendChild() {} },
+    querySelector: () => meta,
+    createElement: () => meta,
+  };
+  vm.runInNewContext(code, { window: windowStub, document: documentStub, URL });
+  return {
+    initialSearch: windowStub.__PASSPORT_INITIAL_SEARCH__,
+    replaced,
+    finalSearch: replaced.length ? new URL(replaced[replaced.length - 1], href).search : location.search,
+  };
+}
+
+{
+  const original = syncQuery();
+  const scrubbed = runEarlyScrubber(`https://passport.kiwimu.com/${original}`);
+  assertEqual(scrubbed.initialSearch, original, 'scrubber must preserve the original query in __PASSPORT_INITIAL_SEARCH__');
+  for (const param of ['action', 'amount', 'source', 'ts', 'device_id']) {
+    assert(!new URLSearchParams(scrubbed.finalSearch).has(param), `scrubber must remove ${param} before GA4 reads the URL`);
+  }
+  assertEqual(scrubbed.finalSearch, '', 'sync-only URL must end up with an empty query');
+
+  const mixed = runEarlyScrubber('https://passport.kiwimu.com/?tab=rewards&action=add_points&amount=7&ts=9&device_id=abc&source=gacha');
+  assertEqual(mixed.finalSearch, '?tab=rewards', 'scrubber must keep unrelated params');
+
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?amount=5').finalSearch, '', 'bare amount must be scrubbed');
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?ts=5&device_id=abc').finalSearch, '', 'bare ts/device_id must be scrubbed');
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?action=other').replaced.length, 0, 'non add_points action must be left alone');
+
+  // 既有 OAuth／claim 行為不變
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?code=ABC&state=XYZ').replaced.length, 0, 'OAuth code+state must not be scrubbed');
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?reward=easter&code=test').finalSearch, '', 'reward claim code must still be scrubbed');
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?claim=abc').finalSearch, '', 'claim must still be scrubbed');
+  assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?email=a%40b.com').finalSearch, '', 'email must still be scrubbed');
+}
+
+// 8b) 處理完要把同步參數從 __PASSPORT_INITIAL_SEARCH__ 拿掉（避免 remount 重放），但保留 from／utm 歸因
+assertEqual(
+  guard.stripPointsSyncParams('?action=add_points&amount=5&source=gacha&ts=1&device_id=x&from=gacha_store&utm_source=a'),
+  '?from=gacha_store&utm_source=a',
+  'stripPointsSyncParams must keep attribution params',
+);
+assertEqual(guard.stripPointsSyncParams(syncQuery()), '?from=gacha_store', 'stripPointsSyncParams must drop every sync param');
+assertEqual(guard.stripPointsSyncParams('?action=add_points&amount=5&source=gacha&ts=1&device_id=x'), '', 'stripPointsSyncParams of a sync-only query is empty');
+assertEqual(guard.stripPointsSyncParams(''), '', 'stripPointsSyncParams of an empty query is empty');
+
+// 8c) GA4 sign_up／login 送達閘門：關 popup／導頁前要等事件送完，最久 maxWait，不會卡住使用者
+{
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const runGate = async (gate, { maxWaitMs, before }) => {
+    const startedAt = Date.now();
+    const runs = [];
+    before?.();
+    gate.runAfterPendingDelivery(() => runs.push(Date.now() - startedAt), maxWaitMs);
+    return { runs, startedAt, sleep };
+  };
+
+  assertEqual(String((await loadTsModule('src/lib/deliveryGate.ts', 'const')).DELIVERY_MAX_WAIT_MS), '1500', 'delivery gate max wait must stay 1500ms');
+
+  // (a) 沒有 pending：不延遲（只讓出一個 tick），且是非同步執行
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'a');
+    const { runs } = await runGate(gate, { maxWaitMs: 500 });
+    assertEqual(String(runs.length), '0', 'gate must not run synchronously');
+    await sleep(60);
+    assertEqual(String(runs.length), '1', 'gate with nothing pending must run right away');
+    assert(runs[0] < 50, `gate with nothing pending ran too late (${runs[0]}ms)`);
+  }
+
+  // (b) pending 在 maxWait 之前完成：等到完成才執行，且只執行一次
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'b');
+    const { runs } = await runGate(gate, { maxWaitMs: 800, before: () => gate.registerPendingDelivery(sleep(150)) });
+    await sleep(60);
+    assertEqual(String(runs.length), '0', 'gate must wait while a delivery is in flight');
+    await sleep(250);
+    assertEqual(String(runs.length), '1', 'gate must run exactly once after the delivery completes');
+    assert(runs[0] >= 140 && runs[0] < 600, `gate should run when the delivery completes, not at the timeout (${runs[0]}ms)`);
+  }
+
+  // (c) pending 永遠不完成：到 maxWait 照樣執行
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'c');
+    const { runs } = await runGate(gate, { maxWaitMs: 200, before: () => gate.registerPendingDelivery(new Promise(() => {})) });
+    await sleep(120);
+    assertEqual(String(runs.length), '0', 'gate must still be waiting before the timeout');
+    await sleep(250);
+    assertEqual(String(runs.length), '1', 'gate must give up and run at the timeout');
+    assert(runs[0] >= 190 && runs[0] < 600, `gate should run at the timeout (${runs[0]}ms)`);
+  }
+
+  // (d) 模擬 supabase-js 的順序：導頁決策先排隊，SIGNED_IN（註冊 pending）在 setTimeout(0) 才發生，
+  //     閘門仍要等到那筆 pending 完成
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'd');
+    const { runs } = await runGate(gate, {
+      maxWaitMs: 800,
+      before: () => setTimeout(() => gate.registerPendingDelivery(sleep(150)), 0),
+    });
+    await sleep(80);
+    assertEqual(String(runs.length), '0', 'a delivery registered one tick later must still hold the redirect');
+    await sleep(250);
+    assertEqual(String(runs.length), '1', 'redirect must run once after the late-registered delivery completes');
+  }
+
+  // (e) pending 失敗（reject）也算完成，不能卡住也不能產生 unhandled rejection
+  {
+    const gate = await loadTsModule('src/lib/deliveryGate.ts', 'e');
+    let unhandled = 0;
+    const onUnhandled = () => {
+      unhandled += 1;
+    };
+    process.on('unhandledRejection', onUnhandled);
+    const { runs } = await runGate(gate, {
+      maxWaitMs: 800,
+      before: () => gate.registerPendingDelivery(sleep(30).then(() => Promise.reject(new Error('boom')))),
+    });
+    await sleep(200);
+    process.off('unhandledRejection', onUnhandled);
+    assertEqual(String(runs.length), '1', 'a failed delivery must release the gate');
+    assertEqual(String(unhandled), '0', 'a failed delivery must not leak an unhandled rejection');
+  }
+}
+
+// 9) 原始碼層面的鎖：debug 只在 DEV、同步讀原始 query、拒絕事件不帶金額
+assert(
+  appTsx.includes("const isDebugAllStamps = import.meta.env.DEV && params.get('debug') === '1';"),
+  'App.tsx debug=1 all-stamps branch must be gated by import.meta.env.DEV',
+);
+assert(!appTsx.includes('debugParam'), 'App.tsx must not read the debug param outside the DEV gate');
+assert(
+  appTsx.includes("trackEventWhenReady('points_sync_rejected', { reason: result.rejected });"),
+  'App.tsx must report rejected syncs with reason only (no amount/device_id)',
+);
+const passportUtilsTs = read('passportUtils.ts');
+assert(passportUtilsTs.includes('__PASSPORT_INITIAL_SEARCH__'), 'handleIncomingPointsSync must read the pre-scrub query');
+assert(passportUtilsTs.includes('processIncomingPointsSync({'), 'handleIncomingPointsSync must delegate to the guard');
+assert(passportUtilsTs.includes('`max-age=${30 * 24 * 60 * 60}`'), 'ACK cookie must live 30 days (Gacha deletes it when read)');
+assert(passportUtilsTs.includes('clearInitialSearch: () => {') && passportUtilsTs.includes('stripPointsSyncParams(getInitialUrlSearch())'), 'handled syncs must be removed from __PASSPORT_INITIAL_SEARCH__');
+assert(
+  appTsx.includes("'points_sync_received',") && !appTsx.includes("trackEvent('points_sync_received'"),
+  'points_sync_received must go through trackEventWhenReady',
+);
+assert(!appTsx.includes("dispatchEvent(new CustomEvent('kiwimu:points_earned'"), 'App must not re-dispatch kiwimu:points_earned after a sync (PassportScreen would credit it a second time)');
+assert(!passportUtilsTs.includes("params.get('amount')"), 'passportUtils must not parse the amount outside the guard');
+// sign_up／login 必須「真的送到」才能離開頁面
+const analyticsSource = read('analytics.ts');
+const authReliable = analyticsSource.slice(analyticsSource.indexOf('export const trackAuthConversion'));
+assert(authReliable.includes("trackEventReliably(isNewUser ? 'sign_up' : 'login', {"), 'trackAuthConversion must send sign_up/login through the reliable path');
+assert(authReliable.includes('registerPendingDelivery(delivery);'), 'trackAuthConversion must register its delivery with the gate');
+assert(analyticsSource.includes("transport_type: 'beacon',") && analyticsSource.includes('event_callback: finish,'), 'reliable events must use beacon transport and event_callback');
+assert(analyticsSource.includes('DELIVERY_MAX_WAIT_MS') && analyticsSource.includes('const cap = window.setTimeout(finish, maxWaitMs);'), 'reliable events must cap their wait');
+assert(
+  ssoBroker.indexOf('runAfterPendingDelivery(() => {') > 0 &&
+    ssoBroker.indexOf('runAfterPendingDelivery(() => {') < ssoBroker.indexOf('window.close();'),
+  'SSO popup close must wait for the pending GA4 delivery',
+);
+assert(
+  ssoBroker.indexOf('runAfterPendingDelivery(() => {') < ssoBroker.indexOf('window.opener.postMessage(payload, targetOrigin);'),
+  'SSO opener notification must wait too: the opener may close the popup immediately',
+);
+assert(!read('vite.config.ts').includes('GEMINI_API_KEY'), 'Passport must not inject server Gemini credentials into its client bundle');
+assert(
+  (authContext.match(/runAfterPendingDelivery\(\(\) => \{/g) || []).length === 2 &&
+    authContext.includes('window.location.href = pendingRedirect;') &&
+    authContext.includes('window.location.href = redirectTo;'),
+  'both post-login redirects must wait for the pending GA4 delivery',
+);
+assert(
+  authContext.indexOf('trackAuthConversion(isNewUser, getPendingRedirectTo() ?? undefined);') <
+    authContext.indexOf('handleSignedInUser(currentUser);\n\n      if (currentUser) {'),
+  'auth conversion must still be tracked before the SIGNED_IN handler may redirect',
+);
+assert(
+  indexHtml.includes("const pointsSyncParams = ['amount', 'device_id', 'ts'];") &&
+    indexHtml.includes("pointsSyncParams.push('action')") &&
+    indexHtml.includes('pointsSyncParams.forEach((param) => url.searchParams.delete(param));'),
+  'index.html must scrub points sync params',
+);
+assert(indexHtml.includes("'source',"), 'index.html trackingParams must keep scrubbing source');
+
+// 實跑 SSO broker：來源站收到 postMessage 會立即關窗，事件仍須先送達。
+{
+  const ts = require('typescript');
+  const compile = (source) => ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022}}).outputText;
+  const dataUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+  const gateUrl = dataUrl(compile(read('src/lib/deliveryGate.ts')) + '\n// broker-order');
+  const gate = await import(gateUrl);
+  const broker = await import(dataUrl(compile(ssoBroker).replace("'./deliveryGate'", JSON.stringify(gateUrl))));
+  const originalWindow = globalThis.window;
+  const originalStorage = globalThis.sessionStorage;
+  const events = [];
+  let release;
+  let closeDone;
+  const closed = new Promise((resolve) => { closeDone = resolve; });
+  try {
+    globalThis.sessionStorage = {getItem: () => 'popup', removeItem: () => events.push('mode-cleared')};
+    globalThis.window = {
+      opener: {closed: false, postMessage: (_payload, origin) => {events.push(`notify:${origin}`);}},
+      setTimeout, close: () => {events.push('close'); closeDone();},
+      location: {replace: () => events.push('redirect')},
+    };
+    gate.registerPendingDelivery(new Promise((resolve) => {release = () => {events.push('delivered'); resolve();};}));
+    assert(broker.notifySsoBrokerComplete('https://kiwimu.com/read/ESTJ-A'), 'broker must accept a valid popup');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert(events.length === 0, 'opener must not be notified while auth delivery is pending');
+    release();
+    await closed;
+    assert(events.indexOf('delivered') < events.indexOf('notify:https://kiwimu.com'), 'delivery must precede opener notification');
+    assert(events.filter((event) => event.startsWith('notify:')).length === 1, 'SSO must notify once');
+    assert(events.indexOf('notify:https://kiwimu.com') < events.indexOf('close'), 'SSO must notify before self close');
+  } finally {
+    globalThis.window = originalWindow;
+    globalThis.sessionStorage = originalStorage;
+  }
+}
+
+// adjust_points 鎖定 migration（草稿，尚未套用；套用由 coordinator 決定）：關鍵條款不得被改掉
+const adjustPointsMigration = read('supabase/migrations/20261004150000_adjust_points_lockdown.sql');
+for (const [needle, label] of [
+  ['create or replace function public.adjust_points(p_amount integer, p_reason text)', 'same signature'],
+  ['set search_path = public', 'pinned search_path'],
+  ["p_reason !~ '^daily_checkin_day_[0-9]+$'", 'reason allowlist'],
+  ['p_amount < 1 or p_amount > c_max_daily_award', 'amount bounds'],
+  ['c_max_daily_award constant integer := 5;', 'max award matches STREAK_BONUS_TABLE (Day 7 = 5)'],
+  ["'Asia/Taipei'", 'Taipei calendar day'],
+  ['for update', 'per-user serialization'],
+  ['revoke execute on function public.adjust_points(integer, text) from public, anon;', 'revoke public/anon'],
+  ['grant execute on function public.adjust_points(integer, text) to authenticated, service_role;', 'grant authenticated/service_role'],
+]) {
+  assert(adjustPointsMigration.includes(needle), `adjust_points migration lost clause: ${label}`);
+}
+assert(read('types/gamification-types.ts').includes('7: 5, // Day 7 大獎'), 'STREAK_BONUS_TABLE max changed: update c_max_daily_award in the adjust_points migration');
+
+// profiles 受保護欄位 trigger migration（草稿，尚未套用）：關鍵條款不得被改掉
+const profilesGuardMigration = read('supabase/migrations/20261004160000_profiles_server_managed_columns_guard.sql');
+for (const [needle, label] of [
+  ["if current_user in ('postgres', 'service_role', 'supabase_admin') then", 'privileged roles pass'],
+  ['before insert or update of points, total_points, tier, v2_unlocked_at on public.profiles', 'trigger events/columns'],
+  ['new.points := 0;', 'INSERT coerces points to 0'],
+  ['if new.points is distinct from old.points then', 'UPDATE rejects points changes'],
+  ["using errcode = '42501'", 'insufficient_privilege errcode'],
+  ['revoke execute on function public.guard_profiles_server_managed_columns() from public, anon, authenticated;', 'trigger fn not directly callable'],
+]) {
+  assert(profilesGuardMigration.includes(needle), `profiles guard migration lost clause: ${label}`);
+}
+assert(!/security\s+definer/i.test(profilesGuardMigration.replace(/--.*$/gm, '')), 'profiles guard trigger function must stay SECURITY INVOKER (current_user must be the caller)');
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
@@ -283,4 +749,17 @@ assert(sw.includes('networkTimeoutSeconds:3'), 'passport-html NetworkFirst timeo
 assert(sw.includes('maxEntries:10'), 'passport-html maxEntries changed');
 assert(!sw.includes('\\bcode='), 'sw.js must not regress to enumerated code denylist');
 
-console.log('OAuth, SSO broker, service-worker, and reward ledger regression checks passed.');
+// production bundle 不得含 debug 後門（import.meta.env.DEV 在 vite build 為 false，整段應被 tree-shake）
+const distAssetsDir = path.join(repoRoot, 'dist', 'assets');
+assert(fs.existsSync(distAssetsDir), 'dist/assets is missing; run npm run build before npm test');
+const distBundle = fs
+  .readdirSync(distAssetsDir)
+  .filter((file) => file.endsWith('.js'))
+  .map((file) => fs.readFileSync(path.join(distAssetsDir, file), 'utf8'))
+  .join('\n');
+assert(!distBundle.includes('debug_passport_unlocked'), 'production bundle must not contain the debug=1 unlock-all-stamps branch');
+assert(!distBundle.includes('Failed to set debug passport state'), 'production bundle must not contain the debug=1 handler');
+assert(distBundle.includes('points_sync_rejected'), 'production bundle must report rejected points syncs');
+assert(distBundle.includes('gacha.kiwimu.com'), 'production bundle must carry the points sync referrer allowlist');
+
+console.log('OAuth, SSO broker, service-worker, reward ledger, points-sync guard, and debug-backdoor regression checks passed.');

@@ -1,5 +1,26 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-10-04 (Codex 接手 Claude 安全修補)
+
+- 修正 SSO opener 通知也等待 sign_up／login 送出，避免來源站提前關窗；實際 broker 時序回歸通過。
+- 移除未使用的 Gemini client define；沿用 Claude debug／points-sync 修補。
+- 兩支 migration 加上鎖等待、statement timeout 與撤銷客戶 TRUNCATE 權限；正式 catalog 證明兩表 RLS 開啟。
+- typecheck、build／regression、SQL sandbox 十案及獨立 code review APPROVE。此處是候選版本驗證，正式部署與 migration 狀態以 canonical SSOT 最新章節為準。
+- 限制：QR／自我申報集章尚未改為伺服器證明，實體獎勵需店員確認；既有 redeem_reward_item 的 device_id 缺漏尚未修復，不應承諾線上兌換成功。
+
+## Snapshot · 2026-10-04 (security: client-side backdoors)
+
+Status: `fix/passport-security-20261004` 已實作與驗證，尚未 push／deploy
+
+- `?debug=1` 全解鎖印章：只在開發建置（`import.meta.env.DEV`）有效；正式 bundle 已 tree-shake 掉，`npm test` 會檢查 `dist/` 不含該分支。
+- `?action=add_points` 積分同步：改由 `src/lib/pointsSyncGuard.ts` 驗證。只有 `document.referrer` origin 不是 `https://gacha.kiwimu.com`（vercel 別名讀不到 `.kiwimu.com` ACK cookie，已移除），或 amount／ts／source 格式不對才拒絕（不入帳、不寫 ACK、送 GA4 `points_sync_rejected`，只帶 `reason`）。通過後入帳 `min(amount, MAX_PER_SYNC=400, 滾動 24 小時剩餘額度 MAX_PER_DAY=600)`，一律寫 ACK（30 天，Gacha 游標前進，超出部分作廢，Penso 2026-10-04 決定），超量時 `points_sync_received` 帶 `capped: true`；重複 ts 只補 ACK。處理完會把同步參數從 `window.__PASSPORT_INITIAL_SEARCH__` 拿掉。
+- App 不再 dispatch `kiwimu:points_earned`：PassportScreen 掛載時會監聽並再入帳一次（實測 50 變 100）。
+- GA4 `sign_up`／`login`：`trackAuthConversion` 改走 ready-aware + beacon + `event_callback`，SSO popup 關閉與登入後導頁會等它送完（最久 1500ms，`src/lib/deliveryGate.ts`）。
+- 草稿 migration `supabase/migrations/20261004150000_adjust_points_lockdown.sql`（尚未套用）：鎖定 `adjust_points`（reason 白名單、1..5、每台北日一次、REVOKE PUBLIC/anon）。注意線上現行函式因 `point_transactions.device_id` NOT NULL 而每次回滾，新版補上 device_id 後簽到同步才會真正運作。另見遺留：`profiles` 對 authenticated 有表級 UPDATE，可繞過 RPC 直接改 `points`。
+- 同步參數（amount／ts／device_id／source／action）由 `index.html` 早期 scrubber 在 GA4 讀網址前清掉；原始 query 留在 `window.__PASSPORT_INITIAL_SEARCH__` 供 App 讀取。
+- 發現：`source` 自 2026-05-21（14d7b23）起被 scrubber 清掉，導致舊的 `handleIncomingPointsSync` 讀不到 `source`，Gacha 同步在本機 build 實測是失效狀態（正式站實際行為尚未驗證，未對正式站做任何測試）。本次修正會讓合法同步恢復運作，部署後請看 GA4 `points_sync_rejected` 的 reason 分佈，特別留意 `referrer`（LINE 內建瀏覽器可能不帶 referrer）；長期玩家的第一次同步會被截斷到 400 並視為完成。
+- 未處理（需伺服器端重新設計）：`?unlock=` QR 解鎖碼、舊的 `?stamp=`、`?auto_unlock=true&mbti_type=`、外部任務（IG／LINE／Google 評論）的「我完成了」按鈕，以及本機積分本身，都仍是純前端信任。
+
 ## Snapshot · 2026-07-15
 
 Status: `五站共用視覺語言已完成本機整合與瀏覽器驗證，尚未 commit／push／deploy`
