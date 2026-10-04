@@ -938,6 +938,47 @@ assert(!lineBindWrapper.includes('Access-Control-Allow-Origin'), 'line-bind must
   assert(!read('src/api/lineBind.ts').includes('profile.userId') && !read('src/api/lineBind.ts').includes("from('profiles')"), 'client bind helper must only forward the LIFF ID token to the server');
 }
 
+// redeem_reward_item device_id 修正 migration（草稿，尚未套用）：只多一欄，其餘行為不得被改掉
+const redeemFixMigration = read('supabase/migrations/20261004180000_redeem_reward_item_device_id.sql');
+const redeemFixSql = redeemFixMigration.replace(/--.*$/gm, '');
+for (const [needle, label] of [
+  ['CREATE OR REPLACE FUNCTION public.redeem_reward_item(p_reward_id text, p_expected_points_cost integer DEFAULT NULL::integer)', 'same signature'],
+  ['SECURITY DEFINER', 'definer'],
+  ["SET search_path TO 'pg_catalog', 'public'", 'pinned search_path'],
+  ['INSERT INTO public.point_transactions (user_id, device_id, points, action, description, source)', 'ledger insert names device_id (NOT NULL, no default)'],
+  ["'server:redeem_reward_item',", 'device_id marker for RPC-generated ledger rows'],
+  ['AND COALESCE(points, 0) >= v_item.points_cost', 'atomic balance check + row lock in one UPDATE'],
+  ["'insufficient_points'", 'insufficient points error'],
+  ["'reward_price_changed'", 'expected-cost mismatch error'],
+  ["'reward_unavailable'", 'inactive/unknown reward error'],
+  ["'profile_not_found'", 'missing profile error'],
+  ["'auth_required'", 'unauthenticated error'],
+  ['FOR v_attempt IN 1..5 LOOP', 'redemption code retry loop'],
+  ['WHEN unique_violation THEN', 'redemption code collision retry'],
+  ['INSERT INTO public.reward_redemptions', 'redemption row'],
+  ['revoke execute on function public.redeem_reward_item(text, integer) from public, anon;', 'revoke public/anon'],
+  ['grant execute on function public.redeem_reward_item(text, integer) to authenticated, service_role;', 'grant authenticated/service_role'],
+]) {
+  assert(redeemFixSql.includes(needle), `redeem_reward_item migration lost clause: ${label}`);
+}
+assert(!/fulfill_reward_redemption_staff/.test(redeemFixSql), 'redeem fix must not touch the staff fulfilment path');
+// 前端必須對 RPC 會回的每一種失敗代碼都有說明，不能落到泛用的「兌換失敗」
+for (const code of [...redeemFixSql.matchAll(/'error',\s*'([a-z_]+)'/g)].map((m) => m[1])) {
+  assert(new RegExp(`\\b${code}:\\s*'`).test(rewardShop), `RewardShop has no user-facing message for redeem error "${code}"`);
+}
+assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"), 'rewards API must surface the RPC error code to the UI');
+// 前端福利清單（constants.tsx）必須與 DB 種子（ledger migration）的 id／點數／分類一致，否則會是 reward_unavailable／reward_price_changed
+{
+  const constantsSource = read('constants.tsx');
+  const itemsBlock = constantsSource.slice(constantsSource.indexOf('REDEEMABLE_ITEMS'));
+  const uiItems = [...itemsBlock.slice(0, itemsBlock.indexOf('];')).matchAll(/id:\s*'([a-z_]+)'[\s\S]*?pointsCost:\s*(\d+),\s*category:\s*'(\w+)'/g)]
+    .map((m) => `${m[1]}|${m[2]}|${m[3]}`).sort();
+  const seededItems = [...rewardLedgerMigration.matchAll(/\('([a-z_]+)',\s*'[^']*',\s*'[^']*',\s*(\d+),\s*'(\w+)',\s*'show-screen',\s*TRUE/g)]
+    .map((m) => `${m[1]}|${m[2]}|${m[3]}`).sort();
+  assert(seededItems.length === 10, `reward_items seed should list 10 rows, found ${seededItems.length}`);
+  assertEqual(uiItems.join(','), seededItems.join(','), 'REDEEMABLE_ITEMS must match the reward_items seed (id|points|category)');
+}
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
