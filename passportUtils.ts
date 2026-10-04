@@ -2,6 +2,7 @@ import { PassportState, Achievement, PointTransaction, RedeemableItem } from './
 import { ACHIEVEMENTS, STAMPS, REDEEMABLE_ITEMS } from './constants';
 import { performCheckin, recordPointTransaction } from './src/lib/checkinService';
 import { getCheckinPoints } from './types/gamification-types';
+import { processIncomingPointsSync, type IncomingPointsSyncResult } from './src/lib/pointsSyncGuard';
 
 const STORAGE_KEY = 'moonmoon_passport';
 const DEVICE_ID_KEY = 'moonmoon_device_id';
@@ -500,54 +501,50 @@ export function getPointsHistory(): PointTransaction[] {
 }
 
 /**
- * Handle incoming points sync from Gacha (via URL params)
- * Call this on Passport page load to credit points from Gacha redirect
+ * 進站當下的原始 query。
+ * index.html 的早期 scrubber 會在 GA4 讀網址前把 amount／ts／device_id／source／action 從網址列
+ * 拿掉，所以這裡不能讀 window.location.search（讀得到的是被清過的版本），必須讀 scrubber
+ * 事先存好的 window.__PASSPORT_INITIAL_SEARCH__（與 App.tsx 的 getInitialUrlSearch 同一份來源）。
  */
-export function handleIncomingPointsSync(): { credited: number } | null {
+const getInitialUrlSearch = (): string => {
+    const initial = (window as Window & { __PASSPORT_INITIAL_SEARCH__?: string }).__PASSPORT_INITIAL_SEARCH__;
+    return initial || window.location.search;
+};
+
+/**
+ * Handle incoming points sync from Gacha (via URL params)
+ * Call this on Passport page load to credit points from Gacha redirect.
+ *
+ * 驗證規則（referrer／金額上限／24 小時總量／重複 ts）全在 src/lib/pointsSyncGuard.ts。
+ * 回傳 { credited } = 已入帳；{ rejected: reason } = 被拒（呼叫端送 points_sync_rejected）；
+ * null = 沒有同步參數，或是已處理過的重複 ts。
+ */
+export function handleIncomingPointsSync(): IncomingPointsSyncResult {
     try {
-        const SYNC_KEY = 'moonmoon_points_last_sync_ts';
         const ACK_COOKIE = 'moonmoon_passport_sync_ack_ts';
         const COOKIE_DOMAIN = '.kiwimu.com';
-        const params = new URLSearchParams(window.location.search);
-        const action = params.get('action');
-        const amount = params.get('amount');
-        const source = params.get('source');
-        const ts = params.get('ts');
 
-        if (action !== 'add_points' || !amount || !source || !ts) return null;
-
-        const pointsAmount = parseInt(amount, 10);
-        if (isNaN(pointsAmount) || pointsAmount <= 0) return null;
-
-        const writeAckCookie = () => {
-            document.cookie = [
-                `${ACK_COOKIE}=${encodeURIComponent(ts)}`,
-                `domain=${COOKIE_DOMAIN}`,
-                'path=/',
-                'max-age=600',
-                'SameSite=Lax',
-            ].join('; ');
-        };
-
-        // Prevent duplicate sync: check if this timestamp was already processed
-        const lastSyncTs = localStorage.getItem(SYNC_KEY);
-        if (lastSyncTs === ts) {
-            writeAckCookie();
-            const cleanUrl = window.location.pathname;
-            window.history.replaceState({}, '', cleanUrl);
-            return null; // Already processed
-        }
-
-        // Credit points
-        addPassportPoints(pointsAmount, 'gacha_earn', `扭蛋同步 +${pointsAmount} 積分`);
-        localStorage.setItem(SYNC_KEY, ts);
-        writeAckCookie();
-
-        // Clean up URL
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, '', cleanUrl);
-
-        return { credited: pointsAmount };
+        return processIncomingPointsSync({
+            search: getInitialUrlSearch(),
+            referrer: document.referrer,
+            now: Date.now(),
+            storage: localStorage,
+            credit: (amount) => {
+                addPassportPoints(amount, 'gacha_earn', `扭蛋同步 +${amount} 積分`);
+            },
+            writeAck: (ts) => {
+                document.cookie = [
+                    `${ACK_COOKIE}=${encodeURIComponent(ts)}`,
+                    `domain=${COOKIE_DOMAIN}`,
+                    'path=/',
+                    'max-age=600',
+                    'SameSite=Lax',
+                ].join('; ');
+            },
+            cleanUrl: () => {
+                window.history.replaceState({}, '', window.location.pathname);
+            },
+        });
     } catch (e) {
         console.error('Failed to process incoming points sync:', e);
         return null;

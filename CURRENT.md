@@ -1,5 +1,15 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-10-04 (security: client-side backdoors)
+
+Status: `fix/passport-security-20261004` 已實作與驗證，尚未 push／deploy
+
+- `?debug=1` 全解鎖印章：只在開發建置（`import.meta.env.DEV`）有效；正式 bundle 已 tree-shake 掉，`npm test` 會檢查 `dist/` 不含該分支。
+- `?action=add_points` 積分同步：改由 `src/lib/pointsSyncGuard.ts` 驗證。必須同時成立才入帳：`document.referrer` origin 是 `https://gacha.kiwimu.com` 或 `https://moonmoon-gacha.vercel.app`；amount 是 1..`MAX_PER_SYNC`(400) 的整數；滾動 24 小時入帳總量 <= `MAX_PER_DAY`(600)；ts 未處理過。被拒不入帳、不寫 ACK cookie、仍清網址，並送 GA4 `points_sync_rejected`（只帶 `reason`）。
+- 同步參數（amount／ts／device_id／source／action）由 `index.html` 早期 scrubber 在 GA4 讀網址前清掉；原始 query 留在 `window.__PASSPORT_INITIAL_SEARCH__` 供 App 讀取。
+- 發現：`source` 自 2026-05-21（14d7b23）起被 scrubber 清掉，導致舊的 `handleIncomingPointsSync` 讀不到 `source`，Gacha 同步在本機 build 實測是失效狀態（正式站實際行為尚未驗證，未對正式站做任何測試）。本次修正會讓合法同步恢復運作，部署後請看 GA4 `points_sync_rejected` 的 reason 分佈，特別留意 `referrer`（LINE 內建瀏覽器可能不帶 referrer）與 `amount_over_cap`（同步失效期間 Gacha 收不到 ACK、游標不會前進，長期玩家的待同步量可能超過單次上限）。
+- 未處理（需伺服器端重新設計）：`?unlock=` QR 解鎖碼、舊的 `?stamp=`、`?auto_unlock=true&mbti_type=`、外部任務（IG／LINE／Google 評論）的「我完成了」按鈕，以及本機積分本身，都仍是純前端信任。
+
 ## Snapshot · 2026-07-15
 
 Status: `五站共用視覺語言已完成本機整合與瀏覽器驗證，尚未 commit／push／deploy`

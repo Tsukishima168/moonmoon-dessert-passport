@@ -142,6 +142,33 @@ export const trackEvent = (
   }
 };
 
+/**
+ * 與 trackEvent 相同，但 gtag 還沒就緒時（index.html 會延遲 500ms 才載入 gtag）改成短暫輪詢，
+ * 而不是直接丟掉事件。給「App 一掛載就觸發」的事件用（例如 points_sync_rejected）。
+ * 逾時（預設 8 秒）就靜默放棄，例如 localhost／預覽網址本來就不載入 gtag。
+ */
+export const trackEventWhenReady = (
+  eventName: string,
+  eventParams?: Record<string, any>,
+  maxWaitMs = 8000
+) => {
+  if (typeof window === 'undefined') return;
+  if (window.gtag) {
+    trackEvent(eventName, eventParams);
+    return;
+  }
+
+  const startedAt = Date.now();
+  const timer = window.setInterval(() => {
+    if (window.gtag) {
+      window.clearInterval(timer);
+      trackEvent(eventName, eventParams);
+    } else if (Date.now() - startedAt >= maxWaitMs) {
+      window.clearInterval(timer);
+    }
+  }, 250);
+};
+
 export type UtmParams = {
   utm_source?: string;
   utm_medium?: string;
