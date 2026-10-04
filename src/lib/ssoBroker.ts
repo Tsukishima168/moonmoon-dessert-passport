@@ -79,16 +79,17 @@ export function notifySsoBrokerComplete(
     ...(message ? { message } : {}),
   };
 
-  window.opener.postMessage(payload, targetOrigin);
-  clearSsoBrokerMode();
-
-  window.setTimeout(() => {
-    // 關窗前先等進行中的 GA4 sign_up／login 送完（最久 1500ms），否則 popup 一關事件就沒了。
-    runAfterPendingDelivery(() => {
+  // 來源站收到完成訊息就可能關閉 popup；訊息本身也必須等登入事件送出。
+  runAfterPendingDelivery(() => {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(payload, targetOrigin);
+    }
+    clearSsoBrokerMode();
+    window.setTimeout(() => {
       window.close();
       window.location.replace(redirectTo);
-    });
-  }, 120);
+    }, 120);
+  });
 
   return true;
 }

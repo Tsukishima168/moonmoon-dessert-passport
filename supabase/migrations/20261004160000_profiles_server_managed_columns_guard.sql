@@ -34,6 +34,8 @@
 --   daily_checkin_at / first_site / last_seen_*：目前沒有用戶端寫入，但無金額或權限意義，暫不保護。
 
 begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '30s';
 
 create or replace function public.guard_profiles_server_managed_columns()
 returns trigger
@@ -84,5 +86,7 @@ create trigger trg_profiles_guard_server_managed_columns
   before insert or update of points, total_points, tier, v2_unlocked_at on public.profiles
   for each row
   execute function public.guard_profiles_server_managed_columns();
+
+revoke truncate on table public.profiles from public, anon, authenticated;
 
 commit;

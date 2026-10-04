@@ -44,6 +44,8 @@
 -- 線上資料（2026-10-04）：236 筆 profiles、points 最大值 0，沒有被利用的跡象。
 
 begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '30s';
 
 create or replace function public.adjust_points(p_amount integer, p_reason text)
 returns json
@@ -106,5 +108,8 @@ $function$;
 
 revoke execute on function public.adjust_points(integer, text) from public, anon;
 grant execute on function public.adjust_points(integer, text) to authenticated, service_role;
+
+-- RLS does not apply to TRUNCATE; clients must never clear the daily-award ledger.
+revoke truncate on table public.point_transactions from public, anon, authenticated;
 
 commit;

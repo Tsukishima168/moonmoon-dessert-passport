@@ -1,5 +1,13 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-10-04 (Codex 接手 Claude 安全修補)
+
+- 修正 SSO opener 通知也等待 sign_up／login 送出，避免來源站提前關窗；實際 broker 時序回歸通過。
+- 移除未使用的 Gemini client define；沿用 Claude debug／points-sync 修補。
+- 兩支 migration 加上鎖等待、statement timeout 與撤銷客戶 TRUNCATE 權限；正式 catalog 證明兩表 RLS 開啟。
+- typecheck、build／regression、SQL sandbox 十案及獨立 code review APPROVE。此處是候選版本驗證，正式部署與 migration 狀態以 canonical SSOT 最新章節為準。
+- 限制：QR／自我申報集章尚未改為伺服器證明，實體獎勵需店員確認；既有 redeem_reward_item 的 device_id 缺漏尚未修復，不應承諾線上兌換成功。
+
 ## Snapshot · 2026-10-04 (security: client-side backdoors)
 
 Status: `fix/passport-security-20261004` 已實作與驗證，尚未 push／deploy

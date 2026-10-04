@@ -642,6 +642,11 @@ assert(
   'SSO popup close must wait for the pending GA4 delivery',
 );
 assert(
+  ssoBroker.indexOf('runAfterPendingDelivery(() => {') < ssoBroker.indexOf('window.opener.postMessage(payload, targetOrigin);'),
+  'SSO opener notification must wait too: the opener may close the popup immediately',
+);
+assert(!read('vite.config.ts').includes('GEMINI_API_KEY'), 'Passport must not inject server Gemini credentials into its client bundle');
+assert(
   (authContext.match(/runAfterPendingDelivery\(\(\) => \{/g) || []).length === 2 &&
     authContext.includes('window.location.href = pendingRedirect;') &&
     authContext.includes('window.location.href = redirectTo;'),
@@ -659,6 +664,42 @@ assert(
   'index.html must scrub points sync params',
 );
 assert(indexHtml.includes("'source',"), 'index.html trackingParams must keep scrubbing source');
+
+// 實跑 SSO broker：來源站收到 postMessage 會立即關窗，事件仍須先送達。
+{
+  const ts = require('typescript');
+  const compile = (source) => ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022}}).outputText;
+  const dataUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+  const gateUrl = dataUrl(compile(read('src/lib/deliveryGate.ts')) + '\n// broker-order');
+  const gate = await import(gateUrl);
+  const broker = await import(dataUrl(compile(ssoBroker).replace("'./deliveryGate'", JSON.stringify(gateUrl))));
+  const originalWindow = globalThis.window;
+  const originalStorage = globalThis.sessionStorage;
+  const events = [];
+  let release;
+  let closeDone;
+  const closed = new Promise((resolve) => { closeDone = resolve; });
+  try {
+    globalThis.sessionStorage = {getItem: () => 'popup', removeItem: () => events.push('mode-cleared')};
+    globalThis.window = {
+      opener: {closed: false, postMessage: (_payload, origin) => {events.push(`notify:${origin}`);}},
+      setTimeout, close: () => {events.push('close'); closeDone();},
+      location: {replace: () => events.push('redirect')},
+    };
+    gate.registerPendingDelivery(new Promise((resolve) => {release = () => {events.push('delivered'); resolve();};}));
+    assert(broker.notifySsoBrokerComplete('https://kiwimu.com/read/ESTJ-A'), 'broker must accept a valid popup');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert(events.length === 0, 'opener must not be notified while auth delivery is pending');
+    release();
+    await closed;
+    assert(events.indexOf('delivered') < events.indexOf('notify:https://kiwimu.com'), 'delivery must precede opener notification');
+    assert(events.filter((event) => event.startsWith('notify:')).length === 1, 'SSO must notify once');
+    assert(events.indexOf('notify:https://kiwimu.com') < events.indexOf('close'), 'SSO must notify before self close');
+  } finally {
+    globalThis.window = originalWindow;
+    globalThis.sessionStorage = originalStorage;
+  }
+}
 
 // adjust_points 鎖定 migration（草稿，尚未套用；套用由 coordinator 決定）：關鍵條款不得被改掉
 const adjustPointsMigration = read('supabase/migrations/20261004150000_adjust_points_lockdown.sql');
