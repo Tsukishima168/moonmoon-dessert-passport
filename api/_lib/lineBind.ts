@@ -1,7 +1,7 @@
 /**
  * LINE 帳號綁定的伺服器端核心（與 Vercel 無關、零 import，方便 scripts/regression-passport-oauth.mjs 直接實跑）。
  *
- * 為什麼存在：profiles.line_user_id 以前會員可以自己 PATCH（20261004170000 migration 已封死），
+ * 為什麼存在：profiles.line_user_id 以前會員可以自己 PATCH（20261004190000 migration 已封死），
  * 現在唯一合法的寫入口是 DB 函式 public.bind_line_user_id（只給 service_role）。SQL 無法驗 LINE 簽章，
  * 所以驗證放在這裡：
  *   1. 呼叫者必須帶有效的 Supabase 登入 token（Authorization: Bearer <access_token>）

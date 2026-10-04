@@ -733,7 +733,7 @@ for (const [needle, label] of [
 assert(!/security\s+definer/i.test(profilesGuardMigration.replace(/--.*$/gm, '')), 'profiles guard trigger function must stay SECURITY INVOKER (current_user must be the caller)');
 
 // profiles 身分欄位守衛 + 已驗證 LINE 綁定 + get_own_profile_by_line_id（草稿，尚未套用）：關鍵條款不得被改掉
-const identityGuardMigration = read('supabase/migrations/20261004170000_profiles_identity_columns_guard.sql');
+const identityGuardMigration = read('supabase/migrations/20261004190000_profiles_identity_columns_guard.sql');
 const identityGuardSql = identityGuardMigration.replace(/--.*$/gm, '');
 const sqlSection = (sql, startNeedle, endNeedle) => {
   const start = sql.indexOf(startNeedle);
@@ -939,7 +939,7 @@ assert(!lineBindWrapper.includes('Access-Control-Allow-Origin'), 'line-bind must
 }
 
 // redeem_reward_item device_id 修正 migration（草稿，尚未套用）：只多一欄，其餘行為不得被改掉
-const redeemFixMigration = read('supabase/migrations/20261004180000_redeem_reward_item_device_id.sql');
+const redeemFixMigration = read('supabase/migrations/20261004200000_redeem_reward_item_device_id.sql');
 const redeemFixSql = redeemFixMigration.replace(/--.*$/gm, '');
 for (const [needle, label] of [
   ['CREATE OR REPLACE FUNCTION public.redeem_reward_item(p_reward_id text, p_expected_points_cost integer DEFAULT NULL::integer)', 'same signature'],
