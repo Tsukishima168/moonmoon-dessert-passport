@@ -677,6 +677,20 @@ for (const [needle, label] of [
 }
 assert(read('types/gamification-types.ts').includes('7: 5, // Day 7 大獎'), 'STREAK_BONUS_TABLE max changed: update c_max_daily_award in the adjust_points migration');
 
+// profiles 受保護欄位 trigger migration（草稿，尚未套用）：關鍵條款不得被改掉
+const profilesGuardMigration = read('supabase/migrations/20261004160000_profiles_server_managed_columns_guard.sql');
+for (const [needle, label] of [
+  ["if current_user in ('postgres', 'service_role', 'supabase_admin') then", 'privileged roles pass'],
+  ['before insert or update of points, total_points, tier, v2_unlocked_at on public.profiles', 'trigger events/columns'],
+  ['new.points := 0;', 'INSERT coerces points to 0'],
+  ['if new.points is distinct from old.points then', 'UPDATE rejects points changes'],
+  ["using errcode = '42501'", 'insufficient_privilege errcode'],
+  ['revoke execute on function public.guard_profiles_server_managed_columns() from public, anon, authenticated;', 'trigger fn not directly callable'],
+]) {
+  assert(profilesGuardMigration.includes(needle), `profiles guard migration lost clause: ${label}`);
+}
+assert(!/security\s+definer/i.test(profilesGuardMigration.replace(/--.*$/gm, '')), 'profiles guard trigger function must stay SECURITY INVOKER (current_user must be the caller)');
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
