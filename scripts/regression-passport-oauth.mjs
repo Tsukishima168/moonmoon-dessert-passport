@@ -732,6 +732,253 @@ for (const [needle, label] of [
 }
 assert(!/security\s+definer/i.test(profilesGuardMigration.replace(/--.*$/gm, '')), 'profiles guard trigger function must stay SECURITY INVOKER (current_user must be the caller)');
 
+// profiles 身分欄位守衛 + 已驗證 LINE 綁定 + get_own_profile_by_line_id（草稿，尚未套用）：關鍵條款不得被改掉
+const identityGuardMigration = read('supabase/migrations/20261004190000_profiles_identity_columns_guard.sql');
+const identityGuardSql = identityGuardMigration.replace(/--.*$/gm, '');
+const sqlSection = (sql, startNeedle, endNeedle) => {
+  const start = sql.indexOf(startNeedle);
+  assert(start >= 0, `migration section missing: ${startNeedle}`);
+  const end = endNeedle ? sql.indexOf(endNeedle, start + startNeedle.length) : sql.length;
+  return sql.slice(start, end < 0 ? sql.length : end);
+};
+const identityGuardFn = sqlSection(identityGuardSql, 'create or replace function public.guard_profiles_server_managed_columns()', 'create or replace function public.bind_line_user_id');
+const bindFn = sqlSection(identityGuardSql, 'create or replace function public.bind_line_user_id', 'create or replace function public.get_own_profile_by_line_id');
+const ownProfileFn = sqlSection(identityGuardSql, 'create or replace function public.get_own_profile_by_line_id', null);
+for (const [needle, label] of [
+  ["if current_user in ('postgres', 'service_role', 'supabase_admin') then", 'privileged roles still pass'],
+  ['new.google_id := null;', 'INSERT coerces google_id'],
+  ['new.line_user_id := null;', 'INSERT coerces line_user_id'],
+  ["new.auth_provider := 'google';", 'INSERT coerces auth_provider to the column default'],
+  ['new.email := case when v_uid is not null and new.id = v_uid then v_jwt_email else null end;', 'INSERT email comes from the signed JWT, never the payload'],
+  ['if new.google_id is distinct from old.google_id then', 'UPDATE rejects google_id changes'],
+  ['if new.auth_provider is distinct from old.auth_provider then', 'UPDATE rejects auth_provider changes'],
+  ['if new.line_user_id is distinct from old.line_user_id then', 'UPDATE rejects line_user_id changes'],
+  ['if new.email is distinct from old.email then', 'UPDATE rejects email changes'],
+  ['lower(btrim(new.email)) = lower(v_jwt_email)', 'email may only be set to the caller\'s own verified JWT email'],
+  ['if new.points is distinct from old.points then', 'balance guards from 160000 are kept'],
+  ["using errcode = '42501'", 'insufficient_privilege errcode'],
+]) {
+  assert(identityGuardFn.includes(needle), `identity guard lost clause: ${label}`);
+}
+assert(!/user_metadata/i.test(identityGuardFn), 'identity guard must never trust user_metadata (user-editable)');
+assert(!/security\s+definer/i.test(identityGuardFn), 'identity guard trigger function must stay SECURITY INVOKER (current_user must be the caller)');
+assert(
+  /before insert or update of points, total_points, tier, v2_unlocked_at,\s+email, google_id, auth_provider, line_user_id\s+on public\.profiles/.test(identityGuardSql),
+  'trigger must cover balance AND identity columns',
+);
+assert(identityGuardSql.includes('revoke execute on function public.guard_profiles_server_managed_columns() from public, anon, authenticated;'), 'guard fn must stay non-callable');
+assert(identityGuardSql.includes('create unique index if not exists profiles_line_user_id_key') && identityGuardSql.includes('where line_user_id is not null'), 'one LINE id per profile (partial unique index)');
+for (const [needle, label] of [
+  ['security definer', 'definer'],
+  ["p_line_user_id !~ '^U[0-9A-Za-z]{32}$'", 'LINE userId format check'],
+  ['for update', 'row lock'],
+  ["'profile_bound_to_other_line'", 'no silent re-binding'],
+  ["'line_id_in_use'", 'unique LINE id conflict reported'],
+]) {
+  assert(bindFn.includes(needle), `bind_line_user_id lost clause: ${label}`);
+}
+assert(identityGuardSql.includes('revoke all on function public.bind_line_user_id(uuid, text) from public, anon, authenticated;'), 'bind_line_user_id must be revoked from every client role');
+assert(identityGuardSql.includes('grant execute on function public.bind_line_user_id(uuid, text) to service_role;'), 'bind_line_user_id must be service_role only');
+assert(!/grant execute on function public\.bind_line_user_id[^;]*(authenticated|anon)/.test(identityGuardSql), 'bind_line_user_id must never be granted to anon/authenticated');
+for (const [needle, label] of [
+  ['v_uid uuid := auth.uid();', 'caller identity'],
+  ["'auth_required'", 'unauthenticated callers get nothing'],
+  ['and id = v_uid', 'only the caller\'s own row can be returned'],
+  ['revoke all on function public.get_own_profile_by_line_id(text) from public;', 'PUBLIC grant removed'],
+]) {
+  assert(ownProfileFn.includes(needle), `get_own_profile_by_line_id lost clause: ${label}`);
+}
+assert(!/\bemail\b|\bphone\b|google_id|line_user_id,/.test(ownProfileFn.slice(ownProfileFn.indexOf('select id,'), ownProfileFn.indexOf('from public.profiles'))), 'get_own_profile_by_line_id must keep its non-sensitive column whitelist');
+
+// 實跑 api/_lib/lineBind.ts（零 import，與 Vercel 無關）：用假的 fetch 驗證「先驗 Supabase 登入者、再驗 LINE ID token、最後才用 service_role 寫入」。
+{
+  const { handleLineBind, LINE_VERIFY_URL } = await loadTsModule('api/_lib/lineBind.ts', 'line-bind');
+  const USER_ID = '11111111-2222-4333-8444-555555555555';
+  const LINE_SUB = 'U0123456789abcdef0123456789abcdef';
+  const CHANNEL = '2009156462';
+  const SERVICE_KEY = 'service-role-key-SECRET';
+  const baseEnv = {
+    VITE_SUPABASE_URL: 'https://example.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'anon-key',
+    VITE_LIFF_ID: `${CHANNEL}-AbCdEfGh`,
+    SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY,
+  };
+  const goodClaims = () => ({ iss: 'https://access.line.me', sub: LINE_SUB, aud: CHANNEL, exp: Math.floor(Date.now() / 1000) + 600 });
+  const jsonResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+  const makeFetch = ({ user = { status: 200, body: { id: USER_ID } }, line = { status: 200, body: goodClaims() }, rpc = { status: 200, body: { ok: true } } } = {}) => {
+    const calls = [];
+    const fn = async (url, init = {}) => {
+      calls.push({ url: String(url), init });
+      if (String(url).endsWith('/auth/v1/user')) {
+        if (user instanceof Error) throw user;
+        return jsonResponse(user.status, user.body);
+      }
+      if (String(url) === LINE_VERIFY_URL) {
+        if (line instanceof Error) throw line;
+        return jsonResponse(line.status, line.body);
+      }
+      if (String(url).endsWith('/rest/v1/rpc/bind_line_user_id')) {
+        if (rpc instanceof Error) throw rpc;
+        return jsonResponse(rpc.status, rpc.body);
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    };
+    return { fn, calls };
+  };
+  const run = async (overrides = {}, input = {}) => {
+    const mock = makeFetch(overrides.fetch);
+    const logs = [];
+    const result = await handleLineBind(
+      { method: 'POST', authorizationHeader: 'Bearer user-access-token', body: { idToken: 'line-id-token' }, ...input },
+      { env: overrides.env ?? baseEnv, fetchImpl: mock.fn, logError: (m) => logs.push(m) },
+    );
+    return { result, calls: mock.calls, logs };
+  };
+  const hits = (calls, needle) => calls.filter((c) => c.url.includes(needle));
+
+  // 基本守門
+  assertEqual(String((await run({}, { method: 'GET' })).result.status), '405', 'GET must be rejected');
+  {
+    const r = await run({}, { authorizationHeader: undefined });
+    assertEqual(String(r.result.status), '401', 'missing bearer must be 401');
+    assertEqual(String(r.calls.length), '0', 'no upstream call before auth header is present');
+  }
+  assertEqual(String((await run({}, { body: {} })).result.status), '400', 'missing idToken must be 400');
+  assertEqual(String((await run({}, { body: 'not json' })).result.status), '400', 'garbage body must be 400');
+  assertEqual(String((await run({}, { body: { idToken: 'x'.repeat(5000) } })).result.status), '400', 'oversized idToken must be 400');
+  {
+    const r = await run({ env: { ...baseEnv, SUPABASE_SERVICE_ROLE_KEY: undefined } });
+    assertEqual(String(r.result.status), '503', 'missing service key must be 503');
+    assertEqual(r.result.body.error, 'server_not_configured', 'config error code');
+    assertEqual(String(r.calls.length), '0', 'misconfigured server must not call any upstream');
+    assert(r.logs.some((m) => m.includes('SUPABASE_SERVICE_ROLE_KEY')) && !r.logs.join('').includes(SERVICE_KEY), 'log names the missing var, never a value');
+  }
+  assertEqual(String((await run({ env: { ...baseEnv, VITE_LIFF_ID: undefined } })).result.status), '503', 'unknown LINE channel must be 503');
+
+  // 驗證順序：Supabase 登入者 -> LINE token -> 寫入；前一關失敗就不能進下一關
+  {
+    const r = await run({ fetch: { user: { status: 401, body: {} } } });
+    assertEqual(String(r.result.status), '401', 'bad Supabase session must be 401');
+    assertEqual(r.result.body.error, 'invalid_session', 'bad session code');
+    assertEqual(String(hits(r.calls, 'api.line.me').length + hits(r.calls, '/rpc/').length), '0', 'LINE verify and write must not run for a bad session');
+  }
+  assertEqual(String((await run({ fetch: { user: { status: 200, body: { id: USER_ID, is_anonymous: true } } } })).result.status), '401', 'anonymous Supabase users must be rejected');
+  assertEqual(String((await run({ fetch: { user: { status: 200, body: { id: 'not-a-uuid' } } } })).result.status), '401', 'non-uuid user id must be rejected');
+  for (const [label, claims, status] of [
+    ['LINE verify rejects token', null, 400],
+    ['aud mismatch', { ...goodClaims(), aud: '999' }, 200],
+    ['iss mismatch', { ...goodClaims(), iss: 'https://evil.example' }, 200],
+    ['expired', { ...goodClaims(), exp: Math.floor(Date.now() / 1000) - 5 }, 200],
+    ['bad sub format', { ...goodClaims(), sub: 'U123' }, 200],
+    ['missing sub', { ...goodClaims(), sub: undefined }, 200],
+  ]) {
+    const r = await run({ fetch: { line: { status, body: claims ?? { error: 'invalid_request' } } } });
+    assertEqual(String(r.result.status), '401', `${label} must be 401`);
+    assertEqual(r.result.body.error, 'invalid_line_token', `${label} code`);
+    assertEqual(String(hits(r.calls, '/rpc/').length), '0', `${label} must not reach the DB write`);
+  }
+
+  // 成功路徑：寫入的 LINE id 只能來自 LINE 驗證結果，user id 只能來自 Supabase；body 裡的任何自我宣稱都被忽略
+  {
+    const r = await run({}, { body: { idToken: 'line-id-token', lineUserId: 'Uattacker0000000000000000000000000', userId: '99999999-9999-4999-8999-999999999999', p_line_user_id: 'Uattacker0000000000000000000000000' } });
+    assertEqual(String(r.result.status), '200', 'happy path must be 200');
+    assertEqual(String(r.result.body.ok), 'true', 'happy path ok');
+    const userCall = hits(r.calls, '/auth/v1/user')[0];
+    assertEqual(userCall.init.headers.Authorization, 'Bearer user-access-token', 'Supabase lookup must use the caller\'s own token');
+    assertEqual(userCall.init.headers.apikey, 'anon-key', 'Supabase lookup uses the anon key, not the service key');
+    const lineCall = hits(r.calls, 'api.line.me')[0];
+    const form = new URLSearchParams(lineCall.init.body);
+    assertEqual(form.get('id_token'), 'line-id-token', 'LINE verify receives the client\'s ID token');
+    assertEqual(form.get('client_id'), CHANNEL, 'LINE verify client_id comes from server config (VITE_LIFF_ID prefix), not the request');
+    assert(!JSON.stringify(lineCall).includes(SERVICE_KEY), 'service key must never be sent to LINE');
+    const rpcCall = hits(r.calls, '/rest/v1/rpc/bind_line_user_id')[0];
+    assertEqual(rpcCall.init.headers.apikey, SERVICE_KEY, 'write uses the service key');
+    const sent = JSON.parse(rpcCall.init.body);
+    assertEqual(sent.p_user_id, USER_ID, 'user id comes from Supabase, not the body');
+    assertEqual(sent.p_line_user_id, LINE_SUB, 'LINE id comes from the verified token, not the body');
+    assert(!JSON.stringify(r.result).includes(SERVICE_KEY) && !JSON.stringify(r.result).includes(LINE_SUB), 'response must not echo secrets or the LINE id');
+    const order = r.calls.map((c) => (c.url.includes('/auth/v1/user') ? 'user' : c.url.includes('api.line.me') ? 'line' : 'rpc')).join(',');
+    assertEqual(order, 'user,line,rpc', 'verification order');
+  }
+  assertEqual(
+    new URLSearchParams((await run({ env: { ...baseEnv, LINE_LOGIN_CHANNEL_ID: '1234567890' } })).calls.find((c) => c.url.includes('api.line.me')).init.body).get('client_id'),
+    '1234567890',
+    'LINE_LOGIN_CHANNEL_ID overrides the VITE_LIFF_ID prefix',
+  );
+  // DB 回報的衝突要原樣對應狀態碼
+  for (const [rpcBody, status, error] of [
+    [{ ok: false, error: 'line_id_in_use' }, '409', 'line_id_in_use'],
+    [{ ok: false, error: 'profile_bound_to_other_line' }, '409', 'profile_bound_to_other_line'],
+    [{ ok: false, error: 'profile_not_found' }, '404', 'profile_not_found'],
+    [{ ok: false, error: 'invalid_input' }, '400', 'invalid_request'],
+    [{ ok: false, error: 'something_new' }, '502', 'bind_failed'],
+  ]) {
+    const r = await run({ fetch: { rpc: { status: 200, body: rpcBody } } });
+    assertEqual(String(r.result.status), status, `rpc ${rpcBody.error} status`);
+    assertEqual(r.result.body.error, error, `rpc ${rpcBody.error} code`);
+  }
+  {
+    const r = await run({ fetch: { rpc: { status: 200, body: { ok: true, already_bound: true } } } });
+    assertEqual(`${r.result.status}/${r.result.body.already_bound}`, '200/true', 'idempotent re-bind is a success');
+  }
+  assertEqual(String((await run({ fetch: { rpc: { status: 401, body: { message: 'bad key' } } } })).result.status), '502', 'DB permission failure is a 502, not a success');
+  assertEqual(String((await run({ fetch: { line: new Error('boom') } })).result.status), '502', 'LINE outage must be 502');
+  assertEqual(String((await run({ fetch: { user: new Error('boom') } })).result.status), '502', 'Supabase outage must be 502');
+}
+const lineBindWrapper = read('api/line-bind.ts');
+assert(lineBindWrapper.includes("from './_lib/lineBind.js'"), 'api/line-bind.ts must import the core with a .js extension (type: module + Vercel)');
+assert(lineBindWrapper.includes("res.setHeader('Cache-Control', 'no-store');"), 'line-bind responses must not be cached');
+assert(!lineBindWrapper.includes('Access-Control-Allow-Origin'), 'line-bind must stay same-origin (no CORS)');
+{
+  // 秘密不得進任何前端程式碼
+  const clientSideFiles = ['App.tsx', 'PassportScreen.tsx', 'passportUtils.ts', 'analytics.ts', 'rewardClaim.ts', 'mbtiClaim.ts', 'vite.config.ts', 'src/api/lineBind.ts', 'src/lib/supabase.ts', 'src/contexts/LiffContext.tsx'];
+  for (const file of clientSideFiles) {
+    assert(!read(file).includes('SERVICE_ROLE'), `${file} must not reference the service-role key`);
+  }
+  assert(!read('src/api/lineBind.ts').includes('profile.userId') && !read('src/api/lineBind.ts').includes("from('profiles')"), 'client bind helper must only forward the LIFF ID token to the server');
+}
+
+// redeem_reward_item device_id 修正 migration（草稿，尚未套用）：只多一欄，其餘行為不得被改掉
+const redeemFixMigration = read('supabase/migrations/20261004200000_redeem_reward_item_device_id.sql');
+const redeemFixSql = redeemFixMigration.replace(/--.*$/gm, '');
+for (const [needle, label] of [
+  ['CREATE OR REPLACE FUNCTION public.redeem_reward_item(p_reward_id text, p_expected_points_cost integer DEFAULT NULL::integer)', 'same signature'],
+  ['SECURITY DEFINER', 'definer'],
+  ["SET search_path TO 'pg_catalog', 'public'", 'pinned search_path'],
+  ['INSERT INTO public.point_transactions (user_id, device_id, points, action, description, source)', 'ledger insert names device_id (NOT NULL, no default)'],
+  ["'server:redeem_reward_item',", 'device_id marker for RPC-generated ledger rows'],
+  ['AND COALESCE(points, 0) >= v_item.points_cost', 'atomic balance check + row lock in one UPDATE'],
+  ["'insufficient_points'", 'insufficient points error'],
+  ["'reward_price_changed'", 'expected-cost mismatch error'],
+  ["'reward_unavailable'", 'inactive/unknown reward error'],
+  ["'profile_not_found'", 'missing profile error'],
+  ["'auth_required'", 'unauthenticated error'],
+  ['FOR v_attempt IN 1..5 LOOP', 'redemption code retry loop'],
+  ['WHEN unique_violation THEN', 'redemption code collision retry'],
+  ['INSERT INTO public.reward_redemptions', 'redemption row'],
+  ['revoke execute on function public.redeem_reward_item(text, integer) from public, anon;', 'revoke public/anon'],
+  ['grant execute on function public.redeem_reward_item(text, integer) to authenticated, service_role;', 'grant authenticated/service_role'],
+]) {
+  assert(redeemFixSql.includes(needle), `redeem_reward_item migration lost clause: ${label}`);
+}
+assert(!/fulfill_reward_redemption_staff/.test(redeemFixSql), 'redeem fix must not touch the staff fulfilment path');
+// 前端必須對 RPC 會回的每一種失敗代碼都有說明，不能落到泛用的「兌換失敗」
+for (const code of [...redeemFixSql.matchAll(/'error',\s*'([a-z_]+)'/g)].map((m) => m[1])) {
+  assert(new RegExp(`\\b${code}:\\s*'`).test(rewardShop), `RewardShop has no user-facing message for redeem error "${code}"`);
+}
+assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"), 'rewards API must surface the RPC error code to the UI');
+// 前端福利清單（constants.tsx）必須與 DB 種子（ledger migration）的 id／點數／分類一致，否則會是 reward_unavailable／reward_price_changed
+{
+  const constantsSource = read('constants.tsx');
+  const itemsBlock = constantsSource.slice(constantsSource.indexOf('REDEEMABLE_ITEMS'));
+  const uiItems = [...itemsBlock.slice(0, itemsBlock.indexOf('];')).matchAll(/id:\s*'([a-z_]+)'[\s\S]*?pointsCost:\s*(\d+),\s*category:\s*'(\w+)'/g)]
+    .map((m) => `${m[1]}|${m[2]}|${m[3]}`).sort();
+  const seededItems = [...rewardLedgerMigration.matchAll(/\('([a-z_]+)',\s*'[^']*',\s*'[^']*',\s*(\d+),\s*'(\w+)',\s*'show-screen',\s*TRUE/g)]
+    .map((m) => `${m[1]}|${m[2]}|${m[3]}`).sort();
+  assert(seededItems.length === 10, `reward_items seed should list 10 rows, found ${seededItems.length}`);
+  assertEqual(uiItems.join(','), seededItems.join(','), 'REDEEMABLE_ITEMS must match the reward_items seed (id|points|category)');
+}
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
@@ -760,6 +1007,7 @@ const distBundle = fs
 assert(!distBundle.includes('debug_passport_unlocked'), 'production bundle must not contain the debug=1 unlock-all-stamps branch');
 assert(!distBundle.includes('Failed to set debug passport state'), 'production bundle must not contain the debug=1 handler');
 assert(distBundle.includes('points_sync_rejected'), 'production bundle must report rejected points syncs');
+assert(!distBundle.includes('SUPABASE_SERVICE_ROLE_KEY') && !distBundle.includes('SERVICE_ROLE'), 'production bundle must never contain the service-role key name or value');
 assert(distBundle.includes('gacha.kiwimu.com'), 'production bundle must carry the points sync referrer allowlist');
 
 console.log('OAuth, SSO broker, service-worker, reward ledger, points-sync guard, and debug-backdoor regression checks passed.');
