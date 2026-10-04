@@ -445,18 +445,18 @@ function App() {
       return;
     }
 
-    trackEvent('points_sync_received', {
-      source: 'gacha',
-      points: result.credited,
-    });
+    // 不帶金額或任何 id；被截斷（超過單次／日額度，多的作廢）時只標 capped。
+    trackEventWhenReady(
+      'points_sync_received',
+      result.capped ? { source: 'gacha', capped: true } : { source: 'gacha', points: result.credited, capped: false },
+    );
 
-    document.dispatchEvent(new CustomEvent('kiwimu:points_earned', {
-      detail: {
-        points: result.credited,
-        action: 'gacha_earn',
-        description: `扭蛋同步 +${result.credited} 積分`,
-      },
-    }));
+    // 額度用完的同步入帳 0：不需要開護照。
+    if (result.credited <= 0) return;
+
+    // 注意：這裡不能再 dispatch 'kiwimu:points_earned'。handleIncomingPointsSync 已經入帳
+    // （並發出 passport-points-updated 更新畫面），而 PassportScreen 掛載時（網址帶 add_points 會直接
+    // 開護照）會監聽 kiwimu:points_earned 並再呼叫 addPassportPoints，等於同一筆同步被入帳兩次。
 
     // Open passport directly so users can immediately see updated points
     setPassportTab('hub');

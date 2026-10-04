@@ -293,6 +293,7 @@ assert(MAX_PER_SYNC >= 200 && MAX_PER_SYNC <= 1000, 'MAX_PER_SYNC outside the sa
 assert(MAX_PER_DAY <= 2000, 'MAX_PER_DAY too high to be a meaningful abuse cap');
 
 const GACHA_REFERRER = 'https://gacha.kiwimu.com/';
+// vercel 別名讀不到 .kiwimu.com 的 ACK cookie（Gacha 游標不會前進、會被無限重複入帳），所以不在允許清單內。
 const GACHA_ALIAS_REFERRER = 'https://moonmoon-gacha.vercel.app/some/path?x=1';
 const T0 = Date.UTC(2026, 9, 4, 12, 0, 0);
 
@@ -302,6 +303,7 @@ function makeSyncHarness() {
     credited: [],
     acks: [],
     cleaned: 0,
+    searchCleared: 0,
     storage: {
       getItem: (key) => (store.has(key) ? store.get(key) : null),
       setItem: (key, value) => void store.set(key, String(value)),
@@ -317,6 +319,9 @@ function makeSyncHarness() {
         cleanUrl: () => {
           harness.cleaned += 1;
         },
+        clearInitialSearch: () => {
+          harness.searchCleared += 1;
+        },
       });
     },
   };
@@ -327,13 +332,14 @@ const syncQuery = ({ amount = '50', ts = '1790000000000', source = 'gacha', acti
   `?action=${action}&amount=${amount}&source=${source}&device_id=11111111-2222-3333-4444-555555555555&ts=${ts}&from=gacha_store`;
 
 // 1) 合法的 Gacha 同步要能入帳（正式站與 vercel 別名都算），並寫 ACK、清網址、記流水
-for (const referrer of [GACHA_REFERRER, GACHA_ALIAS_REFERRER, 'https://gacha.kiwimu.com']) {
+for (const referrer of [GACHA_REFERRER, 'https://gacha.kiwimu.com', 'https://gacha.kiwimu.com/some/path?x=1']) {
   const h = makeSyncHarness();
   const result = h.run({ query: syncQuery(), referrer });
-  assert(result && result.credited === 50, `valid gacha sync from ${referrer} must credit 50, got ${JSON.stringify(result)}`);
+  assertEqual(JSON.stringify(result), '{"credited":50,"capped":false}', `valid gacha sync from ${referrer} must credit 50`);
   assertEqual(JSON.stringify(h.credited), '[50]', `credit calls for ${referrer}`);
   assertEqual(JSON.stringify(h.acks), '["1790000000000"]', `ACK for accepted sync ${referrer}`);
   assertEqual(String(h.cleaned), '1', `URL cleaned for accepted sync ${referrer}`);
+  assertEqual(String(h.searchCleared), '1', `initial search cleared for accepted sync ${referrer}`);
   assertEqual(h.storage.getItem(POINTS_SYNC_LAST_TS_KEY), '1790000000000', 'accepted sync must remember ts');
   assertEqual(String(guard.parseSyncLedger(h.storage.getItem(POINTS_SYNC_LEDGER_KEY)).length), '1', 'accepted sync must add a ledger entry');
 }
@@ -341,6 +347,7 @@ for (const referrer of [GACHA_REFERRER, GACHA_ALIAS_REFERRER, 'https://gacha.kiw
 // 2) 沒有 referrer／外站 referrer／長得像但不是 gacha 的 referrer 一律拒絕，且不入帳、不寫 ACK
 const badReferrers = [
   '',
+  GACHA_ALIAS_REFERRER,
   'https://evil.example/',
   'https://gacha.kiwimu.com.evil.example/',
   'https://evil.example/?next=https://gacha.kiwimu.com/',
@@ -359,6 +366,7 @@ for (const referrer of badReferrers) {
   assertEqual(JSON.stringify(h.credited), '[]', `no credit for referrer ${JSON.stringify(referrer)}`);
   assertEqual(JSON.stringify(h.acks), '[]', `no ACK for rejected referrer ${JSON.stringify(referrer)}`);
   assertEqual(String(h.cleaned), '1', `URL still cleaned for rejected referrer ${JSON.stringify(referrer)}`);
+  assertEqual(String(h.searchCleared), '1', `initial search still cleared for rejected referrer ${JSON.stringify(referrer)}`);
   assertEqual(String(h.storage.getItem(POINTS_SYNC_LAST_TS_KEY)), 'null', 'rejected sync must not record ts');
   assertEqual(String(h.storage.getItem(POINTS_SYNC_LEDGER_KEY)), 'null', 'rejected sync must not touch the ledger');
 }
@@ -370,17 +378,19 @@ for (const amount of ['0', '-5', '1.5', '1e3', '+5', '12abc', '%205', '05', 'NaN
   assertEqual(JSON.stringify(result), '{"rejected":"amount_invalid"}', `amount ${amount} must be invalid`);
   assertEqual(JSON.stringify(h.credited), '[]', `no credit for amount ${amount}`);
 }
+// 超過單次上限不是拒絕：入帳 MAX_PER_SYNC、視為同步完成（寫 ACK，多的作廢）、事件標 capped
 for (const amount of [String(MAX_PER_SYNC + 1), '99999999', '9'.repeat(400)]) {
   const h = makeSyncHarness();
   const result = h.run({ query: syncQuery({ amount }) });
-  assertEqual(JSON.stringify(result), '{"rejected":"amount_over_cap"}', `amount ${amount.slice(0, 12)} must exceed per-sync cap`);
-  assertEqual(JSON.stringify(h.credited), '[]', 'no credit for over-cap amount');
-  assertEqual(JSON.stringify(h.acks), '[]', 'no ACK for over-cap amount');
+  assertEqual(JSON.stringify(result), `{"credited":${MAX_PER_SYNC},"capped":true}`, `amount ${amount.slice(0, 12)} must be truncated to the per-sync cap`);
+  assertEqual(JSON.stringify(h.credited), `[${MAX_PER_SYNC}]`, 'over-cap sync must credit exactly the cap');
+  assertEqual(JSON.stringify(h.acks), '["1790000000000"]', 'over-cap sync must still write the ACK (excess is forfeited)');
+  assertEqual(h.storage.getItem(POINTS_SYNC_LAST_TS_KEY), '1790000000000', 'over-cap sync must record ts');
 }
 for (const amount of ['1', String(MAX_PER_SYNC)]) {
   const h = makeSyncHarness();
   const result = h.run({ query: syncQuery({ amount }) });
-  assertEqual(JSON.stringify(result), `{"credited":${amount}}`, `boundary amount ${amount} must be accepted`);
+  assertEqual(JSON.stringify(result), `{"credited":${amount},"capped":false}`, `boundary amount ${amount} must be accepted untruncated`);
 }
 
 // 4) 缺參數／ts 格式不對 = params_invalid；不是 add_points = 完全不碰（null 且不清網址）
@@ -403,33 +413,37 @@ for (const query of [
   assertEqual(String(h.cleaned), '0', 'ignored queries must not touch the URL');
 }
 
-// 5) 滾動 24 小時總量：MAX_PER_DAY 為界，視窗過去後恢復
+// 5) 滾動 24 小時總量：入帳量截斷到剩餘額度（額度用完入帳 0 但仍寫 ACK），視窗過去後恢復
 {
   const h = makeSyncHarness();
   let ts = 1790000000000;
   const attempt = (amount, now) => h.run({ query: syncQuery({ amount: String(amount), ts: String(ts++) }), now });
   let total = 0;
   while (total + MAX_PER_SYNC <= MAX_PER_DAY) {
-    assertEqual(JSON.stringify(attempt(MAX_PER_SYNC, T0)), `{"credited":${MAX_PER_SYNC}}`, 'sync within day cap must be accepted');
+    assertEqual(JSON.stringify(attempt(MAX_PER_SYNC, T0)), `{"credited":${MAX_PER_SYNC},"capped":false}`, 'sync within day cap must be accepted');
     total += MAX_PER_SYNC;
   }
   const remaining = MAX_PER_DAY - total;
   if (remaining > 0) {
-    assertEqual(JSON.stringify(attempt(remaining + 1, T0)), '{"rejected":"daily_cap"}', 'sync that overflows the day cap by 1 must be rejected');
-    assertEqual(JSON.stringify(attempt(remaining, T0)), `{"credited":${remaining}}`, 'sync that exactly fills the day cap must be accepted');
+    assertEqual(JSON.stringify(attempt(remaining + 1, T0)), `{"credited":${remaining},"capped":true}`, 'sync that overflows the day cap must credit only the remaining allowance');
     total += remaining;
+    assertEqual(String(h.acks.length), String(ts - 1790000000000), 'every truncated sync must still write an ACK');
   }
   assertEqual(String(total), String(MAX_PER_DAY), 'accepted total must equal MAX_PER_DAY');
-  assertEqual(JSON.stringify(attempt(1, T0)), '{"rejected":"daily_cap"}', 'any further sync inside 24h must be rejected');
-  assertEqual(JSON.stringify(attempt(1, T0 + POINTS_SYNC_WINDOW_MS - 1)), '{"rejected":"daily_cap"}', 'still capped 1ms before the window closes');
-  assertEqual(JSON.stringify(attempt(1, T0 + POINTS_SYNC_WINDOW_MS)), '{"credited":1}', 'sync must be accepted again once the 24h window has passed');
-  assertEqual(String(h.credited.reduce((a, b) => a + b, 0)), String(total + 1), 'total credited must match accepted syncs only');
+  const creditsBeforeExhausted = h.credited.length;
+  const ackBeforeExhausted = h.acks.length;
+  assertEqual(JSON.stringify(attempt(50, T0)), '{"credited":0,"capped":true}', 'once the allowance is exhausted a sync credits 0 but completes');
+  assertEqual(String(h.credited.length), String(creditsBeforeExhausted), 'exhausted allowance must not call credit');
+  assertEqual(String(h.acks.length), String(ackBeforeExhausted + 1), 'exhausted allowance must still write the ACK so Gacha moves its cursor');
+  assertEqual(JSON.stringify(attempt(50, T0 + POINTS_SYNC_WINDOW_MS - 1)), '{"credited":0,"capped":true}', 'still exhausted 1ms before the window closes');
+  assertEqual(JSON.stringify(attempt(50, T0 + POINTS_SYNC_WINDOW_MS)), '{"credited":50,"capped":false}', 'allowance must come back once the 24h window has passed');
+  assertEqual(String(h.credited.reduce((a, b) => a + b, 0)), String(total + 50), 'total credited must match what was actually credited');
 }
 
 // 6) 重複 ts：沿用舊行為（補 ACK、清網址、回 null、不重複入帳）；但外站 referrer 的重複請求不能拿到 ACK
 {
   const h = makeSyncHarness();
-  assertEqual(JSON.stringify(h.run({ query: syncQuery() })), '{"credited":50}', 'first sync credits');
+  assertEqual(JSON.stringify(h.run({ query: syncQuery() })), '{"credited":50,"capped":false}', 'first sync credits');
   assertEqual(String(h.run({ query: syncQuery() })), 'null', 'duplicate ts must return null');
   assertEqual(JSON.stringify(h.credited), '[50]', 'duplicate ts must not credit twice');
   assertEqual(JSON.stringify(h.acks), '["1790000000000","1790000000000"]', 'duplicate ts must re-write the ACK');
@@ -445,13 +459,13 @@ for (const query of [
 {
   const h = makeSyncHarness();
   h.run({ query: syncQuery(), referrer: '' });
-  assertEqual(JSON.stringify(h.run({ query: syncQuery() })), '{"credited":50}', 'valid sync after a rejected one must still credit');
+  assertEqual(JSON.stringify(h.run({ query: syncQuery() })), '{"credited":50,"capped":false}', 'valid sync after a rejected one must still credit');
 
   const corrupt = makeSyncHarness();
   corrupt.storage.setItem(POINTS_SYNC_LEDGER_KEY, '{not json');
-  assertEqual(JSON.stringify(corrupt.run({ query: syncQuery() })), '{"credited":50}', 'corrupt ledger must be treated as empty');
+  assertEqual(JSON.stringify(corrupt.run({ query: syncQuery() })), '{"credited":50,"capped":false}', 'corrupt ledger must be treated as empty');
   corrupt.storage.setItem(POINTS_SYNC_LEDGER_KEY, JSON.stringify([{ at: 'x', amount: 'y' }, null, 5, { at: T0, amount: -100 }]));
-  assertEqual(JSON.stringify(corrupt.run({ query: syncQuery({ ts: '1790000000001' }) })), '{"credited":50}', 'malformed ledger entries must be ignored, not trusted');
+  assertEqual(JSON.stringify(corrupt.run({ query: syncQuery({ ts: '1790000000001' }) })), '{"credited":50,"capped":false}', 'malformed ledger entries must be ignored, not trusted');
 }
 
 // 8) 真的執行 index.html 的早期 scrubber：同步參數不得留在網址（GA4 page_location 來源），
@@ -505,6 +519,16 @@ function runEarlyScrubber(href) {
   assertEqual(runEarlyScrubber('https://passport.kiwimu.com/?email=a%40b.com').finalSearch, '', 'email must still be scrubbed');
 }
 
+// 8b) 處理完要把同步參數從 __PASSPORT_INITIAL_SEARCH__ 拿掉（避免 remount 重放），但保留 from／utm 歸因
+assertEqual(
+  guard.stripPointsSyncParams('?action=add_points&amount=5&source=gacha&ts=1&device_id=x&from=gacha_store&utm_source=a'),
+  '?from=gacha_store&utm_source=a',
+  'stripPointsSyncParams must keep attribution params',
+);
+assertEqual(guard.stripPointsSyncParams(syncQuery()), '?from=gacha_store', 'stripPointsSyncParams must drop every sync param');
+assertEqual(guard.stripPointsSyncParams('?action=add_points&amount=5&source=gacha&ts=1&device_id=x'), '', 'stripPointsSyncParams of a sync-only query is empty');
+assertEqual(guard.stripPointsSyncParams(''), '', 'stripPointsSyncParams of an empty query is empty');
+
 // 9) 原始碼層面的鎖：debug 只在 DEV、同步讀原始 query、拒絕事件不帶金額
 assert(
   appTsx.includes("const isDebugAllStamps = import.meta.env.DEV && params.get('debug') === '1';"),
@@ -518,6 +542,13 @@ assert(
 const passportUtilsTs = read('passportUtils.ts');
 assert(passportUtilsTs.includes('__PASSPORT_INITIAL_SEARCH__'), 'handleIncomingPointsSync must read the pre-scrub query');
 assert(passportUtilsTs.includes('processIncomingPointsSync({'), 'handleIncomingPointsSync must delegate to the guard');
+assert(passportUtilsTs.includes('`max-age=${30 * 24 * 60 * 60}`'), 'ACK cookie must live 30 days (Gacha deletes it when read)');
+assert(passportUtilsTs.includes('clearInitialSearch: () => {') && passportUtilsTs.includes('stripPointsSyncParams(getInitialUrlSearch())'), 'handled syncs must be removed from __PASSPORT_INITIAL_SEARCH__');
+assert(
+  appTsx.includes("'points_sync_received',") && !appTsx.includes("trackEvent('points_sync_received'"),
+  'points_sync_received must go through trackEventWhenReady',
+);
+assert(!appTsx.includes("dispatchEvent(new CustomEvent('kiwimu:points_earned'"), 'App must not re-dispatch kiwimu:points_earned after a sync (PassportScreen would credit it a second time)');
 assert(!passportUtilsTs.includes("params.get('amount')"), 'passportUtils must not parse the amount outside the guard');
 assert(
   indexHtml.includes("const pointsSyncParams = ['amount', 'device_id', 'ts'];") &&

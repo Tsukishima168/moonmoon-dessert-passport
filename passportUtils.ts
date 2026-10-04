@@ -2,7 +2,7 @@ import { PassportState, Achievement, PointTransaction, RedeemableItem } from './
 import { ACHIEVEMENTS, STAMPS, REDEEMABLE_ITEMS } from './constants';
 import { performCheckin, recordPointTransaction } from './src/lib/checkinService';
 import { getCheckinPoints } from './types/gamification-types';
-import { processIncomingPointsSync, type IncomingPointsSyncResult } from './src/lib/pointsSyncGuard';
+import { processIncomingPointsSync, stripPointsSyncParams, type IncomingPointsSyncResult } from './src/lib/pointsSyncGuard';
 
 const STORAGE_KEY = 'moonmoon_passport';
 const DEVICE_ID_KEY = 'moonmoon_device_id';
@@ -516,7 +516,8 @@ const getInitialUrlSearch = (): string => {
  * Call this on Passport page load to credit points from Gacha redirect.
  *
  * 驗證規則（referrer／金額上限／24 小時總量／重複 ts）全在 src/lib/pointsSyncGuard.ts。
- * 回傳 { credited } = 已入帳；{ rejected: reason } = 被拒（呼叫端送 points_sync_rejected）；
+ * 回傳 { credited, capped } = 同步完成（credited 可能被截斷到單次／日額度，甚至為 0；多的作廢，
+ * 且已寫 ACK）；{ rejected: reason } = 來源或格式不對被拒（呼叫端送 points_sync_rejected，不寫 ACK）；
  * null = 沒有同步參數，或是已處理過的重複 ts。
  */
 export function handleIncomingPointsSync(): IncomingPointsSyncResult {
@@ -537,12 +538,17 @@ export function handleIncomingPointsSync(): IncomingPointsSyncResult {
                     `${ACK_COOKIE}=${encodeURIComponent(ts)}`,
                     `domain=${COOKIE_DOMAIN}`,
                     'path=/',
-                    'max-age=600',
+                    // Gacha 讀到就會刪掉；給 30 天是為了讓很久才回 Gacha 的人游標也能前進。
+                    `max-age=${30 * 24 * 60 * 60}`,
                     'SameSite=Lax',
                 ].join('; ');
             },
             cleanUrl: () => {
                 window.history.replaceState({}, '', window.location.pathname);
+            },
+            clearInitialSearch: () => {
+                (window as Window & { __PASSPORT_INITIAL_SEARCH__?: string }).__PASSPORT_INITIAL_SEARCH__ =
+                    stripPointsSyncParams(getInitialUrlSearch());
             },
         });
     } catch (e) {
