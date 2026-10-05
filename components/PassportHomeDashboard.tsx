@@ -15,6 +15,8 @@ import { KiwimuMetricCard } from './kiwimu/KiwimuMetricCard';
 import CheckinCard from './CheckinCard';
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
 import { trackEvent } from '../analytics';
+import { trackOutboundNavigation } from '../analytics';
+import type { JourneyMode } from '../src/lib/memberJourney';
 
 interface NextRewardSummary {
   title: string;
@@ -39,7 +41,7 @@ interface PassportHomeDashboardProps {
   checkinStreak: number;
   nextReward: NextRewardSummary | null;
   onOpenCheckin: () => void;
-  onGoJourney: () => void;
+  onGoJourney: (mode?: JourneyMode) => void;
   onGoRewards: () => void;
   onLogin: () => Promise<void> | void;
 }
@@ -176,7 +178,7 @@ export default function PassportHomeDashboard({
         id: 'login',
         eyebrow: 'Identity',
         title: '先登入，把這本護照接上你的會員資料',
-        description: '登入後才能同步跨站足跡、點數與訂單狀態。',
+        description: '登入後可查看帳號資料與訂單；此裝置的探索紀錄會先保留。',
         label: '登入同步',
         icon: <ReceiptText size={15} />,
         run: () => void onLogin(),
@@ -199,23 +201,23 @@ export default function PassportHomeDashboard({
       return {
         id: 'reward',
         eyebrow: 'Ready',
-        title: `${nextReward.title} 已可兌換`,
-        description: '你已達成這個集章里程碑，現在可以查看獎勵狀態。',
+        title: `${nextReward.title}：已達探索里程碑`,
+        description: '可查看獎勵說明；實體領取仍須門市確認與核銷。',
         label: '前往集章獎勵',
         icon: <Star size={15} />,
         run: onGoRewards,
       };
     }
 
-    if (latestOrder) {
+    if (latestOrder && ['pending', 'paid', 'ready'].includes(latestOrder.status)) {
       return {
         id: 'order',
         eyebrow: getOrderSourceLabel(latestOrder),
         title: `${statusLabel || '最新訂單'}：${latestOrder.order_id}`,
-        description: '查看最新訂單狀態，或前往甜點選單繼續探索。',
-        label: '前往甜點選單',
+        description: '先確認這筆訂單的付款或取貨狀態，再安排下一次到店。',
+        label: '查看最新訂單',
         icon: <Package2 size={15} />,
-        run: openShopMenu,
+        run: () => document.getElementById('passport-latest-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       };
     }
 
@@ -347,7 +349,7 @@ export default function PassportHomeDashboard({
                       <p className="text-lg font-black text-brand-black">{nextReward.title}</p>
                       <p className="mt-1 text-[12px] font-medium leading-relaxed text-brand-black/60">
                         {nextReward.isReady
-                          ? '已達成條件，現在可以前往集章獎勵頁兌換。'
+                          ? '已達探索里程碑；請查看獎勵說明，實體領取須門市確認。'
                           : `距離解鎖還差 ${nextReward.remainingStamps} 枚印章。`}
                       </p>
                     </div>
@@ -377,7 +379,8 @@ export default function PassportHomeDashboard({
           </KiwimuPanel>
         </div>
 
-        <KiwimuPanel padded={false}>
+        <KiwimuPanel padded={false} className="scroll-mt-20">
+          <div id="passport-latest-order" className="scroll-mt-20" />
           <div className="border-b-2 border-brand-black bg-white px-4 py-3">
             <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
               Latest Activity
@@ -511,6 +514,35 @@ export default function PassportHomeDashboard({
           </div>
         </KiwimuPanel>
       </div>
+
+      <KiwimuPanel padded={false}>
+        <div className="border-b border-brand-black/10 px-4 py-3">
+          <h4 className="text-sm font-black">下次回來，從這裡繼續</h4>
+          <p className="mt-2 text-xs leading-relaxed text-brand-black/65">今天做一件小事即可。線上簽到與到店集章是不同的紀錄。</p>
+        </div>
+        <div className="grid gap-3 p-4 sm:grid-cols-2">
+          <button type="button" onClick={() => trackSectionClick('return_online', 'journey', () => onGoJourney('online'))}
+            className="rounded-2xl border border-brand-black/20 bg-brand-lime/15 p-4 text-left">
+            <span className="block text-sm font-black">在家先做線上任務 →</span>
+            <span className="mt-2 block text-xs leading-relaxed text-brand-black/65">例如完成免費測驗，再回護照查看探索進度。</span>
+          </button>
+          <button type="button" onClick={() => trackSectionClick('return_store', 'journey', () => onGoJourney('store'))}
+            className="rounded-2xl border border-brand-black/20 bg-white p-4 text-left">
+            <span className="block text-sm font-black">到店繼續集章 →</span>
+            <span className="mt-2 block text-xs leading-relaxed text-brand-black/65">定位與 QR 在現場完成，獎勵由門市確認。</span>
+          </button>
+          <a href="https://kiwimu.com/read/library?from=passport_report_library" target="_blank" rel="noopener noreferrer"
+            onClick={() => trackOutboundNavigation('https://kiwimu.com/read/library?from=passport_report_library', 'member_report_library', { entrySurface: 'passport_return', destinationType: 'report_library' })}
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-black/20 px-4 py-3 text-xs font-bold">
+            <BookOpen size={16} /> 回看我已購的 MBTI 報告 <ExternalLink size={14} />
+          </a>
+          <a href="https://map.kiwimu.com/?from=passport_visit_plan" target="_blank" rel="noopener noreferrer"
+            onClick={() => trackOutboundNavigation('https://map.kiwimu.com/?from=passport_visit_plan', 'member_visit_plan', { entrySurface: 'passport_return', destinationType: 'map' })}
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-black/20 px-4 py-3 text-xs font-bold">
+            <Package2 size={16} /> 查看月島地圖與甜點 <ExternalLink size={14} />
+          </a>
+        </div>
+      </KiwimuPanel>
     </div>
   );
 }

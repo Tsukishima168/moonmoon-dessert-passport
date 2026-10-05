@@ -8,13 +8,12 @@ import {
     Sparkles,
     BookOpen,
 } from 'lucide-react';
-import { MOONMOON_SITES, PUBLIC_MOONMOON_SITES, DESSERTS } from '../constants';
+import { PUBLIC_MOONMOON_SITES, DESSERTS } from '../constants';
 import { useLiff } from '../src/contexts/LiffContext';
 import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 import { getVisitedSites, markSiteVisited, getPassportState } from '../passportUtils';
 import { trackEvent, trackOutboundNavigation } from '../analytics';
 import {
-    FootprintSiteId,
     loadCloudFootprints,
     markCloudFootprint,
     syncLocalFootprintsOnce,
@@ -27,6 +26,7 @@ import {
 import { KiwimuHubMilestoneCard } from './kiwimu/KiwimuHubMilestoneCard';
 import { KiwimuPanel } from './kiwimu/KiwimuPanel';
 import { KiwimuSiteCard } from './kiwimu/KiwimuSiteCard';
+import { detectIncomingSite } from '../src/lib/memberJourney';
 
 const IconMap: Record<string, any> = {
     BrainCircuit,
@@ -73,6 +73,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                     loadCloudMbtiResult(user.id),
                 ])
                 : [[], null] as const;
+            if (!isActive) return;
             const merged = new Set<string>([...saved, ...cloud]);
             const nextMbtiType = cloudMbti?.mbtiType ?? storedMbti?.mbtiType ?? null;
 
@@ -86,33 +87,15 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                 merged.add('passport');
             }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const referrer = document.referrer;
-            const fromParam = urlParams.get('from');
-
-            MOONMOON_SITES.forEach(site => {
-                const isCurrentSite =
-                    site.id === 'passport' && window.location.hostname === 'passport.kiwimu.com';
-                const isReferrerMatch =
-                    referrer && site.url && referrer.includes(new URL(site.url).hostname);
-                const isUrlMatch = fromParam === site.id;
-
-                if (isCurrentSite || isUrlMatch || isReferrerMatch) {
-                    if (!merged.has(site.id)) {
-                        markSiteVisited(site.id);
-                        markCloudFootprint(site.id as FootprintSiteId, {
-                            source: isUrlMatch ? 'url_param' : isReferrerMatch ? 'referrer' : 'current_site',
-                            referrer: referrer || null,
-                            path: window.location.pathname,
-                        });
-                        merged.add(site.id);
-                        trackEvent('moon_site_visit_detected', {
-                            site_id: site.id,
-                            source: isUrlMatch ? 'url_param' : isReferrerMatch ? 'referrer' : 'current_site',
-                        });
-                    }
-                }
-            });
+            const search = window.__PASSPORT_INITIAL_SEARCH__ ?? window.location.search;
+            const incomingSite = detectIncomingSite(search, document.referrer);
+            if (incomingSite && !merged.has(incomingSite)) {
+                const source = new URLSearchParams(search).has('from') ? 'url_param' : 'referrer';
+                markSiteVisited(incomingSite);
+                void markCloudFootprint(incomingSite, { source, path: window.location.pathname });
+                merged.add(incomingSite);
+                trackEvent('moon_site_visit_detected', { site_id: incomingSite, source });
+            }
 
             const nextVisitedSites = Array.from(merged);
             nextVisitedSites.forEach(siteId => markSiteVisited(siteId));
@@ -247,7 +230,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                     <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
                         <Sparkles size={16} className="text-brand-lime-dark" />
                         <p className="text-[12px] font-bold text-brand-lime-dark uppercase">
-                            你已走完整個月島足跡。
+                            你已完成目前開放的探索足跡。足跡不代表已集章或取得兌換資格。
                         </p>
                     </div>
                 )}
