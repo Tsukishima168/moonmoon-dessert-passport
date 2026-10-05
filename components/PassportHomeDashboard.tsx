@@ -102,6 +102,7 @@ export default function PassportHomeDashboard({
   const [latestOrder, setLatestOrder] = useState<ShopOrderRecord | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [orderReload, setOrderReload] = useState(0);
   const hasTrackedView = useRef(false);
 
   useEffect(() => {
@@ -124,7 +125,7 @@ export default function PassportHomeDashboard({
         }
       } catch (error) {
         if (!cancelled) {
-          setOrderError(error instanceof Error ? error.message : '讀取最新訂單失敗');
+          setOrderError('目前無法讀取訂單，請確認網路後重試。');
         }
       } finally {
         if (!cancelled) {
@@ -138,7 +139,7 @@ export default function PassportHomeDashboard({
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, orderReload]);
 
   const statusLabel = useMemo(() => {
     if (!latestOrder) return null;
@@ -257,7 +258,7 @@ export default function PassportHomeDashboard({
           <div>
             <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/40">
+                <p className="text-[12px] font-black uppercase tracking-[0.24em] text-white/65">
                   Passport Home
                 </p>
                 <h3 className="mt-2 truncate text-2xl font-black tracking-tight text-white">
@@ -271,11 +272,11 @@ export default function PassportHomeDashboard({
               </div>
 
               <div className="shrink-0 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
-                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
+                <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
                   Passport
                 </p>
                 <p className="mt-1 text-xs font-black text-white">#{passportCoverNumber}</p>
-                <p className="mt-1 text-[10px] font-bold text-white/55">{passportMode}</p>
+                <p className="mt-1 text-[12px] font-bold text-white/65">{passportMode}</p>
               </div>
             </div>
 
@@ -286,25 +287,25 @@ export default function PassportHomeDashboard({
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-brand-lime">
+              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-lime">
                 護照等級 Lv.{userLevel}
               </span>
               {mbtiType ? (
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white">
                   靈魂甜點 {mbtiType}
                 </span>
               ) : (
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/55">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
                   尚未同步 MBTI
                 </span>
               )}
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/55">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
                 {canCheckin ? '今日可簽到' : '今日已簽到'}
               </span>
             </div>
 
             <div className="mt-4 rounded-[1.6rem] border border-white/15 bg-white p-4 text-brand-black">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40">
+              <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
                 {nextAction.eyebrow}
               </p>
               <h4 className="mt-2 text-lg font-black leading-tight text-brand-black">
@@ -332,7 +333,7 @@ export default function PassportHomeDashboard({
 
           <KiwimuPanel padded={false}>
             <div className="border-b-2 border-brand-black bg-brand-lime px-4 py-3 text-brand-black">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/60">
+              <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/60">
                 Next Unlock
               </p>
               <h4 className="mt-1 text-sm font-black">你的下一個里程碑</h4>
@@ -344,13 +345,13 @@ export default function PassportHomeDashboard({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-lg font-black text-brand-black">{nextReward.title}</p>
-                      <p className="mt-1 text-[11px] font-medium leading-relaxed text-brand-black/60">
+                      <p className="mt-1 text-[12px] font-medium leading-relaxed text-brand-black/60">
                         {nextReward.isReady
                           ? '已達成條件，現在可以前往集章獎勵頁兌換。'
                           : `距離解鎖還差 ${nextReward.remainingStamps} 枚印章。`}
                       </p>
                     </div>
-                    <div className="rounded-full border border-brand-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-brand-black">
+                    <div className="rounded-full border border-brand-black bg-white px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black">
                       {nextReward.requiredStamps} stamps
                     </div>
                   </div>
@@ -358,7 +359,7 @@ export default function PassportHomeDashboard({
                   <button
                     type="button"
                     onClick={() => trackSectionClick('next_unlock', 'rewards', onGoRewards)}
-                    className="inline-flex items-center gap-2 rounded-full border-2 border-brand-black bg-brand-black px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-[2px_2px_0px_black] transition-all hover:bg-brand-lime hover:text-brand-black"
+                    className="inline-flex items-center gap-2 rounded-full border-2 border-brand-black bg-brand-black px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white shadow-[2px_2px_0px_black] transition-all hover:bg-brand-lime hover:text-brand-black"
                   >
                     <Star size={13} />
                     前往集章獎勵
@@ -367,7 +368,7 @@ export default function PassportHomeDashboard({
               ) : (
                 <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-gray/10 p-4">
                   <p className="text-sm font-black text-brand-black">所有里程碑都已完成</p>
-                  <p className="mt-2 text-[11px] font-medium leading-relaxed text-brand-black/55">
+                  <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
                     下一步可以把重心放在任務回訪、集章紀錄與跨站探索。
                   </p>
                 </div>
@@ -378,7 +379,7 @@ export default function PassportHomeDashboard({
 
         <KiwimuPanel padded={false}>
           <div className="border-b-2 border-brand-black bg-white px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/35">
+            <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
               Latest Activity
             </p>
             <h4 className="mt-1 text-sm font-black text-brand-black">最近訂單與消費狀態</h4>
@@ -389,75 +390,75 @@ export default function PassportHomeDashboard({
               <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-gray/10 p-4">
                 <div>
                   <p className="text-sm font-black text-brand-black">登入後可同步最新訂單</p>
-                  <p className="mt-2 text-[11px] font-medium leading-relaxed text-brand-black/55">
+                  <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
                     Shop 與 Map 訂單紀錄會在這裡回來，先登入才能把會員資料接起來。
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => void onLogin()}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-brand-black bg-brand-black px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-[2px_2px_0px_black] transition-all hover:bg-brand-lime hover:text-brand-black"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-brand-black bg-brand-black px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white shadow-[2px_2px_0px_black] transition-all hover:bg-brand-lime hover:text-brand-black"
                 >
                   <ReceiptText size={13} />
                   先登入同步
                 </button>
               </div>
             ) : loadingOrder ? (
-              <div className="flex items-center gap-2 rounded-2xl border border-brand-black/10 bg-brand-gray/10 px-4 py-4 text-sm font-bold text-brand-black/60">
+              <div role="status" className="flex items-center gap-2 rounded-2xl border border-brand-black/10 bg-brand-gray/10 px-4 py-4 text-sm font-bold text-brand-black/60">
                 <Loader2 size={16} className="animate-spin" />
                 正在讀取最新訂單...
               </div>
             ) : orderError ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-sm font-black text-red-700">目前沒有順利讀到訂單狀態</p>
-                <p className="mt-2 text-[11px] font-medium leading-relaxed text-red-600">
+              <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-black text-red-700">訂單狀態暫時無法讀取</p>
+                <p className="mt-2 text-[12px] font-medium leading-relaxed text-red-600">
                   {orderError}
                 </p>
                 <button
                   type="button"
-                  onClick={() => trackSectionClick('latest_order_error', 'shop', openShopMenu)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+                  onClick={() => setOrderReload(value => value + 1)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
                 >
-                  前往甜點選單
-                  <ExternalLink size={13} />
+                  重試讀取訂單
+                  <ReceiptText size={13} />
                 </button>
               </div>
             ) : latestOrder ? (
               <div className="rounded-[1.6rem] border-2 border-brand-black bg-brand-black p-4 text-white shadow-[3px_3px_0px_black]">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+                    <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
                       Latest Order
                     </p>
                     <p className="mt-2 text-sm font-black text-white">{latestOrder.order_id}</p>
                   </div>
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-brand-lime">
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-lime">
                     {statusLabel}
                   </span>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">
+                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
                       來源
                     </p>
-                    <p className="mt-1 text-[11px] font-black text-white">
+                    <p className="mt-1 text-[12px] font-black text-white">
                       {getOrderSourceLabel(latestOrder)}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">
+                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
                       取貨時間
                     </p>
-                    <p className="mt-1 text-[11px] font-black text-white">
+                    <p className="mt-1 text-[12px] font-black text-white">
                       {formatPickupTime(latestOrder.pickup_time)}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/35">
+                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
                       訂單金額
                     </p>
-                    <p className="mt-1 text-[11px] font-black text-white">
+                    <p className="mt-1 text-[12px] font-black text-white">
                       ${Number(latestOrder.final_price ?? latestOrder.total_price ?? 0).toLocaleString()}
                     </p>
                   </div>
@@ -466,7 +467,7 @@ export default function PassportHomeDashboard({
                 <button
                   type="button"
                   onClick={() => trackSectionClick('latest_order', 'shop', openShopMenu)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-brand-black"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-brand-black"
                 >
                   <Package2 size={13} />
                   前往甜點選單
@@ -475,13 +476,13 @@ export default function PassportHomeDashboard({
             ) : (
               <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-gray/10 p-4">
                 <p className="text-sm font-black text-brand-black">目前還沒有同步到訂單</p>
-                <p className="mt-2 text-[11px] font-medium leading-relaxed text-brand-black/55">
+                <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
                   第一次登入下單後，這裡就會出現你的最近取貨與消費狀態。
                 </p>
                 <button
                   type="button"
                   onClick={() => trackSectionClick('latest_order_empty', 'shop', openShopMenu)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
                 >
                   <Coins size={13} />
                   去看甜點選單
@@ -500,12 +501,12 @@ export default function PassportHomeDashboard({
                 </div>
                 <div>
                   <p className="text-sm font-black text-brand-black">回到任務與足跡</p>
-                  <p className="mt-1 text-[11px] font-medium leading-relaxed text-brand-black/55">
+                  <p className="mt-1 text-[12px] font-medium leading-relaxed text-brand-black/65">
                     查看印章、門市定位與跨站探索進度。
                   </p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-brand-black/45" />
+              <ArrowRight size={15} className="text-brand-black/65" />
             </button>
           </div>
         </KiwimuPanel>

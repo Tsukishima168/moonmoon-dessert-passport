@@ -146,7 +146,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     const [isProfileCenterHydrated, setIsProfileCenterHydrated] = useState(false);
     const [profileCenterSyncStatus, setProfileCenterSyncStatus] = useState<ProfileCenterSyncStatus>({
         tone: 'idle',
-        message: '尚未檢查 shared profiles 同步狀態。',
+        message: '正在確認會員資料同步狀態。',
     });
 
     const handleHubProfileSnapshotChange = React.useCallback((snapshot: {
@@ -294,7 +294,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
         setProfileCenterSyncStatus({
             tone: 'syncing',
-            message: '正在寫回 shared profiles...',
+            message: '正在保存會員資料...',
         });
 
         const timer = window.setTimeout(() => {
@@ -459,6 +459,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                 <div className="bg-brand-black px-5 pb-4 pt-7 shadow-lg relative overflow-hidden shrink-0">
                     <div className="relative z-10">
                         <button
+                            type="button"
+                            aria-label="關閉會員護照"
                             onClick={onClose}
                             className="absolute right-0 top-0 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
                         >
@@ -470,18 +472,18 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 <Trophy size={22} className="text-brand-black" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-white/40">
+                                <p className="text-[12px] font-black uppercase tracking-[0.26em] text-white/65">
                                     Passport No. {passportCoverNumber}
                                 </p>
                                 <h1 className="mt-1 truncate text-lg font-black tracking-tight text-white">
                                     Kiwimu 月島護照
                                 </h1>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-brand-lime">
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.14em] text-brand-lime">
                                         <ShieldCheck size={11} />
                                         Lv.{userLevel}
                                     </span>
-                                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/65">
+                                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.14em] text-white/65">
                                         {passportMode}
                                     </span>
                                 </div>
@@ -512,7 +514,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             <ShieldCheck size={24} className="text-brand-lime-dark" />
                             <div>
                                 <h3 className="text-sm font-black text-brand-black uppercase">保存你的探險紀錄</h3>
-                                <p className="text-[10px] text-gray-500 font-bold mt-1">登入以永久保存印章與積分，並在所有宇宙服務中同步。</p>
+                                <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可同步會員資料，並查看帳號的印章與積分；訪客紀錄先保留在這個裝置。</p>
                             </div>
                             <button
                                 onClick={() => void signInWithGoogle()}
@@ -535,10 +537,10 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                     header={
                                         <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black bg-brand-gray/10 px-4 py-3">
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">定位記錄</p>
+                                            <p className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-600">定位記錄</p>
                                             <h3 className="text-sm font-black text-brand-black">{gpsDebug.stampName}</h3>
                                         </div>
-                                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${GPS_STATUS_STYLE[gpsDebug.status]}`}>
+                                        <span className={`rounded-full border px-2.5 py-1 text-[12px] font-black uppercase tracking-wider ${GPS_STATUS_STYLE[gpsDebug.status]}`}>
                                             {GPS_STATUS_LABEL[gpsDebug.status]}
                                         </span>
                                         </div>
@@ -548,15 +550,15 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                     <div className="space-y-3 p-4">
                                         <p className="text-xs font-medium leading-relaxed text-gray-600">{gpsDebug.message}</p>
 
-                                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                        <div className="grid grid-cols-2 gap-2 text-[12px]">
                                             {typeof gpsDebug.distanceMeters === 'number' && (
                                                 <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                                                    <p className="font-bold uppercase tracking-wider text-gray-400">距離月島</p>
+                                                    <p className="font-bold uppercase tracking-wider text-gray-600">距離月島</p>
                                                     <p className="mt-1 font-semibold text-brand-black/80">{Math.round(gpsDebug.distanceMeters)} m</p>
                                                 </div>
                                             )}
                                             <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                                                <p className="font-bold uppercase tracking-wider text-gray-400">需進入範圍</p>
+                                                <p className="font-bold uppercase tracking-wider text-gray-600">需進入範圍</p>
                                                 <p className="mt-1 font-semibold text-brand-black/80">{gpsDebug.allowedRadiusMeters} m 內</p>
                                             </div>
                                         </div>
@@ -565,7 +567,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => window.open(LINKS.NAVIGATION, '_blank')}
-                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-3 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
+                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-3 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
                                                 >
                                                     導航前往月島
                                                     <ExternalLink size={12} />
@@ -591,7 +593,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         <div className="space-y-4">
                             <KiwimuSectionIntro eyebrow="Stamp Milestones">
                                 <p>
-                                    這裡是「集章里程碑獎勵」。完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。
+                                    完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。實體獎勵須由門市確認與核銷，解鎖里程碑不代表已兌換。
                                 </p>
                             </KiwimuSectionIntro>
                             {REWARD_TIERS.map((reward) => {
@@ -656,7 +658,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             />
                             <div className="space-y-3 pt-1">
                                 <div className="px-1">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-black/35">
+                                    <p className="text-[12px] font-black uppercase tracking-[0.24em] text-brand-black/65">
                                         Extension Records
                                     </p>
                                     <h2 className="mt-1 text-sm font-black text-brand-black">身份資料與宇宙足跡</h2>

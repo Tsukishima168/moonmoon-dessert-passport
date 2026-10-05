@@ -28,7 +28,7 @@ export const KiwimuSiteCard: React.FC<KiwimuSiteCardProps> = ({
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-lg border ${
           visited
-            ? 'border-brand-lime/20 bg-brand-lime/10 text-brand-black/40'
+            ? 'border-brand-lime/20 bg-brand-lime/10 text-brand-black/65'
             : 'border-brand-black bg-brand-lime text-brand-black'
         }`}
       >
@@ -36,10 +36,10 @@ export const KiwimuSiteCard: React.FC<KiwimuSiteCardProps> = ({
       </div>
 
       <div className="flex-1 text-left">
-        <h3 className={`text-xs font-bold ${visited ? 'text-brand-black/40' : 'text-brand-black'}`}>
+        <h3 className={`text-xs font-bold ${visited ? 'text-brand-black/65' : 'text-brand-black'}`}>
           {name}
         </h3>
-        <p className="text-[10px] font-medium text-gray-400">{description}</p>
+        <p className="text-[12px] font-medium text-gray-600">{description}</p>
       </div>
 
       <div className="flex items-center justify-center">

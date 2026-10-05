@@ -20,7 +20,7 @@ export const KiwimuMetricCard: React.FC<KiwimuMetricCardProps> = ({
     <div
       className={`flex flex-1 flex-col items-center rounded-xl border border-white/10 bg-white/5 p-2.5 ${className}`.trim()}
     >
-      <span className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+      <span className="mb-0.5 text-[12px] font-bold uppercase tracking-widest text-white/65">
         {label}
       </span>
       <span className={`text-lg font-black ${valueClass}`}>{value}</span>

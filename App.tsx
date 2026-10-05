@@ -206,7 +206,8 @@ const Header = ({
   passportCoverNumber: string;
   onHomeClick: () => void;
 }) => {
-  const { user: supabaseUser, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
+  const { user: supabaseUser, loading: authLoading, signInWithGoogle, signOut: supabaseSignOut } = useSupabaseAuth();
+  const [signingOut, setSigningOut] = useState(false);
 
   if (currentScreen !== 'landing') {
     return null;
@@ -227,22 +228,25 @@ const Header = ({
       </div>
 
       <div className="pointer-events-auto flex items-center gap-2">
-        <div className="hidden sm:flex items-center rounded-full border border-brand-black bg-white/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-brand-black/55 shadow-[2px_2px_0px_black]">
+        <div className="hidden sm:flex items-center rounded-full border border-brand-black bg-white/90 px-4 py-2 text-[12px] font-black uppercase tracking-[0.22em] text-brand-black/65 shadow-[2px_2px_0px_black]">
           Passport No. {passportCoverNumber}
         </div>
 
         {supabaseUser ? (
           <div className="flex items-center bg-white border border-brand-black rounded-full px-2 py-1 shadow-[2px_2px_0px_black] ml-1 gap-2">
-            <button onClick={supabaseSignOut} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-brand-black transition-colors">
+            <button type="button" aria-label={signingOut ? '登出中' : '登出'} disabled={signingOut} onClick={async () => { setSigningOut(true); try { await supabaseSignOut(); } finally { setSigningOut(false); } }} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-brand-black transition-colors">
               <LogOut size={12} /> <span className="hidden sm:inline">登出</span>
             </button>
           </div>
         ) : (
           <button
+            type="button"
+            disabled={authLoading}
+            aria-label={authLoading ? '確認登入狀態中' : '使用 Google 登入'}
             onClick={() => void signInWithGoogle()}
-            className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 h-9 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-px hover:shadow-[1px_1px_0px_black] transition-all"
+            className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 min-h-11 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-px hover:shadow-[1px_1px_0px_black] transition-all"
           >
-            <LogIn size={14} /> <span className="hidden sm:inline">Google </span>登入
+            <LogIn size={14} /> <span className="hidden sm:inline">Google </span>{authLoading ? '確認中…' : '登入'}
           </button>
         )}
       </div>
@@ -277,7 +281,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
           <p className="mt-3 max-w-56 text-sm font-medium leading-relaxed text-brand-black/62 md:mt-4 md:max-w-[18rem] md:text-base">
             你的會員資料、MBTI、任務、集章與積分，都從這本護照開始。
           </p>
-          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-brand-black/28 md:text-[11px]">
+          <p className="mt-4 text-[12px] font-black uppercase tracking-[0.28em] text-brand-black/65 md:text-[12px]">
             No. {passportCoverNumber}
           </p>
         </div>
@@ -311,7 +315,7 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
             <span>打開我的護照</span>
             <ArrowUpRight className="h-3.5 w-3.5 text-brand-black/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>
-          <p className="text-[10px] font-bold tracking-[0.16em] text-brand-black/30">
+          <p className="text-[12px] font-bold tracking-[0.16em] text-brand-black/65">
             身份 · 任務 · 集章
           </p>
         </div>
@@ -339,13 +343,13 @@ const SsoBrokerScreen = () => {
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-black bg-brand-lime">
           <LogIn size={22} className="text-brand-black" />
         </div>
-        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.28em] text-brand-black/35">
+        <p className="mb-3 text-[12px] font-black uppercase tracking-[0.28em] text-brand-black/65">
           Kiwimu Passport
         </p>
         <h1 className="text-2xl font-black leading-tight text-brand-black">
           正在確認會員身份
         </h1>
-        <p className="mt-4 text-sm font-semibold leading-7 text-brand-black/55">
+        <p className="mt-4 text-sm font-semibold leading-7 text-brand-black/65">
           這個視窗只用來完成登入。完成後會自動回到原本頁面。
         </p>
         {error ? (
@@ -360,7 +364,7 @@ const SsoBrokerScreen = () => {
             重新登入
           </button>
         ) : (
-          <p className="mt-6 animate-pulse text-xs font-black uppercase tracking-[0.2em] text-brand-black/35">
+          <p className="mt-6 animate-pulse text-xs font-black uppercase tracking-[0.2em] text-brand-black/65">
             Opening Google...
           </p>
         )}
@@ -777,7 +781,7 @@ function App() {
             ) : (
               <CircleAlert size={18} className="mt-0.5 shrink-0" />
             )}
-            <p className="flex-1 text-sm font-semibold leading-6">{appNotice.message}</p>
+            <p role={appNotice.tone === 'error' ? 'alert' : 'status'} className="flex-1 text-sm font-semibold leading-6">{appNotice.message}</p>
             <button
               type="button"
               onClick={() => {

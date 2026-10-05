@@ -227,8 +227,14 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   const handleSignOut = async () => {
     const client = supabase;
     if (!client) return;
-    await client.auth.signOut();
-    setUser(null);
+    setError(null);
+    try {
+      const { error: signOutError } = await client.auth.signOut();
+      if (signOutError) throw signOutError;
+      setUser(null);
+    } catch {
+      setError('登出尚未完成，請確認網路後再試一次。');
+    }
   };
 
   return (

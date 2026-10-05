@@ -93,11 +93,11 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
                         {streak > 0 && (
                             <div className="flex items-center gap-0.5 bg-brand-black/10 rounded-full px-2 py-0.5">
                                 <Flame size={10} className="text-orange-500" />
-                                <span className="text-[9px] font-bold text-brand-black">{streak}連</span>
+                                <span className="text-[12px] font-bold text-brand-black">{streak}連</span>
                             </div>
                         )}
                     </div>
-                    <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                    <p className="text-[12px] text-gray-500 font-medium mt-0.5">
                         {canCheckin
                             ? '打開護照，領今日積分'
                             : '今日已完成，明天再來'
@@ -113,11 +113,11 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
                         點此簽到
                     </span>
                 ) : (
-                    <span className="text-xs font-bold text-gray-400">
+                    <span className="text-xs font-bold text-gray-600">
                         查看日曆
                     </span>
                 )}
-                <ChevronRight size={14} className="text-brand-black/40" />
+                <ChevronRight size={14} className="text-brand-black/65" />
             </div>
         </button>
     );
