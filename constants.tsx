@@ -217,9 +217,9 @@ export const MOONMOON_SITES: MoonSite[] = [
   },
   {
     id: 'gacha',
-    name: '月島扭蛋',
+    name: '月島遊戲中心',
     url: 'https://gacha.kiwimu.com',
-    description: '抽運籤拿獎勵',
+    description: '每日運勢與本機遊戲積分',
     iconType: 'Dices'
   },
 ];
