@@ -182,7 +182,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                     <h2 className="text-sm font-bold tracking-tight uppercase">月島足跡</h2>
                 </div>
                 <div className="bg-brand-gray/10 px-2 py-0.5 rounded-full border border-brand-black/10">
-                    <span className="text-[10px] font-black text-brand-black uppercase">
+                    <span className="text-[12px] font-black text-brand-black uppercase">
                         {publicVisitedSites.length === PUBLIC_MOONMOON_SITES.length ? '已完成' : `${publicVisitedSites.length}/${PUBLIC_MOONMOON_SITES.length}`}
                     </span>
                 </div>
@@ -199,7 +199,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
             {/* User Footprint Cards */}
             {(mbtiType || stampCount > 0) && (
                 <div className="p-3 pb-0 bg-gray-50/50 border-b border-gray-100">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1">你的成就記錄</p>
+                    <p className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-600 mb-2 px-1">你的成就記錄</p>
                     <div className="grid grid-cols-2 gap-2 mb-3">
                         {mbtiType && (
                             <KiwimuHubMilestoneCard
@@ -223,7 +223,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
 
             {/* Sites List */}
             <div className="p-3 bg-gray-50/50">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1">宇宙探索進度</p>
+                <p className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-600 mb-2 px-1">宇宙探索進度</p>
                 <div className="grid grid-cols-1 gap-2.5">
                     {PUBLIC_MOONMOON_SITES.map((site) => {
                         const isVisited = visitedSites.includes(site.id);
@@ -246,7 +246,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
                 {publicVisitedSites.length === PUBLIC_MOONMOON_SITES.length && (
                     <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
                         <Sparkles size={16} className="text-brand-lime-dark" />
-                        <p className="text-[10px] font-bold text-brand-lime-dark uppercase">
+                        <p className="text-[12px] font-bold text-brand-lime-dark uppercase">
                             你已走完整個月島足跡。
                         </p>
                     </div>

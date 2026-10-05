@@ -141,7 +141,7 @@ export async function loadProfileCenterDraft(
       draft: baseDraft,
       syncStatus: {
         tone: 'warning',
-        message: '目前沒有對應到 shared profiles，暫時只使用本機草稿。',
+        message: '尚未同步到會員資料，目前先使用本機草稿。',
       },
     };
   }
@@ -149,8 +149,8 @@ export async function loadProfileCenterDraft(
   const { row } = resolved;
   const syncMessage =
     resolved.source === 'authUserId'
-      ? '已從 shared profiles 讀取會員資料。'
-      : '已從 shared profiles（line_user_id fallback）讀取會員資料。';
+      ? '已讀取你的會員資料。'
+      : '已讀取你的 LINE 會員資料。';
 
   return {
     draft: {
@@ -183,7 +183,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'warning',
-        message: 'Supabase 尚未設定完成，資料只會留在本機草稿。',
+        message: '會員同步暫時無法使用，這次變更先保留在本機草稿。',
       },
     };
   }
@@ -200,7 +200,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'warning',
-        message: '找不到 shared profiles 對應列，這次只存到本機草稿。',
+        message: '尚未同步到會員資料，這次變更先保留在本機草稿。',
       },
     };
   }
@@ -237,7 +237,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'warning',
-        message: 'shared profiles 沒有可寫入欄位，這次未送出更新。',
+        message: '目前沒有可同步的變更，這次未更新會員資料。',
       },
     };
   }
@@ -252,7 +252,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'error',
-        message: `shared profiles 寫回失敗：${error.message}`,
+        message: '會員資料尚未保存成功，請確認網路後再試一次。',
       },
     };
   }
@@ -266,7 +266,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'warning',
-        message: '已透過 line_user_id fallback 寫回 shared profiles。',
+        message: '已保存至你的 LINE 會員資料。',
       },
     };
   }
@@ -274,7 +274,7 @@ export async function saveProfileCenterDraftToProfile(
   return {
     syncStatus: {
       tone: 'success',
-      message: '已寫回 shared profiles，重新整理後應可讀回目前設定。',
+      message: '會員資料已保存。重新開啟護照後可讀取目前設定。',
     },
   };
 }

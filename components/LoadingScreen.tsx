@@ -3,7 +3,7 @@ import { BRANDING } from '../constants';
 
 const LoadingScreen: React.FC = () => {
     return (
-        <div className="fixed inset-0 z-100 bg-white flex flex-col items-center justify-center p-8">
+        <div role="status" aria-label="正在載入會員護照" className="fixed inset-0 z-100 bg-white flex flex-col items-center justify-center p-8">
             {/* Brand Logo - Center Area */}
             <div className="relative mb-8 animate-float">
                 <div className="absolute -inset-4 bg-brand-lime/20 rounded-full blur-2xl animate-pulse" />
@@ -21,16 +21,16 @@ const LoadingScreen: React.FC = () => {
 
             {/* Loading Status */}
             <div className="mt-4 flex flex-col items-center gap-1">
-                <p className="text-[10px] font-black tracking-[0.3em] uppercase text-brand-black animate-pulse">
-                    Loading Island
+                <p className="text-[12px] font-black tracking-[0.3em] uppercase text-brand-black animate-pulse">
+                    正在載入島嶼
                 </p>
-                <span className="text-[8px] font-bold text-gray-400">
+                <span className="text-[12px] font-bold text-gray-600">
                     Powered by Kiwimu
                 </span>
             </div>
 
             {/* Background Decorative Element */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 opacity-10">
+            <div aria-hidden="true" className="absolute bottom-12 left-1/2 -translate-x-1/2 opacity-10">
                 <p className="text-[60px] font-black text-brand-gray/20 select-none whitespace-nowrap">
                     MOONMOON
                 </p>

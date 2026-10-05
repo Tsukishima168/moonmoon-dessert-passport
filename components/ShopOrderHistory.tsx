@@ -55,6 +55,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
   const [orders, setOrders] = useState<ShopOrderRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   const stats = useMemo(() => {
     const readyCount = orders.filter((order) => order.status === 'ready').length;
@@ -71,6 +72,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
     if (!userId) {
       setOrders([]);
       setError(null);
+      setLoading(false);
       return;
     }
 
@@ -86,7 +88,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
         }
       } catch (fetchError) {
         if (!cancelled) {
-          setError(fetchError instanceof Error ? fetchError.message : '讀取訂單紀錄失敗');
+          setError('目前無法讀取訂單，請確認網路後重試。');
         }
       } finally {
         if (!cancelled) {
@@ -100,7 +102,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, reloadVersion]);
 
   const handleOpenShop = () => {
     const outboundUrl = new URL('https://map.kiwimu.com/menu');
@@ -112,21 +114,15 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
     <section className="mb-6 rounded-3xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black] overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black bg-brand-lime px-4 py-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/70">Shop Sync</p>
+          <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/70">Shop Sync</p>
           <h3 className="text-sm font-black text-brand-black uppercase">你的甜點訂單紀錄</h3>
         </div>
         {userId && (
           <button
-            onClick={() => {
-              setOrders([]);
-              setError(null);
-              setLoading(true);
-              getUserShopOrders(userId)
-                .then((nextOrders) => setOrders(nextOrders))
-                .catch((fetchError) => setError(fetchError instanceof Error ? fetchError.message : '讀取訂單紀錄失敗'))
-                .finally(() => setLoading(false));
-            }}
-            className="inline-flex items-center gap-1 rounded-full border border-brand-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+            type="button"
+            onClick={() => setReloadVersion(value => value + 1)}
+            disabled={loading}
+            className="inline-flex items-center gap-1 rounded-full border border-brand-black bg-white px-3 py-1 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
             更新
@@ -162,7 +158,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
           </div>
           <button
             onClick={handleOpenShop}
-            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
           >
             前往甜點選單
             <ExternalLink size={13} />
@@ -179,7 +175,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
           </div>
           <button
             onClick={handleOpenShop}
-            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-4 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-4 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
           >
             去逛甜點選單
             <ExternalLink size={13} />
@@ -189,15 +185,15 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
         <div className="space-y-4 p-4">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl border border-brand-black/10 bg-brand-gray/10 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">累積訂單</p>
+              <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500">累積訂單</p>
               <p className="mt-2 text-lg font-black text-brand-black">{orders.length}</p>
             </div>
             <div className="rounded-2xl border border-brand-black/10 bg-brand-gray/10 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">待取貨</p>
+              <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500">待取貨</p>
               <p className="mt-2 text-lg font-black text-brand-black">{stats.readyCount + stats.paidCount}</p>
             </div>
             <div className="rounded-2xl border border-brand-black/10 bg-brand-gray/10 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">累積金額</p>
+              <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500">累積金額</p>
               <p className="mt-2 text-lg font-black text-brand-black">${stats.totalSpent.toLocaleString()}</p>
             </div>
           </div>
@@ -212,13 +208,13 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-black/40">
+                      <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
                         {order.order_id}
                       </p>
                       <h4 className="mt-1 text-sm font-black text-brand-black">{buildItemsSummary(order)}</h4>
                     </div>
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
+                      className={`rounded-full border px-2.5 py-1 text-[12px] font-black uppercase tracking-wider ${
                         ORDER_STATUS_STYLE[order.status] || 'bg-gray-100 text-gray-700 border-gray-200'
                       }`}
                     >
@@ -226,39 +222,39 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                     </span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gray-500">
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[12px] text-gray-500">
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                      <p className="font-bold uppercase tracking-wider text-gray-400">來源</p>
+                      <p className="font-bold uppercase tracking-wider text-gray-600">來源</p>
                       <p className="mt-1 font-semibold text-brand-black/80">
                         {ORDER_SOURCE_LABEL[order.source_from || order.checkout_site || ''] || order.source_from || order.checkout_site || '未設定'}
                       </p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                      <p className="font-bold uppercase tracking-wider text-gray-400">建立時間</p>
+                      <p className="font-bold uppercase tracking-wider text-gray-600">建立時間</p>
                       <p className="mt-1 font-semibold text-brand-black/80">{formatDateTime(order.created_at)}</p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                      <p className="font-bold uppercase tracking-wider text-gray-400">取貨時間</p>
+                      <p className="font-bold uppercase tracking-wider text-gray-600">取貨時間</p>
                       <p className="mt-1 font-semibold text-brand-black/80">{formatDateTime(order.pickup_time)}</p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                      <p className="font-bold uppercase tracking-wider text-gray-400">付款方式</p>
+                      <p className="font-bold uppercase tracking-wider text-gray-600">付款方式</p>
                       <p className="mt-1 font-semibold text-brand-black/80">
                         {PAYMENT_METHOD_LABEL[order.payment_method || ''] || '未設定'}
                       </p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
-                      <p className="font-bold uppercase tracking-wider text-gray-400">訂單金額</p>
+                      <p className="font-bold uppercase tracking-wider text-gray-600">訂單金額</p>
                       <p className="mt-1 font-semibold text-brand-black/80">${price.toLocaleString()}</p>
                     </div>
                   </div>
 
                   {order.payment_method === 'line_pay' && (
                     <div className="mt-3 rounded-xl border border-brand-black/10 bg-brand-lime/10 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-brand-black/50">
+                      <p className="text-[12px] font-bold uppercase tracking-wider text-brand-black/65">
                         Line Pay 交易號
                       </p>
-                      <p className="mt-1 break-all font-mono text-[11px] font-semibold text-brand-black/80">
+                      <p className="mt-1 break-all font-mono text-[12px] font-semibold text-brand-black/80">
                         {order.linepay_transaction_id || '尚未回填'}
                       </p>
                     </div>
@@ -270,7 +266,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
 
           <button
             onClick={handleOpenShop}
-            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
           >
             <ReceiptText size={13} />
             前往甜點選單再下一單
