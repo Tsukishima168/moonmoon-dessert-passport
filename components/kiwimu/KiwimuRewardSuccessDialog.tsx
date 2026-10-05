@@ -65,7 +65,7 @@ export const KiwimuRewardSuccessDialog: React.FC<KiwimuRewardSuccessDialogProps>
 
         {typeof balance === 'number' && (
           <p className="mb-4 text-xs font-bold text-[#5d4037]">
-            目前剩餘 {balance} 點
+            目前剩餘可兌換點數 {balance} 點
           </p>
         )}
 

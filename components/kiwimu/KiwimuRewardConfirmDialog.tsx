@@ -26,7 +26,7 @@ export const KiwimuRewardConfirmDialog: React.FC<KiwimuRewardConfirmDialogProps>
         <p className="mb-6 text-sm text-[#666]">
           <strong>{rewardName}</strong>
           <br />
-          本次將扣除 <strong>{pointsCost} 點</strong>，請確認你要兌換這項福利。
+          本次將扣除 <strong>{pointsCost} 點可兌換點數</strong>，請確認你要兌換這項福利。
         </p>
         <div className="flex gap-3">
           <button

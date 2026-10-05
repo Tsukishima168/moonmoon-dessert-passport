@@ -11,10 +11,13 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { RedeemableItem } from '../../types';
+import type { RewardBalanceStatus } from './KiwimuRewardBalanceCard';
 
 interface KiwimuRewardCardProps {
   reward: RedeemableItem;
-  userPoints: number;
+  /** 伺服器端可兌換點數；status 非 ready 時為 null。 */
+  userPoints: number | null;
+  status: RewardBalanceStatus;
   onRedeem: (reward: RedeemableItem) => void;
 }
 
@@ -34,9 +37,22 @@ const REWARD_ICON_MAP: Record<string, { Icon: LucideIcon; accent: string; bg: st
 export const KiwimuRewardCard: React.FC<KiwimuRewardCardProps> = ({
   reward,
   userPoints,
+  status,
   onRedeem,
 }) => {
-  const canAfford = userPoints >= reward.pointsCost;
+  const isGuest = status === 'guest';
+  const canAfford = status === 'ready' && userPoints !== null && userPoints >= reward.pointsCost;
+  // 訪客可以點「登入後兌換」；讀取中／讀取失敗時不得讓人兌換
+  const isClickable = canAfford || isGuest;
+  const buttonLabel = canAfford
+    ? '立即兌換'
+    : isGuest
+      ? '登入後兌換'
+      : status === 'loading'
+        ? '讀取點數中…'
+        : status === 'error'
+          ? '暫時無法兌換'
+          : `還需 ${reward.pointsCost - (userPoints ?? 0)} 點`;
   const categoryLabel =
     reward.category === 'drink'
       ? '飲品'
@@ -93,19 +109,19 @@ export const KiwimuRewardCard: React.FC<KiwimuRewardCardProps> = ({
         }`}
       >
         <Coins size={18} />
-        <span>{reward.pointsCost} 積分</span>
+        <span>{reward.pointsCost} 點</span>
       </div>
 
       <button
         onClick={() => onRedeem(reward)}
-        disabled={!canAfford}
+        disabled={!isClickable}
         className={`w-full rounded-[10px] py-2.5 text-sm font-bold text-white transition-all ${
-          canAfford
+          isClickable
             ? 'cursor-pointer bg-linear-to-r from-[#ff8f00] to-[#ffa000]'
             : 'cursor-not-allowed bg-[#bdbdbd]'
         }`}
       >
-        {canAfford ? '立即兌換' : `還需 ${reward.pointsCost - userPoints} 積分`}
+        {buttonLabel}
       </button>
     </div>
   );
