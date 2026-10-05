@@ -46,6 +46,7 @@ import {
     saveProfileCenterDraft,
 } from './src/lib/profileCenter';
 import { readStoredMbtiResult } from './src/lib/mbtiResult';
+import { parseJourneyMode, type JourneyMode } from './src/lib/memberJourney';
 
 
 interface PassportScreenProps {
@@ -118,6 +119,18 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
     onTabChange,
 }) => {
     const [activeTab, setActiveTab] = useState<PassportTab>(normalizePublicPassportTab(initialTab));
+    const [journeyMode, setJourneyMode] = useState<JourneyMode>(() => parseJourneyMode(
+        new URLSearchParams(window.__PASSPORT_INITIAL_SEARCH__ ?? window.location.search).get('journey_mode')
+    ));
+    const goToJourney = (mode: JourneyMode = 'online') => {
+        setJourneyMode(mode);
+        setActiveTab('journey');
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', 'journey');
+        url.searchParams.set('journey_mode', mode);
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        trackEvent('passport_journey_mode_selected', { journey_mode: mode });
+    };
     const [showAchievementModal, setShowAchievementModal] = useState<string | null>(null);
     const [showCheckinModal, setShowCheckinModal] = useState(false);
     const [unlockedCount, setUnlockedCount] = useState(0);
@@ -580,6 +593,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
                             {/* ─── Stamp Journey ─── */}
                             <BadgeJourney
+                                mode={journeyMode}
+                                onModeChange={goToJourney}
                                 onStampUnlocked={handleStampUnlocked}
                                 onGpsCheckin={handleGpsCheckin}
                                 isCheckingLocation={isCheckingLocation}
@@ -634,7 +649,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 visitedSiteCount={hubProfileSnapshot.visitedSiteCount}
                                 visitedSiteTotal={PUBLIC_MOONMOON_SITES.length}
                                 mbtiType={hubProfileSnapshot.mbtiType}
-                                hasIdentity={Boolean(user || profile)}
+                                hasIdentity={Boolean(user?.id)}
                                 userId={user?.id ?? null}
                                 canCheckin={canDailyCheckin}
                                 checkinStreak={checkinStreak}
@@ -652,7 +667,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                         : null
                                 }
                                 onOpenCheckin={handleOpenCheckin}
-                                onGoJourney={() => setActiveTab('journey')}
+                                onGoJourney={goToJourney}
                                 onGoRewards={() => setActiveTab('rewards')}
                                 onLogin={signInWithGoogle}
                             />

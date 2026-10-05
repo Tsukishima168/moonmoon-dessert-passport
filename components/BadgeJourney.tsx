@@ -21,11 +21,13 @@ import {
     isStampUnlocked,
     unlockStamp,
     getUnlockedStampCount,
-    getNextStampInJourney,
 } from '../passportUtils';
 import { trackEvent, trackOutboundNavigation } from '../analytics';
+import { getNextMission, type JourneyMode } from '../src/lib/memberJourney';
 
 interface BadgeJourneyProps {
+    mode: JourneyMode;
+    onModeChange: (mode: JourneyMode) => void;
     onStampUnlocked: (newAchievements: string[]) => void;
     onGpsCheckin: (stamp: Stamp) => void;
     isCheckingLocation: boolean;
@@ -51,12 +53,12 @@ const IconMap: Record<string, any> = {
     Sparkles,
 };
 
-const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheckin, isCheckingLocation, gpsDebug }) => {
+const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStampUnlocked, onGpsCheckin, isCheckingLocation, gpsDebug }) => {
     const [externalPending, setExternalPending] = useState<string | null>(null);
     const [showCollected, setShowCollected] = useState(false);
     const visibleStamps = STAMPS.filter(stamp => !stamp.isSecret);
     const unlockedCount = getUnlockedStampCount();
-    const nextStamp = getNextStampInJourney();
+    const nextStamp = getNextMission(STAMPS, STAMPS.filter(s => isStampUnlocked(s.id)).map(s => s.id), mode);
     const totalStamps = visibleStamps.length;
     const allComplete = unlockedCount >= totalStamps;
 
@@ -94,6 +96,22 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
 
     return (
         <div className="space-y-4">
+            <div className="rounded-2xl border-2 border-brand-black bg-white p-4">
+                <h3 className="text-sm font-black">這次想在哪裡繼續？</h3>
+                <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="選擇任務情境">
+                    {(['online', 'store'] as const).map(value => (
+                        <button key={value} type="button" aria-pressed={mode === value}
+                            onClick={() => onModeChange(value)}
+                            className={`min-h-11 rounded-xl border border-brand-black px-3 py-3 text-xs font-bold ${mode === value ? 'bg-brand-lime text-brand-black' : 'bg-white text-brand-black/70'}`}>
+                            {value === 'online' ? '先做線上任務' : '我已到店'}
+                        </button>
+                    ))}
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-brand-black/65">
+                    {mode === 'online' ? '例如先完成免費 MBTI 測驗，下次回來再查看護照紀錄。' : '到店後才使用定位或掃描現場 QR；實體獎勵由門市確認與核銷。'}
+                    印章探索進度先保留在此裝置，跨站足跡不會自動換成印章。
+                </p>
+            </div>
             {/* ─── Progress Tracker ─── */}
             <div className="bg-white rounded-2xl p-4 border-2 border-brand-black shadow-[4px_4px_0px_black]">
                 <div className="flex items-center justify-between mb-3">
@@ -117,7 +135,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
                 <div className="bg-white rounded-2xl p-5 border-2 border-brand-black shadow-[4px_4px_0px_black] relative overflow-hidden group">
                     <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-lime/10 rounded-full transition-transform group-hover:scale-125" />
 
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">
+                    <p className="text-[12px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-4">
                         Next Mission
                     </p>
 
@@ -127,7 +145,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
                         </div>
                         <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-bold text-brand-black mb-1">{nextStamp.name}</h3>
-                            <p className="text-xs text-gray-500 mb-4 font-medium">{nextStamp.guideHint}</p>
+                            <p className="text-xs text-gray-600 mb-4 font-medium">{nextStamp.id === 'quiz_completed' ? '前往免費 MBTI 測驗，完成後從結果頁回到護照。' : nextStamp.guideHint}</p>
 
                             {/* Action Buttons based on unlockMethod */}
                             {nextStamp.unlockMethod === 'gps' && (
@@ -173,13 +191,26 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ onStampUnlocked, onGpsCheck
                                 )
                             )}
 
-                            {nextStamp.unlockMethod === 'qr' && (
+                            {nextStamp.id === 'quiz_completed' ? (
+                                <a href="https://kiwimu.com/?from=passport_online_mission" target="_blank" rel="noopener noreferrer"
+                                    onClick={() => trackOutboundNavigation('https://kiwimu.com/?from=passport_online_mission', 'member_mbti_mission', { entrySurface: 'passport_badge_journey', destinationType: 'quiz' })}
+                                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-black bg-brand-black px-3 py-3 text-sm font-bold text-white">
+                                    做免費 MBTI 測驗 <ExternalLink size={16} />
+                                </a>
+                            ) : nextStamp.unlockMethod === 'qr' && (
                                 <div className="w-full py-2.5 bg-gray-50 text-brand-black/60 rounded-xl text-[11px] font-bold text-center border border-dashed border-gray-300">
                                     {nextStamp.id === 'quiz_completed' ? '完成甜點測驗自動解鎖' : '尋找店內 QR Code 掃描'}
                                 </div>
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {!nextStamp && !allComplete && (
+                <div role="status" className="rounded-2xl border border-brand-black/20 bg-white p-4">
+                    <p className="text-sm font-bold">{mode === 'online' ? '目前線上任務已完成' : '目前到店任務已完成'}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-brand-black/65">{mode === 'online' ? '下次到店時切換「我已到店」，繼續定位與 QR 探索。' : '可以切換線上任務，或回到護照首頁查看紀錄。'}</p>
                 </div>
             )}
 
