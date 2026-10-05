@@ -8,16 +8,16 @@ insert into public.profiles(id,points) values
 insert into public.reward_items(reward_id,name,points_cost,category) values ('qa_redemption','隔離測試',50,'drink');
 select set_config('request.jwt.claim.sub','',true);
 do $$ begin
- if public.redeem_reward_item('qa_redemption',50)->>'error' <> 'auth_required' then raise exception 'missing identity accepted'; end if;
+ if public.redeem_reward_item('qa_redemption',50)->>'error' is distinct from 'auth_required' then raise exception 'missing identity accepted'; end if;
  if has_function_privilege('anon','public.redeem_reward_item(text,integer)','EXECUTE') then raise exception 'anon execution allowed'; end if;
 end $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000041',true);
 do $$ declare r jsonb; begin
- if public.redeem_reward_item('missing',50)->>'error' <> 'reward_unavailable' then raise exception 'invalid reward accepted'; end if;
- if public.redeem_reward_item('qa_redemption',1)->>'error' <> 'reward_price_changed' then raise exception 'price override accepted'; end if;
+ if public.redeem_reward_item('missing',50)->>'error' is distinct from 'reward_unavailable' then raise exception 'invalid reward accepted'; end if;
+ if public.redeem_reward_item('qa_redemption',1)->>'error' is distinct from 'reward_price_changed' then raise exception 'price override accepted'; end if;
  r:=public.redeem_reward_item('qa_redemption',50);
- if r->>'ok' <> 'true' or (r->>'balance')::int <> 50 then raise exception 'redemption failed'; end if;
+ if r->>'ok' is distinct from 'true' or (r->>'balance')::int is distinct from 50 then raise exception 'redemption failed'; end if;
 end $$;
 reset role;
 do $$ begin
@@ -28,7 +28,7 @@ end $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000042',true);
 do $$ begin
- if public.redeem_reward_item('qa_redemption',50)->>'error' <> 'insufficient_points' then raise exception 'overspend accepted'; end if;
+ if public.redeem_reward_item('qa_redemption',50)->>'error' is distinct from 'insufficient_points' then raise exception 'overspend accepted'; end if;
 end $$;
 reset role;
 create function pg_temp.reject_qa_ledger() returns trigger language plpgsql as $$ begin raise exception 'qa injected ledger failure'; end $$;
