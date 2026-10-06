@@ -267,7 +267,7 @@ export default function PassportHomeDashboard({
       <section className="member-welcome" aria-labelledby="member-welcome-title">
         <div className="member-welcome-copy">
           <p className="member-eyebrow">MOON ISLAND · YOUR PASSPORT</p>
-          <h2 id="member-welcome-title">{hasIdentity ? `${displayName}，歡迎回來。` : '在月島，留一份日常。'}</h2>
+          <h2 id="member-welcome-title">{hasIdentity ? <><span>{displayName}，</span><span>歡迎回來。</span></> : <><span>在月島，</span><span>留一份日常。</span></>}</h2>
           <p className="member-welcome-intro">{hasIdentity ? '今天的小事、累積的印章，都從這裡繼續。' : '你的集章、訂單與已購報告，在這裡找到。'}</p>
           <div className="member-next-action">
             <h3>{nextAction.title}</h3>

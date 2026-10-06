@@ -1,5 +1,14 @@
 # CURRENT.md — passport.kiwimu.com
 
+## Snapshot · 2026-10-06（月島深綠改版）
+
+- 分支 `codex/passport-green-simplify-20261006`（base＝main `0646b77`）：Codex 作者 commit「收斂深綠會員首頁與集章入口」＋ Claude 配色統一修正。Codex 獨立審查 APPROVE（40 個 mocked behavior checks：登出、訂單重試／取消、水合、URL 分頁、獎勵頁純說明）。
+- Claude 配色統一：PWA manifest `background_color`／`theme_color` 由舊 lime `#D4FF00` 改為 `#F5F0E8`／`#1F2F1F`；移除深色模式 `theme-color #111111`（頁面深色模式仍是奶油白＋深綠，瀏覽器頂色應一致）。
+- Claude 細節修正：會員首頁標題在 320px 斷成「在月島，留／一份日常。」→ 改為逗號後換行（兩段 inline-block span），桌機仍一行。
+- Claude 接手重驗：tsc exit 0；`npm run build`（含 OAuth／SSO／points-sync／member journey／hydration 迴歸）通過；本機 preview 1280／768／390／320 無水平溢出、無 console error、按鈕 ≥44px；Kiwimu 角色圖未裁切（object-fit: contain）。
+- 待 Penso 判斷：手機首頁「開啟會員中心」是整排寬的金色主按鈕，沒擋到 Kiwimu，但與先前「CTA 要小」的偏好不同。
+- 未做：Google 登入、集章、兌換、點數同步實操；實機 Safari／LINE 瀏覽器。
+
 ## Snapshot · 2026-10-04 (Codex 接手 Claude 安全修補)
 
 - 修正 SSO opener 通知也等待 sign_up／login 送出，避免來源站提前關窗；實際 broker 時序回歸通過。

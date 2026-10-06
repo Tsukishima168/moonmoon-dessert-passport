@@ -170,6 +170,7 @@ html {
 .member-welcome { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr); gap:44px; align-items:center; padding:38px; border-radius:24px; background:#1f3527; color:#f8f4e9; }
 .member-welcome .member-eyebrow { color:#d7ceac; }
 .member-welcome h2 { font-size:clamp(28px,3.6vw,44px); line-height:1.35; letter-spacing:-.05em; font-weight:700; margin:16px 0 14px; overflow-wrap:anywhere; text-wrap:balance; }
+.member-welcome h2 > span { display:inline-block; max-width:100%; }
 .member-welcome-intro { color:#d7ddd0; font-size:15px; line-height:1.8; }
 .member-next-action { margin-top:30px; }
 .member-next-action h3 { font-size:17px; font-weight:500; line-height:1.6; }
