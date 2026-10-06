@@ -3,7 +3,7 @@ import { BRANDING } from '../constants';
 
 const LoadingScreen: React.FC = () => {
     return (
-        <div role="status" aria-label="正在載入會員護照" className="fixed inset-0 z-100 bg-white flex flex-col items-center justify-center p-8">
+        <div role="status" aria-label="正在載入會員護照" className="fixed inset-0 z-100 bg-brand-bg flex flex-col items-center justify-center p-8">
             {/* Brand Logo - Center Area */}
             <div className="relative mb-8 animate-float">
                 <div className="absolute -inset-4 bg-brand-lime/20 rounded-full blur-2xl animate-pulse" />

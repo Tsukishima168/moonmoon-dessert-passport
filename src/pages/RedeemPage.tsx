@@ -80,7 +80,7 @@ export default function RedeemPage() {
 
         <div className="mb-8">
           <p className="text-xs text-brand-black/40 tracking-widest uppercase">月島端驗證</p>
-          <h1 className="font-serif text-3xl text-brand-black mt-2">兌換核銷</h1>
+          <h1 className="text-3xl text-brand-black mt-2">兌換核銷</h1>
         </div>
 
         <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-brand-black/5 p-1">

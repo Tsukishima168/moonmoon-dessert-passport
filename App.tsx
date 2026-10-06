@@ -291,8 +291,8 @@ const SsoBrokerScreen = () => {
 
   return (
     <div className="ku-passport-route-shell flex items-center justify-center bg-brand-cream px-6 text-center">
-      <div className="w-full max-w-sm rounded-[28px] border-2 border-brand-black bg-white p-8 shadow-[8px_8px_0px_black]">
-        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-black bg-brand-lime">
+      <div className="w-full max-w-sm rounded-[24px] border border-[#D8D7C4] bg-white p-8 shadow-[0_16px_32px_#10211530]">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#D8D7C4] bg-brand-lime">
           <LogIn size={22} className="text-brand-black" />
         </div>
         <p className="mb-3 text-[12px] font-black uppercase tracking-[0.28em] text-brand-black/65">
@@ -311,7 +311,7 @@ const SsoBrokerScreen = () => {
               startedRef.current = false;
               void signInWithGoogle();
             }}
-            className="mt-6 w-full rounded-full border-2 border-brand-black bg-brand-lime px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-black shadow-[3px_3px_0px_black]"
+            className="mt-6 w-full rounded-full border border-[#D8D7C4] bg-brand-lime px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-black shadow-[0_8px_28px_#1F2F1F26]"
           >
             重新登入
           </button>
@@ -722,9 +722,9 @@ function App() {
       {appNotice && (
         <div className="fixed top-[calc(var(--ku-rail-height)+6rem)] left-1/2 z-70 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 px-1">
           <div
-            className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-3 shadow-[4px_4px_0px_black] ${
+            className={`flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-[0_8px_28px_#1F2F1F26] ${
               appNotice.tone === 'success'
-                ? 'border-brand-black bg-brand-lime text-brand-black'
+                ? 'border-[#D8D7C4] bg-brand-lime text-brand-black'
                 : 'border-red-200 bg-red-50 text-red-700'
             }`}
           >
