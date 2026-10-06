@@ -13,7 +13,7 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 
 const ORDER_STATUS_STYLE: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  paid: 'bg-sky-100 text-sky-700 border-sky-200',
+  paid: 'bg-[#E6E8D9] text-[#304F2F] border-[#D8D7C4]',
   ready: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   completed: 'bg-gray-100 text-gray-700 border-gray-200',
   cancelled: 'bg-red-100 text-red-700 border-red-200',

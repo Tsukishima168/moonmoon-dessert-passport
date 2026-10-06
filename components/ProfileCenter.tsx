@@ -98,7 +98,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
         : syncStatus.tone === 'error'
           ? 'border-red-200 bg-red-50 text-red-700'
           : syncStatus.tone === 'syncing'
-            ? 'border-sky-200 bg-sky-50 text-sky-700'
+            ? 'border-[#D8D7C4] bg-[#E6E8D9] text-[#304F2F]'
             : 'border-brand-black/10 bg-brand-gray/10 text-brand-black/65';
 
   const updateDraft = <K extends keyof ProfileCenterDraft>(

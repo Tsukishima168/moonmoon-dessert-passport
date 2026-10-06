@@ -1,12 +1,11 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter', 'Noto Sans TC', sans-serif;
-  --font-serif: 'DM Serif Display', serif;
+  --font-sans: 'Noto Sans TC', system-ui, sans-serif;
 
   --color-brand-bg: #f5f0e8;
   --color-brand-lime: #d7c678;
-  --color-brand-lime-dark: #526944;
+  --color-brand-lime-dark: #304f2f;
   --color-brand-black: #1f2f1f;
   --color-brand-gray: #e3e0d3;
 
@@ -156,7 +155,7 @@ html {
 }
 
 /* Passport: a quiet member center in the approved Map / Gacha green series. */
-:root { --member-paper:#f5f0e8; --member-ink:#1f2f1f; --member-muted:#626b5c; --member-line:#dcded1; --member-gold:#d7c678; }
+:root { --member-paper:#f5f0e8; --member-ink:#1f2f1f; --member-muted:#5f6856; --member-line:#d8d7c4; --member-gold:#d7c678; }
 .member-center, .member-landing { font-family:'Noto Sans TC',sans-serif; color:var(--member-ink); }
 .member-shell { width:min(100%,1168px); margin-inline:auto; padding:0 32px 48px; }
 .member-header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:36px 0 24px; }
@@ -182,7 +181,7 @@ html {
 .member-button:disabled { opacity:.65; cursor:wait; }
 .member-passport-card { min-width:0; border:1px solid #d7c67860; background:#f3f0e4; color:var(--member-ink); border-radius:20px; padding:20px 24px 16px; box-shadow:0 16px 32px #10211530; }
 .member-card-top, .member-card-holder { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:13px; font-weight:600; }
-.member-card-mode { font-size:12px; color:#617258; border:1px solid #d2d8c2; border-radius:99px; padding:4px 8px; font-weight:400; white-space:nowrap; }
+.member-card-mode { font-size:12px; color:#304f2f; border:1px solid #d2d8c2; border-radius:99px; padding:4px 8px; font-weight:400; white-space:nowrap; }
 .member-passport-card img { display:block; width:100%; height:136px; object-fit:contain; margin:10px 0; }
 .member-card-holder>span:first-child { overflow-wrap:anywhere; }
 .member-card-holder>span:last-child { font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; color:var(--member-muted); }
@@ -195,7 +194,7 @@ html {
 .member-essentials { display:grid; grid-template-columns:1fr 1fr; margin:28px 0 24px; border-top:1px solid var(--member-line); border-bottom:1px solid var(--member-line); }
 .member-essential { display:flex; align-items:flex-start; gap:18px; padding:26px 24px; min-width:0; }
 .member-essential+ .member-essential { border-left:1px solid var(--member-line); }
-.member-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; flex-shrink:0; border-radius:14px; background:#e6e8d9; color:#496344; }
+.member-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; flex-shrink:0; border-radius:14px; background:#e6e8d9; color:#304f2f; }
 .member-essential h3 { font-size:20px; font-weight:700; line-height:1.5; }
 .member-essential p { font-size:13px; line-height:1.8; color:var(--member-muted); margin:5px 0; }
 .member-link { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:8px 0; font-size:14px; color:#304f2f; font-weight:600; cursor:pointer; }
@@ -213,7 +212,7 @@ html {
 .member-order-content .member-button { margin-top:16px; }
 .member-order-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .member-order-number { font-family:'JetBrains Mono',monospace; font-size:12px; overflow-wrap:anywhere; margin-top:6px; }
-.member-state { padding:3px 9px; border-radius:99px; background:#e6ebda; color:#3c5834; font-size:12px; }
+.member-state { padding:3px 9px; border-radius:99px; background:#e6ebda; color:#304f2f; font-size:12px; }
 .member-order-facts { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:20px 0; }
 .member-order-facts dt { font-size:12px; }
 .member-order-facts dd { font-size:14px; color:var(--member-ink); }
@@ -236,7 +235,7 @@ html {
 .member-section-heading .member-eyebrow { color:var(--member-muted); }
 .member-content> .space-y-4 { margin-top:20px; }
 .member-landing { padding-top:116px; }
-.member-landing-stage { display:grid; grid-template-columns:1.2fr 1fr; gap:24px; padding:60px; background:#1f3527; color:#f8f4e9; border-radius:26px; align-items:center; }
+.member-landing-stage { display:grid; grid-template-columns:1.2fr 1fr; gap:24px; padding:60px; background:#1f3527; color:#f8f4e9; border-radius:24px; align-items:center; }
 .member-landing-stage h1 { font-size:clamp(30px,4vw,52px); letter-spacing:-.04em; font-weight:700; line-height:1.5; margin:18px 0; }
 .member-landing-stage p { font-size:15px; color:#d7ddd0; line-height:1.9; }
 .member-landing-stage .member-eyebrow { font-size:12px; color:#d7ceac; }
@@ -246,14 +245,14 @@ html {
 .member-landing-footer { font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.1em; color:var(--member-muted); padding:24px 0; }
 .ku-passport-fixed-header { padding-inline:max(24px,calc((100vw - 1104px)/2)); }
 .ku-passport-fixed-header :is(button,[class*='shadow-']) { box-shadow:none; }
-#root :is(button,a,input,select,textarea,summary):focus-visible { outline-color:#526944; box-shadow:0 0 0 5px #d7c67880; }
+#root :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #304f2f; outline-offset:2px; box-shadow:none; }
 @media (max-width:760px) {
  .member-shell { padding:0 20px 32px; }
  .member-header { padding:24px 0 18px; gap:10px; }
  .member-header h1 { font-size:25px; }
  .member-header .member-eyebrow { font-size:12px; }
  .member-tabs { margin-bottom:22px; gap:24px; }
- .member-welcome { padding:26px; gap:26px; grid-template-columns:1fr; }
+ .member-welcome { padding:26px; gap:26px; grid-template-columns:1fr; border-radius:22px; }
  .member-welcome h2 { font-size:30px; }
  .member-passport-card { padding:18px 22px 14px; }
  .member-passport-card img { height:130px; margin:2px 0; }
@@ -268,7 +267,7 @@ html {
  .member-order-content, .member-settings-content { padding:18px; }
  .member-order-facts { grid-template-columns:1fr 1fr; }
  .member-landing { padding-top:110px; }
- .member-landing-stage { padding:32px; grid-template-columns:1fr; gap:8px; }
+ .member-landing-stage { padding:32px; grid-template-columns:1fr; gap:8px; border-radius:22px; }
  .member-landing-stage img { max-width:260px; justify-self:center; }
  .member-landing-stage .member-button { width:100%; }
  .member-landing-stage h1 { font-size:34px; }
@@ -278,7 +277,7 @@ html {
  .member-header h1 { font-size:22px; }
  .member-back { font-size:12px; gap:5px; }
  .member-eyebrow { font-size:12px; }
- .member-welcome { padding:24px 22px; border-radius:20px; }
+ .member-welcome { padding:24px 22px; border-radius:22px; }
  .member-welcome h2 { font-size:28px; }
  .member-welcome-intro { font-size:14px; }
  .member-next-action h3 { font-size:15px; }
@@ -318,7 +317,8 @@ html {
 .member-journey-heading h3 { font-size:17px; font-weight:700; }
 .member-journey-heading span { font-size:12px; color:var(--member-muted); }
 .member-center .bg-brand-lime :is(.text-gray-500,.text-gray-600) { color:#414a3c; }
-#root .member-center :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #526944; outline-offset:3px; box-shadow:0 0 0 5px #d7c67880; }
+#root .member-center :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #304f2f; outline-offset:2px; box-shadow:none; }
+#root :is(.member-welcome,.member-landing-stage) :is(button,a,input,select,textarea,summary):focus-visible { outline-color:#d7c678; }
 @media (max-width:430px) { .member-guest-checkin { padding:10px 6px; flex-wrap:wrap; gap:5px; } .member-guest-checkin .member-link { font-size:12px; } .member-summary-meta { max-width:76px; } }
 
 .member-account-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:18px; border-bottom:1px solid var(--member-line); font-size:13px; color:var(--member-muted); }

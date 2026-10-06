@@ -8,6 +8,7 @@
 - Claude 接手重驗：tsc exit 0；`npm run build`（含 OAuth／SSO／points-sync／member journey／hydration 迴歸）通過；本機 preview 1280／768／390／320 無水平溢出、無 console error、按鈕 ≥44px；Kiwimu 角色圖未裁切（object-fit: contain）。
 - 待 Penso 判斷：手機首頁「開啟會員中心」是整排寬的金色主按鈕，沒擋到 Kiwimu，但與先前「CTA 要小」的偏好不同。
 - 未做：Google 登入、集章、兌換、點數同步實操；實機 Safari／LINE 瀏覽器。
+- 已上線（PR #39 squash `7e0076c`）。上線後配色細節統一（獨立比對差異表 P1–P9＋補兩處）：Hero 圓角 24／手機 22px；焦點框改 2px #304F2F、深綠 Hero 內金色，舊 #111＋lime 光暈限縮在 Universe rail；muted／邊框 token 對齊 #5F6856／#D8D7C4；`brand-lime-dark` 等小字綠統一 #304F2F；訂單藍色狀態標籤改淡綠；PWA 安裝提示、App 通知 toast 與對話框的黑／lime 硬陰影改柔和陰影＋#D8D7C4 細邊；字體改 Noto Sans TC（Inter 未載入）、移除 DM Serif；載入頁白底改奶油白。tsc、build＋迴歸測試通過；390px 實測無 console error、無溢出。
 
 ## Snapshot · 2026-10-04 (Codex 接手 Claude 安全修補)
 

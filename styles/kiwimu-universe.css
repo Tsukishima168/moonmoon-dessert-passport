@@ -361,7 +361,7 @@
 
 /* 觸控尺寸與跨頁鍵盤焦點；不改印章與兌換權限。 */
 :where(#root) button { min-height: 2.75rem; min-width: 2.75rem; }
-#root :is(button, a, input, select, textarea, summary):focus-visible {
+#root .ku-universe-rail :is(button, a, input, select, textarea, summary):focus-visible {
   outline: 2px solid #111;
   outline-offset: 3px;
   box-shadow: 0 0 0 5px #d4ff00;
