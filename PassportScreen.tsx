@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-    X,
     MapPin,
     ExternalLink,
     ShieldCheck,
-    Trophy,
+    ArrowLeft,
+    ChevronDown,
+    Settings,
+    CalendarDays,
+    ArrowRight,
+    LogOut,
 } from 'lucide-react';
 import { STAMPS, REWARD_TIERS, ACHIEVEMENTS, LINKS, PUBLIC_MOONMOON_SITES } from './constants';
 import { Stamp } from './types';
@@ -12,7 +16,6 @@ import { PassportTab } from './types';
 import {
     getPassportState,
     unlockStamp,
-    markRewardRedeemed,
     getUnlockedStampCount,
     calculateUserLevel,
     getVisitedSites,
@@ -26,7 +29,6 @@ import MemberHub from './components/MemberHub';
 import ProfileCenter from './components/ProfileCenter';
 import CheckinCard from './components/CheckinCard';
 import CheckinModal from './components/CheckinModal';
-import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
 import { KiwimuAchievementModal } from './components/kiwimu/KiwimuAchievementModal';
 import { KiwimuPanel } from './components/kiwimu/KiwimuPanel';
 import { KiwimuRewardTierCard } from './components/kiwimu/KiwimuRewardTierCard';
@@ -61,9 +63,8 @@ const normalizePublicPassportTab = (tab: string | null | undefined): PassportTab
 );
 
 const TAB_LABELS: Partial<Record<PassportTab, string>> = {
-    hub: '護照首頁',
-    journey: '任務',
-    rewards: '集章獎勵',
+    hub: '會員首頁',
+    journey: '我的集章',
 };
 
 const PASSPORT_TABS = (Object.entries(TAB_LABELS) as Array<[PassportTab, string]>).map(([key, label]) => ({ key, label }));
@@ -143,7 +144,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
 
     const { isLoggedIn, profile } = useLiff();
-    const { user, signInWithGoogle } = useSupabaseAuth();
+    const { user, loading: authLoading, signInWithGoogle, signOut } = useSupabaseAuth();
+    const [signingOut, setSigningOut] = useState(false);
     const [points, setPoints] = useState(0);
     const [hubProfileSnapshot, setHubProfileSnapshot] = useState<{
         mbtiType: string | null;
@@ -465,55 +467,15 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
         trackEvent('checkin_card_tapped', { source: activeTab });
     };
     return (
-        <div className="fixed inset-0 z-50 bg-brand-bg md:bg-black/20 md:flex md:items-center md:justify-center overflow-hidden">
-            <div className="flex flex-col w-full h-full md:max-w-md md:h-[90vh] md:rounded-[40px] bg-brand-bg shadow-2xl relative overflow-hidden animate-slide-up">
-
-                {/* ─── Hero Header ─── */}
-                <div className="bg-brand-black px-5 pb-4 pt-7 shadow-lg relative overflow-hidden shrink-0">
-                    <div className="relative z-10">
-                        <button
-                            type="button"
-                            aria-label="關閉會員護照"
-                            onClick={onClose}
-                            className="absolute right-0 top-0 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        <div className="flex items-center gap-3 pr-10">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-2 border-white bg-brand-lime shadow-[0_0_18px_rgba(212,255,0,0.25)]">
-                                <Trophy size={22} className="text-brand-black" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[12px] font-black uppercase tracking-[0.26em] text-white/65">
-                                    Passport No. {passportCoverNumber}
-                                </p>
-                                <h1 className="mt-1 truncate text-lg font-black tracking-tight text-white">
-                                    Kiwimu 月島護照
-                                </h1>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.14em] text-brand-lime">
-                                        <ShieldCheck size={11} />
-                                        Lv.{userLevel}
-                                    </span>
-                                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.14em] text-white/65">
-                                        {passportMode}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ─── Content Tabs ─── */}
-                <div className="flex-1 overflow-y-auto px-5 py-5 scrollbar-hide">
-                    {/* Tab Navigation */}
-                    <KiwimuTabs
-                        tabs={PASSPORT_TABS}
-                        activeTab={activeTab}
-                        onChange={setActiveTab}
-                    />
-
+        <div className="member-center">
+            <div className="member-shell">
+                <header className="member-header">
+                    <div><p className="member-eyebrow">KIWIMU PASSPORT</p><h1>月島・會員中心</h1></div>
+                    <button type="button" className="member-back" onClick={onClose}><ArrowLeft size={16} aria-hidden="true" />月島首頁</button>
+                </header>
+                <div className="member-content">
+                    <KiwimuTabs tabs={PASSPORT_TABS} activeTab={activeTab} onChange={setActiveTab} />
+                    {activeTab === 'rewards' && <div className="member-section-heading"><div><p className="member-eyebrow">STAMP REWARDS</p><h2>集章獎勵說明</h2></div><button type="button" className="member-link" onClick={() => setActiveTab('hub')}>回會員首頁<ArrowLeft size={16} aria-hidden="true" /></button></div>}
                     {locationError && (
                         <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl animate-shake flex items-start gap-3">
                             <MapPin size={20} className="text-red-500 shrink-0" />
@@ -521,19 +483,20 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         </div>
                     )}
 
-                    {!user && (
+                    {!user && activeTab === 'rewards' && (
                         <KiwimuPanel className="mb-6" padded={false}>
                             <div className="flex flex-col items-center gap-3 p-4 text-center">
                             <ShieldCheck size={24} className="text-brand-lime-dark" />
                             <div>
-                                <h3 className="text-sm font-black text-brand-black uppercase">保存你的探險紀錄</h3>
+                                <h3 className="text-sm font-black text-brand-black uppercase">登入後查看會員紀錄</h3>
                                 <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可同步會員資料，並查看帳號的印章與積分；訪客紀錄先保留在這個裝置。</p>
                             </div>
                             <button
+                                disabled={authLoading}
                                 onClick={() => void signInWithGoogle()}
                                 className="w-full py-2.5 bg-brand-lime text-brand-black rounded-xl text-xs font-black uppercase tracking-wider border-2 border-brand-black shadow-[2px_2px_0px_black] active:translate-y-[2px] active:shadow-none transition-all"
                             >
-                                登入 Google 帳號快速綁定
+                                {authLoading ? '確認登入狀態中…' : '使用 Google 登入'}
                             </button>
                             </div>
                         </KiwimuPanel>
@@ -542,7 +505,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                     {activeTab === 'journey' && (
                         <div className="space-y-4">
                             {/* ─── Daily Check-in (prominent placement) ─── */}
-                            <CheckinCard onOpen={handleOpenCheckin} />
+                            {user ? <CheckinCard onOpen={handleOpenCheckin} /> : <div className="member-guest-checkin"><CalendarDays size={19} aria-hidden="true" /><span>登入會員後，可開啟每日簽到。</span><button type="button" className="member-link" disabled={authLoading} onClick={() => void signInWithGoogle()}>{authLoading ? '確認中…' : 'Google 登入'}<ArrowRight size={15} aria-hidden="true" /></button></div>}
 
                             {gpsDebug && (
                                 <KiwimuPanel
@@ -608,7 +571,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         <div className="space-y-4">
                             <KiwimuSectionIntro eyebrow="Stamp Milestones">
                                 <p>
-                                    完成探索任務累積印章後，可解鎖一次性的護照成就獎勵。實體獎勵須由門市確認與核銷，解鎖里程碑不代表已兌換。
+                                    這裡是集章里程碑的說明。實體獎勵尚未開放自行兌換；領取條件與核銷須由門市確認，達到章數不代表已領取。
                                 </p>
                             </KiwimuSectionIntro>
                             {REWARD_TIERS.map((reward) => {
@@ -621,15 +584,6 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                         requiredStamps={reward.requiredStamps}
                                         isUnlocked={isUnlocked}
                                         isRedeemed={isRedeemed}
-                                        onRedeem={
-                                            isUnlocked && !isRedeemed
-                                                ? () => {
-                                                      markRewardRedeemed(reward.id);
-                                                      setRedeemedRewards([...redeemedRewards, reward.id]);
-                                                      trackEvent('reward_redeemed', { reward_id: reward.id });
-                                                  }
-                                                : undefined
-                                        }
                                     />
                                 );
                             })}
@@ -638,7 +592,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
 
                     {activeTab === 'hub' && (
                         <div className="space-y-4">
-                            <KiwimuUniverseNav surface="passport_home" />
+
                             <PassportHomeDashboard
                                 displayName={passportHolder}
                                 passportCoverNumber={passportCoverNumber}
@@ -670,14 +624,15 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 onGoJourney={goToJourney}
                                 onGoRewards={() => setActiveTab('rewards')}
                                 onLogin={signInWithGoogle}
+                                authLoading={authLoading}
                             />
-                            <div className="space-y-3 pt-1">
-                                <div className="px-1">
-                                    <p className="text-[12px] font-black uppercase tracking-[0.24em] text-brand-black/65">
-                                        Extension Records
-                                    </p>
-                                    <h2 className="mt-1 text-sm font-black text-brand-black">身份資料與宇宙足跡</h2>
-                                </div>
+                            {(user || profile) && (profileCenterSyncStatus.tone === 'warning' || profileCenterSyncStatus.tone === 'error') && (
+                                <p role={profileCenterSyncStatus.tone === 'error' ? 'alert' : 'status'} className={`member-sync-message ${profileCenterSyncStatus.tone === 'error' ? 'is-error' : ''}`}>{profileCenterSyncStatus.message}</p>
+                            )}
+                            <details className="member-disclosure member-settings">
+                                <summary><span className="member-summary-title"><Settings size={20} aria-hidden="true" />帳號設定與探索紀錄</span><span className="member-summary-meta" role="status">{{ idle: '確認中', syncing: '保存中', success: '已同步', warning: '本機草稿', error: '未保存' }[profileCenterSyncStatus.tone]}</span><ChevronDown size={18} aria-hidden="true" /></summary>
+                                <div className="member-settings-content">
+                                {user && <div className="member-account-actions"><p>目前使用 Google 會員帳號。</p><button type="button" className="member-button" disabled={signingOut} onClick={async () => { setSigningOut(true); try { await signOut(); } finally { setSigningOut(false); } }}><LogOut size={16} aria-hidden="true" />{signingOut ? '登出中…' : '登出這個帳號'}</button></div>}
                                 <ProfileCenter
                                     draft={profileCenterDraft}
                                     mbtiType={hubProfileSnapshot.mbtiType}
@@ -689,7 +644,8 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 <MemberHub
                                     onProfileSnapshotChange={handleHubProfileSnapshotChange}
                                 />
-                            </div>
+                                </div>
+                            </details>
                         </div>
                     )}
 
