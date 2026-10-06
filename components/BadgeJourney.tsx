@@ -97,7 +97,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
     return (
         <div className="space-y-4">
             <div className="rounded-2xl border-2 border-brand-black bg-white p-4">
-                <h3 className="text-sm font-black">這次想在哪裡繼續？</h3>
+                <div className="member-journey-heading"><h3>從一件小事開始集章</h3><span>探索進度 {unlockedCount} / {totalStamps}</span></div>
                 <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="選擇任務情境">
                     {(['online', 'store'] as const).map(value => (
                         <button key={value} type="button" aria-pressed={mode === value}
@@ -112,31 +112,12 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                     印章探索進度先保留在此裝置，跨站足跡不會自動換成印章。
                 </p>
             </div>
-            {/* ─── Progress Tracker ─── */}
-            <div className="bg-white rounded-2xl p-4 border-2 border-brand-black shadow-[4px_4px_0px_black]">
-                <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Adventure Progress</span>
-                    <div className="flex items-baseline gap-1">
-                        <span className="font-mono text-2xl font-bold text-brand-black">{unlockedCount}</span>
-                        <span className="text-sm text-gray-400">/</span>
-                        <span className="font-mono text-lg font-bold text-gray-400">{totalStamps}</span>
-                    </div>
-                </div>
-                <div className="relative h-3 w-full bg-gray-100 rounded-full overflow-hidden border border-brand-black">
-                    <div
-                        className="h-full bg-brand-lime transition-all duration-700 ease-out"
-                        style={{ width: `${(unlockedCount / totalStamps) * 100}%` }}
-                    />
-                </div>
-            </div>
-
             {/* ─── Next Action Card ─── */}
             {!allComplete && nextStamp && (
                 <div className="bg-white rounded-2xl p-5 border-2 border-brand-black shadow-[4px_4px_0px_black] relative overflow-hidden group">
-                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-lime/10 rounded-full transition-transform group-hover:scale-125" />
 
                     <p className="text-[12px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-4">
-                        Next Mission
+                        接著可以做
                     </p>
 
                     <div className="flex items-center gap-5">

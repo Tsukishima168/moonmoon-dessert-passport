@@ -3,16 +3,16 @@ import {
   ArrowRight,
   BookOpen,
   Calendar,
-  Coins,
   ExternalLink,
   Loader2,
   Package2,
   ReceiptText,
   Star,
+  ChevronDown,
+  MapPin,
+  ShieldCheck,
 } from 'lucide-react';
-import { KiwimuPanel } from './kiwimu/KiwimuPanel';
-import { KiwimuMetricCard } from './kiwimu/KiwimuMetricCard';
-import CheckinCard from './CheckinCard';
+
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
 import { trackEvent } from '../analytics';
 import { trackOutboundNavigation } from '../analytics';
@@ -44,6 +44,7 @@ interface PassportHomeDashboardProps {
   onGoJourney: (mode?: JourneyMode) => void;
   onGoRewards: () => void;
   onLogin: () => Promise<void> | void;
+  authLoading?: boolean;
 }
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
@@ -100,12 +101,14 @@ export default function PassportHomeDashboard({
   onGoJourney,
   onGoRewards,
   onLogin,
+  authLoading = false,
 }: PassportHomeDashboardProps) {
   const [latestOrder, setLatestOrder] = useState<ShopOrderRecord | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [orderReload, setOrderReload] = useState(0);
   const hasTrackedView = useRef(false);
+  const orderRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -177,9 +180,9 @@ export default function PassportHomeDashboard({
       return {
         id: 'login',
         eyebrow: 'Identity',
-        title: '先登入，把這本護照接上你的會員資料',
-        description: '登入後可查看帳號資料與訂單；此裝置的探索紀錄會先保留。',
-        label: '登入同步',
+        title: '登入，開始累積你的月島日常',
+        description: '用 Google 帳號登入，查看會員資料與訂單。已有的探索紀錄會留在這個裝置。',
+        label: '使用 Google 登入',
         icon: <ReceiptText size={15} />,
         run: () => void onLogin(),
       };
@@ -189,7 +192,7 @@ export default function PassportHomeDashboard({
       return {
         id: 'checkin',
         eyebrow: 'Today',
-        title: checkinStreak > 0 ? `延續 ${checkinStreak} 連簽到` : '領取今天的護照積分',
+        title: checkinStreak > 0 ? `已連續簽到 ${checkinStreak} 天，今天也來坐坐` : '今天來簽到，留下一次回訪',
         description: '完成每日簽到後，首頁點數會立即更新。',
         label: '今日簽到',
         icon: <Calendar size={15} />,
@@ -217,14 +220,20 @@ export default function PassportHomeDashboard({
         description: '先確認這筆訂單的付款或取貨狀態，再安排下一次到店。',
         label: '查看最新訂單',
         icon: <Package2 size={15} />,
-        run: () => document.getElementById('passport-latest-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+        run: () => {
+          if (orderRef.current) {
+            orderRef.current.open = true;
+            orderRef.current.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+            orderRef.current.querySelector('summary')?.focus();
+          }
+        },
       };
     }
 
     return {
       id: 'journey',
       eyebrow: 'Continue',
-      title: '繼續補齊月島任務與足跡',
+      title: '今天已簽到，慢慢繼續探索吧',
       description: '今天已完成簽到，下一步可以累積印章或探索其他入口。',
       label: '繼續任務',
       icon: <ArrowRight size={15} />,
@@ -254,295 +263,53 @@ export default function PassportHomeDashboard({
   };
 
   return (
-    <div className="space-y-4">
-      <KiwimuPanel padded={false} className="overflow-hidden">
-        <div className="bg-brand-black px-4 py-5 text-white md:px-5">
-          <div>
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
-              <div className="min-w-0">
-                <p className="text-[12px] font-black uppercase tracking-[0.24em] text-white/65">
-                  Passport Home
-                </p>
-                <h3 className="mt-2 truncate text-2xl font-black tracking-tight text-white">
-                  {displayName}
-                </h3>
-                <p className="mt-2 max-w-md text-[12px] font-medium leading-relaxed text-white/70">
-                  {hasIdentity
-                    ? '你的身份、任務、足跡與消費狀態都先在這裡匯合。'
-                    : '目前還在訪客模式。先登入，再把跨站資料同步回這本護照。'}
-                </p>
-              </div>
-
-              <div className="shrink-0 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
-                <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
-                  Passport
-                </p>
-                <p className="mt-1 text-xs font-black text-white">#{passportCoverNumber}</p>
-                <p className="mt-1 text-[12px] font-bold text-white/65">{passportMode}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <KiwimuMetricCard label="積分" value={`${points}P`} accent="lime" />
-              <KiwimuMetricCard label="印章" value={unlockedCount} />
-              <KiwimuMetricCard label="足跡" value={`${visitedSiteCount}/${visitedSiteTotal}`} />
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-lime">
-                護照等級 Lv.{userLevel}
-              </span>
-              {mbtiType ? (
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white">
-                  靈魂甜點 {mbtiType}
-                </span>
-              ) : (
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
-                  尚未同步 MBTI
-                </span>
-              )}
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
-                {canCheckin ? '今日可簽到' : '今日已簽到'}
-              </span>
-            </div>
-
-            <div className="mt-4 rounded-[1.6rem] border border-white/15 bg-white p-4 text-brand-black">
-              <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
-                {nextAction.eyebrow}
-              </p>
-              <h4 className="mt-2 text-lg font-black leading-tight text-brand-black">
-                {nextAction.title}
-              </h4>
-              <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/62">
-                {nextAction.description}
-              </p>
-              <button
-                type="button"
-                onClick={handleNextAction}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-brand-black bg-brand-lime px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[3px_3px_0px_black] transition-all hover:bg-white active:translate-y-0.5 active:shadow-[1px_1px_0px_black]"
-              >
-                {nextAction.icon}
-                {nextAction.label}
-              </button>
-            </div>
-          </div>
-        </div>
-      </KiwimuPanel>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <CheckinCard onOpen={onOpenCheckin} />
-
-          <KiwimuPanel padded={false}>
-            <div className="border-b-2 border-brand-black bg-brand-lime px-4 py-3 text-brand-black">
-              <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/60">
-                Next Unlock
-              </p>
-              <h4 className="mt-1 text-sm font-black">你的下一個里程碑</h4>
-            </div>
-
-            <div className="space-y-3 p-4">
-              {nextReward ? (
-                <>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-black text-brand-black">{nextReward.title}</p>
-                      <p className="mt-1 text-[12px] font-medium leading-relaxed text-brand-black/60">
-                        {nextReward.isReady
-                          ? '已達探索里程碑；請查看獎勵說明，實體領取須門市確認。'
-                          : `距離解鎖還差 ${nextReward.remainingStamps} 枚印章。`}
-                      </p>
-                    </div>
-                    <div className="rounded-full border border-brand-black bg-white px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black">
-                      {nextReward.requiredStamps} stamps
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => trackSectionClick('next_unlock', 'rewards', onGoRewards)}
-                    className="inline-flex items-center gap-2 rounded-full border-2 border-brand-black bg-brand-black px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white shadow-[2px_2px_0px_black] transition-all hover:bg-brand-lime hover:text-brand-black"
-                  >
-                    <Star size={13} />
-                    前往集章獎勵
-                  </button>
-                </>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-gray/10 p-4">
-                  <p className="text-sm font-black text-brand-black">所有里程碑都已完成</p>
-                  <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
-                    下一步可以把重心放在任務回訪、集章紀錄與跨站探索。
-                  </p>
-                </div>
-              )}
-            </div>
-          </KiwimuPanel>
-        </div>
-
-        <KiwimuPanel padded={false} className="scroll-mt-20">
-          <div id="passport-latest-order" className="scroll-mt-20" />
-          <div className="border-b-2 border-brand-black bg-white px-4 py-3">
-            <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
-              Latest Activity
-            </p>
-            <h4 className="mt-1 text-sm font-black text-brand-black">最近訂單與消費狀態</h4>
-          </div>
-
-          <div className="space-y-3 p-4">
-            {!userId ? (
-              <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-gray/10 p-4">
-                <div>
-                  <p className="text-sm font-black text-brand-black">登入後可同步最新訂單</p>
-                  <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
-                    Shop 與 Map 訂單紀錄會在這裡回來，先登入才能把會員資料接起來。
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void onLogin()}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-brand-black bg-brand-black px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white shadow-[2px_2px_0px_black] transition-all hover:bg-brand-lime hover:text-brand-black"
-                >
-                  <ReceiptText size={13} />
-                  先登入同步
-                </button>
-              </div>
-            ) : loadingOrder ? (
-              <div role="status" className="flex items-center gap-2 rounded-2xl border border-brand-black/10 bg-brand-gray/10 px-4 py-4 text-sm font-bold text-brand-black/60">
-                <Loader2 size={16} className="animate-spin" />
-                正在讀取最新訂單...
-              </div>
-            ) : orderError ? (
-              <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-sm font-black text-red-700">訂單狀態暫時無法讀取</p>
-                <p className="mt-2 text-[12px] font-medium leading-relaxed text-red-600">
-                  {orderError}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setOrderReload(value => value + 1)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
-                >
-                  重試讀取訂單
-                  <ReceiptText size={13} />
-                </button>
-              </div>
-            ) : latestOrder ? (
-              <div className="rounded-[1.6rem] border-2 border-brand-black bg-brand-black p-4 text-white shadow-[3px_3px_0px_black]">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
-                      Latest Order
-                    </p>
-                    <p className="mt-2 text-sm font-black text-white">{latestOrder.order_id}</p>
-                  </div>
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-lime">
-                    {statusLabel}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
-                      來源
-                    </p>
-                    <p className="mt-1 text-[12px] font-black text-white">
-                      {getOrderSourceLabel(latestOrder)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
-                      取貨時間
-                    </p>
-                    <p className="mt-1 text-[12px] font-black text-white">
-                      {formatPickupTime(latestOrder.pickup_time)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-white/65">
-                      訂單金額
-                    </p>
-                    <p className="mt-1 text-[12px] font-black text-white">
-                      ${Number(latestOrder.final_price ?? latestOrder.total_price ?? 0).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => trackSectionClick('latest_order', 'shop', openShopMenu)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-brand-black"
-                >
-                  <Package2 size={13} />
-                  前往甜點選單
-                </button>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-gray/10 p-4">
-                <p className="text-sm font-black text-brand-black">目前還沒有同步到訂單</p>
-                <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
-                  第一次登入下單後，這裡就會出現你的最近取貨與消費狀態。
-                </p>
-                <button
-                  type="button"
-                  onClick={() => trackSectionClick('latest_order_empty', 'shop', openShopMenu)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-black bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-brand-gray"
-                >
-                  <Coins size={13} />
-                  去看甜點選單
-                </button>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => trackSectionClick('activity_shortcut', 'journey', onGoJourney)}
-              className="flex w-full items-center justify-between rounded-2xl border border-brand-black/10 bg-brand-gray/10 p-4 text-left transition-all hover:bg-brand-lime/20"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-brand-black bg-white">
-                  <BookOpen size={16} className="text-brand-black" />
-                </div>
-                <div>
-                  <p className="text-sm font-black text-brand-black">回到任務與足跡</p>
-                  <p className="mt-1 text-[12px] font-medium leading-relaxed text-brand-black/65">
-                    查看印章、門市定位與跨站探索進度。
-                  </p>
-                </div>
-              </div>
-              <ArrowRight size={15} className="text-brand-black/65" />
+    <div className="member-home">
+      <section className="member-welcome" aria-labelledby="member-welcome-title">
+        <div className="member-welcome-copy">
+          <p className="member-eyebrow">MOON ISLAND · YOUR PASSPORT</p>
+          <h2 id="member-welcome-title">{hasIdentity ? `${displayName}，歡迎回來。` : '在月島，留一份日常。'}</h2>
+          <p className="member-welcome-intro">{hasIdentity ? '今天的小事、累積的印章，都從這裡繼續。' : '你的集章、訂單與已購報告，在這裡找到。'}</p>
+          <div className="member-next-action">
+            <h3>{nextAction.title}</h3>
+            <p>{nextAction.description}</p>
+            <button type="button" className="member-button member-button-gold" onClick={handleNextAction} disabled={nextAction.id === 'login' && authLoading}>
+              {nextAction.icon}{nextAction.id === 'login' && authLoading ? '確認登入狀態中…' : nextAction.label}<ArrowRight size={18} aria-hidden="true" />
             </button>
           </div>
-        </KiwimuPanel>
-      </div>
+        </div>
+        <div className="member-passport-card">
+          <div className="member-card-top"><span>月島會員護照</span><span className="member-card-mode">{passportMode}</span></div>
+          <img src="/assets/member-green/kiwimu-welcome-841d2d20d0.webp" alt="Kiwimu 在綠葉旁等待你的下一次回訪" width="1517" height="1037" fetchPriority="high" />
+          <div className="member-card-holder"><span>{hasIdentity ? displayName : '月島旅人'}</span><span>No. {passportCoverNumber}</span></div>
+          <div className="member-card-stats"><div><span>{hasIdentity ? '護照積分' : '本機積分'}</span><strong>{points.toLocaleString()}<small>P</small></strong></div><div><span>探索印章</span><strong>{unlockedCount}<small>枚</small></strong></div></div>
+          <p>{hasIdentity ? '資料以目前登入帳號與同步狀態為準。' : '訪客紀錄保留在此裝置。'}</p>
+        </div>
+      </section>
 
-      <KiwimuPanel padded={false}>
-        <div className="border-b border-brand-black/10 px-4 py-3">
-          <h4 className="text-sm font-black">下次回來，從這裡繼續</h4>
-          <p className="mt-2 text-xs leading-relaxed text-brand-black/65">今天做一件小事即可。線上簽到與到店集章是不同的紀錄。</p>
+      <section className="member-essentials" aria-label="常用會員功能">
+        <div className="member-essential">
+          <div className="member-icon"><Star size={24} aria-hidden="true" /></div>
+          <div><h3>我的集章</h3><p>{unlockedCount > 0 ? `已累積 ${unlockedCount} 枚探索印章。` : '從一個小任務，開始你的月島紀錄。'}</p><button type="button" className="member-link" onClick={() => trackSectionClick('journey', 'journey', () => onGoJourney('online'))}>查看集章 <ArrowRight size={16} aria-hidden="true" /></button></div>
         </div>
-        <div className="grid gap-3 p-4 sm:grid-cols-2">
-          <button type="button" onClick={() => trackSectionClick('return_online', 'journey', () => onGoJourney('online'))}
-            className="rounded-2xl border border-brand-black/20 bg-brand-lime/15 p-4 text-left">
-            <span className="block text-sm font-black">在家先做線上任務 →</span>
-            <span className="mt-2 block text-xs leading-relaxed text-brand-black/65">例如完成免費測驗，再回護照查看探索進度。</span>
-          </button>
-          <button type="button" onClick={() => trackSectionClick('return_store', 'journey', () => onGoJourney('store'))}
-            className="rounded-2xl border border-brand-black/20 bg-white p-4 text-left">
-            <span className="block text-sm font-black">到店繼續集章 →</span>
-            <span className="mt-2 block text-xs leading-relaxed text-brand-black/65">定位與 QR 在現場完成，獎勵由門市確認。</span>
-          </button>
-          <a href="https://kiwimu.com/read/library?from=passport_report_library" target="_blank" rel="noopener noreferrer"
-            onClick={() => trackOutboundNavigation('https://kiwimu.com/read/library?from=passport_report_library', 'member_report_library', { entrySurface: 'passport_return', destinationType: 'report_library' })}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-black/20 px-4 py-3 text-xs font-bold">
-            <BookOpen size={16} /> 回看我已購的 MBTI 報告 <ExternalLink size={14} />
-          </a>
-          <a href="https://map.kiwimu.com/?from=passport_visit_plan" target="_blank" rel="noopener noreferrer"
-            onClick={() => trackOutboundNavigation('https://map.kiwimu.com/?from=passport_visit_plan', 'member_visit_plan', { entrySurface: 'passport_return', destinationType: 'map' })}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-black/20 px-4 py-3 text-xs font-bold">
-            <Package2 size={16} /> 查看月島地圖與甜點 <ExternalLink size={14} />
-          </a>
+        <div className="member-essential">
+          <div className="member-icon"><BookOpen size={24} aria-hidden="true" /></div>
+          <div><h3>我的報告</h3><p>已保存的 MBTI 報告，隨時回來讀。</p><a className="member-link" href="https://kiwimu.com/read/library?from=passport_report_library" target="_blank" rel="noopener noreferrer" onClick={() => trackOutboundNavigation('https://kiwimu.com/read/library?from=passport_report_library', 'member_report_library', { entrySurface: 'passport_return', destinationType: 'report_library' })}>開啟報告清單 <ExternalLink size={15} aria-hidden="true" /><span className="visually-hidden">（另開分頁）</span></a></div>
         </div>
-      </KiwimuPanel>
+      </section>
+
+      <details className="member-disclosure" ref={orderRef} id="passport-latest-order">
+        <summary><span className="member-summary-title"><ReceiptText size={20} aria-hidden="true" />我的訂單</span><span className="member-summary-meta">{!userId ? '登入後查看' : loadingOrder ? '讀取中' : orderError ? '暫時無法讀取' : latestOrder ? statusLabel : '尚無訂單'}</span><ChevronDown size={18} aria-hidden="true" /></summary>
+        <div className="member-order-content">
+          {!userId ? <p>使用首頁的 Google 登入後，這裡會顯示該帳號最近的甜點訂單。</p>
+            : loadingOrder ? <p role="status" className="member-loading"><Loader2 size={18} className="animate-spin" />正在讀取最新訂單…</p>
+            : orderError ? <div role="alert"><h3>訂單暫時無法讀取</h3><p>{orderError}</p><button type="button" className="member-button" onClick={() => setOrderReload(value => value + 1)}>重試讀取訂單</button></div>
+            : latestOrder ? <div><div className="member-order-heading"><h3>最近一筆訂單</h3><span className="member-state">{statusLabel}</span></div><p className="member-order-number">{latestOrder.order_id}</p><dl className="member-order-facts"><div><dt>取貨時間</dt><dd>{formatPickupTime(latestOrder.pickup_time)}</dd></div><div><dt>訂單金額</dt><dd>NT$ {Number(latestOrder.final_price ?? latestOrder.total_price ?? 0).toLocaleString()}</dd></div><div><dt>訂購來源</dt><dd>{getOrderSourceLabel(latestOrder)}</dd></div></dl><button type="button" className="member-link" onClick={() => trackSectionClick('latest_order', 'shop', openShopMenu)}>前往甜點選單 <ExternalLink size={15} aria-hidden="true" /></button></div>
+            : <div><h3>還沒有找到你的訂單</h3><p>使用同一個會員帳號登入下單，之後可在這裡查看最近的付款與取貨狀態。</p><button type="button" className="member-link" onClick={() => trackSectionClick('latest_order_empty', 'shop', openShopMenu)}>看看甜點選單 <ExternalLink size={15} aria-hidden="true" /></button></div>}
+        </div>
+      </details>
+
+      <div className="member-quiet-links"><button type="button" onClick={() => trackSectionClick('return_store', 'journey', () => onGoJourney('store'))}><MapPin size={16} aria-hidden="true" />我已到店，查看集章方式<ArrowRight size={15} aria-hidden="true" /></button><button type="button" onClick={() => trackSectionClick('next_unlock', 'rewards', onGoRewards)}>獎勵說明<ArrowRight size={15} aria-hidden="true" /></button></div>
+      <p className="member-record-note"><ShieldCheck size={14} aria-hidden="true" />探索印章先保留於此裝置；線上簽到與到店集章分開，實體獎勵尚未開放自行兌換。</p>
     </div>
   );
 }

@@ -17,16 +17,14 @@ export function KiwimuTabs<T extends string>({
   onChange,
 }: KiwimuTabsProps<T>) {
   return (
-    <div className="mb-8 flex rounded-2xl border-2 border-brand-black bg-brand-gray/10 p-1">
+    <div className="member-tabs" role="group" aria-label="會員中心頁面">
       {tabs.map((tab) => (
         <button
           key={tab.key}
+          type="button"
+          aria-pressed={activeTab === tab.key}
           onClick={() => onChange(tab.key)}
-          className={`flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
-            activeTab === tab.key
-              ? 'bg-brand-lime text-brand-black shadow-[2px_2px_0px_black]'
-              : 'text-gray-400 hover:text-brand-black'
-          }`}
+          className={activeTab === tab.key ? 'is-active' : ''}
         >
           {tab.label}
         </button>

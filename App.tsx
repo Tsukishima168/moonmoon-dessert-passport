@@ -7,7 +7,6 @@ import { BRANDING } from './constants';
 import PassportScreen from './PassportScreen';
 import LoadingScreen from './components/LoadingScreen';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
-import { KiwimuUniverseNav } from './components/KiwimuUniverseNav';
 import { isSsoBrokerMode } from './src/lib/ssoBroker';
 import {
   unlockStamp,
@@ -266,60 +265,13 @@ const LandingScreen: React.FC<{ onOpenPassport: () => void; passportCoverNumber:
     };
   }, []);
 
-  const illustration = BRANDING.LANDING_ILLUSTRATION;
-
   return (
-    <div className="ku-passport-viewport relative overflow-hidden bg-[#F7F5EF] text-brand-black">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(255,255,255,0.96)_0%,rgba(247,245,239,0.84)_42%,rgba(247,245,239,1)_78%)]" />
-      <div className="absolute inset-x-0 top-0 h-[28vh] bg-[linear-gradient(180deg,rgba(255,255,255,0.74)_0%,rgba(255,255,255,0)_100%)]" />
-      <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col px-5 pb-8 pt-24 md:px-8 md:pb-10 md:pt-28">
-        <div className="max-w-[240px] md:max-w-[420px] animate-fade-in">
-          <p className="ku-site-kicker">02 / Member identity</p>
-          <h1 className="mt-3 text-[2.5rem] font-black leading-[0.94] tracking-[-0.06em] text-brand-black md:text-[4.8rem]">
-            Moon Moon Passport
-          </h1>
-          <p className="mt-3 max-w-56 text-sm font-medium leading-relaxed text-brand-black/62 md:mt-4 md:max-w-[18rem] md:text-base">
-            你的會員資料、MBTI、任務、集章與積分，都從這本護照開始。
-          </p>
-          <p className="mt-4 text-[12px] font-black uppercase tracking-[0.28em] text-brand-black/65 md:text-[12px]">
-            No. {passportCoverNumber}
-          </p>
-        </div>
-
-        <div className="relative flex-1">
-          <div className="absolute inset-x-[-10%] bottom-16 top-8 flex items-center justify-center md:inset-x-0 md:bottom-10 md:top-0">
-            <img
-              src={illustration}
-              alt="Kiwimu illustration background"
-              className="h-full max-h-[72vh] w-full object-contain object-center opacity-[0.82] drop-shadow-[0_28px_48px_rgba(17,17,17,0.08)] animate-fade-in"
-              loading="eager"
-              fetchPriority="high"
-            />
-          </div>
-        </div>
-
-        <div className="relative z-20 mb-4 w-full max-w-4xl self-center pointer-events-auto md:self-start">
-          <KiwimuUniverseNav surface="passport_landing" compact />
-        </div>
-
-        <div className="flex flex-col items-center gap-2 self-center pointer-events-auto md:self-start">
-          <button
-            onClick={() => {
-              trackButtonClick('open_passport', 'landing_cover');
-              onOpenPassport();
-            }}
-            className="group inline-flex items-center gap-2 rounded-full border border-brand-black/12 bg-white/84 px-4 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black shadow-[0_10px_28px_rgba(17,17,17,0.08)] backdrop-blur-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-black/26 hover:bg-white"
-            aria-label="打開我的護照"
-          >
-            <BookOpen className="h-4 w-4 text-brand-black" />
-            <span>打開我的護照</span>
-            <ArrowUpRight className="h-3.5 w-3.5 text-brand-black/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </button>
-          <p className="text-[12px] font-bold tracking-[0.16em] text-brand-black/65">
-            身份 · 任務 · 集章
-          </p>
-        </div>
-      </div>
+    <div className="member-landing member-shell">
+      <section className="member-landing-stage">
+        <div><p className="member-eyebrow">KIWIMU PASSPORT · No. {passportCoverNumber}</p><h1>每次回來，<br />都從這裡繼續。</h1><p>集章、訂單、已購報告。<br />你的月島日常，放在一個地方。</p><button type="button" className="member-button member-button-gold" aria-label="開啟會員中心" onClick={() => { trackButtonClick('open_passport', 'landing_cover'); onOpenPassport(); }}><BookOpen size={19} aria-hidden="true" />開啟會員中心<ArrowUpRight size={18} aria-hidden="true" /></button><span className="member-landing-note">先看看也可以，會員資料請登入後查看。</span></div>
+        <img src="/assets/member-green/kiwimu-welcome-841d2d20d0.webp" alt="在綠葉與柔和月光旁等待你的 Kiwimu" width="1517" height="1037" fetchPriority="high" />
+      </section>
+      <p className="member-landing-footer">MOON ISLAND · 一份屬於你的日常紀錄</p>
     </div>
   );
 };
