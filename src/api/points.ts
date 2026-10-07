@@ -85,6 +85,21 @@ export async function getUserPoints(userId: string, isLineId: boolean = false): 
     }
 }
 
+/**
+ * 伺服器端「可兌換點數」（profiles.points）。
+ * 與 getUserPointsByIdentity 不同：讀取失敗回傳 null、不會假裝成 0 點，
+ * 讓兌換畫面能分辨「真的 0 點」與「讀不到」（讀不到時不可顯示成可兌換）。
+ */
+export async function getServerPointsBalance(authUserId: string): Promise<number | null> {
+    try {
+        const profile = await resolveProfile({ authUserId });
+        return profile ? profile.points : null;
+    } catch (error) {
+        console.error('Error fetching server points balance:', error);
+        return null;
+    }
+}
+
 export async function getUserPointsByIdentity(identity: PointIdentity): Promise<number> {
     try {
         const profile = await resolveProfile(identity);

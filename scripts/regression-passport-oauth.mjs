@@ -979,6 +979,121 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
   assertEqual(uiItems.join(','), seededItems.join(','), 'REDEEMABLE_ITEMS must match the reward_items seed (id|points|category)');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 兌換頁改顯示「伺服器可兌換點數」（2026-10-04 Penso 決定）
+// 線上 profiles.points 全為 0、本機 localStorage 才有點數：兌換頁若拿本機點數判斷，會出現
+// 「畫面說夠、伺服器回 insufficient_points」。以下三層檢查：來源碼接線、API 實跑、元件實際渲染。
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  const passportUtilsSource = read('passportUtils.ts');
+  const pointsApiSource = read('src/api/points.ts');
+  const balanceCardSource = read('components/kiwimu/KiwimuRewardBalanceCard.tsx');
+
+  // (1) 接線：可兌換點數只來自伺服器，且兌換成功後採用 RPC 回傳餘額
+  assert(rewardShop.includes('getServerPointsBalance(userId)'), 'RewardShop must read the redeemable balance from the server (getServerPointsBalance)');
+  assert(rewardShop.includes('points={serverPoints}') && rewardShop.includes('userPoints={serverPoints}'), 'RewardShop balance card and reward cards must be driven by the server balance');
+  assert(rewardShop.includes('setServerPoints(data.balance)'), 'RewardShop must update the balance from the redeem RPC response');
+  assert(!/setUserPoints|userPoints=\{gamePoints\}|points=\{gamePoints\}/.test(rewardShop), 'RewardShop must never feed local game points into the redeemable balance');
+  assert(!rewardShop.includes('currentPoints'), 'RewardShop must not accept a caller-supplied balance (hub shows remote||local, which is not redeemable)');
+  assert(rewardShop.includes('gamePoints={gamePoints}'), 'RewardShop must show local game points separately');
+  assert(rewardShop.includes('signInWithGoogle') && rewardShop.includes("if (!userId) {\n            handleLogin();"), 'RewardShop must send guests to Google login instead of opening the redeem dialog');
+  assert(!rewardShop.includes('syncRewardRedemptionFromServer'), 'RewardShop must not mirror the server balance into local points');
+  assert(
+    !/export function recordServerRewardRedemption[\s\S]*?\n\}\n/.exec(passportUtilsSource)?.[0].includes('state.points'),
+    'recordServerRewardRedemption must not touch local game points',
+  );
+  assert(!passportUtilsSource.includes('syncRewardRedemptionFromServer'), 'passportUtils must not keep the old balance-mirroring helper');
+  assert(pointsApiSource.includes('export async function getServerPointsBalance'), 'points API must expose getServerPointsBalance');
+  for (const label of ['可兌換點數', '遊戲積分（不可兌換）', '每日簽到可累積可兌換點數']) {
+    assert(balanceCardSource.includes(label), `balance card is missing the label "${label}"`);
+  }
+
+  // (2) 實跑 getServerPointsBalance：回伺服器數字（含 0）、讀取失敗回 null（不可偽裝成 0）
+  {
+    const ts = require('typescript');
+    const compiled = ts.transpileModule(pointsApiSource, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    const stubUrl = `data:text/javascript;base64,${Buffer.from(`
+      export const supabase = {
+        from() { return globalThis.__pointsStub.from(); },
+        rpc() { return globalThis.__pointsStub.rpc(); },
+      };
+    `).toString('base64')}`;
+    const pointsModule = await import(
+      `data:text/javascript;base64,${Buffer.from(compiled.replace("'../lib/supabase'", JSON.stringify(stubUrl))).toString('base64')}`
+    );
+    const selectedFrom = (result) => ({
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => result }) }) }),
+    });
+    const originalConsoleError = console.error;
+    console.error = () => {};
+    try {
+      globalThis.__pointsStub = selectedFrom({ data: { id: 'u1', points: 7 }, error: null });
+      assertEqual(String(await pointsModule.getServerPointsBalance('u1')), '7', 'server balance must be returned as-is');
+      globalThis.__pointsStub = selectedFrom({ data: { id: 'u1', points: 0 }, error: null });
+      assertEqual(String(await pointsModule.getServerPointsBalance('u1')), '0', 'a real 0 balance must stay 0');
+      globalThis.__pointsStub = selectedFrom({ data: null, error: { message: 'boom' } });
+      assertEqual(String(await pointsModule.getServerPointsBalance('u1')), 'null', 'a failed read must be null, not 0');
+      globalThis.__pointsStub = selectedFrom({ data: null, error: null });
+      assertEqual(String(await pointsModule.getServerPointsBalance('u1')), 'null', 'a missing profile row must be null, not 0');
+      globalThis.__pointsStub = { from: () => { throw new Error('network'); } };
+      assertEqual(String(await pointsModule.getServerPointsBalance('u1')), 'null', 'a thrown read must be null, not 0');
+    } finally {
+      console.error = originalConsoleError;
+      delete globalThis.__pointsStub;
+    }
+  }
+
+  // (3) 實際渲染兌換頁用的兩個元件（react-dom/server）：狀態 → 文案／按鈕
+  {
+    const ts = require('typescript');
+    const React = require('react');
+    const { renderToStaticMarkup } = require('react-dom/server');
+    const loadTsx = (relativePath, extraRequire = {}) => {
+      const { outputText } = ts.transpileModule(read(relativePath), {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+      });
+      const mod = { exports: {} };
+      const localRequire = (id) => (id in extraRequire ? extraRequire[id] : require(id));
+      vm.runInThisContext(`(function (require, module, exports) {${outputText}\n})`)(localRequire, mod, mod.exports);
+      return mod.exports;
+    };
+    const { KiwimuRewardBalanceCard } = loadTsx('components/kiwimu/KiwimuRewardBalanceCard.tsx');
+    const { KiwimuRewardCard } = loadTsx('components/kiwimu/KiwimuRewardCard.tsx', {
+      './KiwimuRewardBalanceCard': {},
+      '../../types': {},
+    });
+    const html = (el) => renderToStaticMarkup(el);
+    const noop = () => {};
+    const reward = { id: 'tea_buckwheat', name: '蕎麥茶', description: 'x', pointsCost: 10, category: 'drink', available: true };
+
+    const ready = html(React.createElement(KiwimuRewardBalanceCard, { points: 12, status: 'ready', gamePoints: 80 }));
+    assert(ready.includes('可兌換點數') && ready.includes('>12<'), 'ready state must show the server balance as 可兌換點數');
+    assert(ready.includes('遊戲積分（不可兌換）：80'), 'local points must be labelled 遊戲積分（不可兌換）');
+    assert(ready.includes('每日簽到可累積可兌換點數'), 'balance card must explain how to earn redeemable points');
+    assert(!html(React.createElement(KiwimuRewardBalanceCard, { points: 12, status: 'ready', gamePoints: 0 })).includes('遊戲積分'), 'game points row must be hidden when there are none');
+    const zero = html(React.createElement(KiwimuRewardBalanceCard, { points: 0, status: 'ready', gamePoints: 80 }));
+    assert(zero.includes('>0<') && !zero.includes('>80<'), 'a server balance of 0 must show 0 even when local points exist');
+
+    const guest = html(React.createElement(KiwimuRewardBalanceCard, { points: null, status: 'guest', gamePoints: 80, onLogin: noop }));
+    assert(guest.includes('Google 登入') && guest.includes('>—<'), 'guest state must prompt Google login and hide any balance');
+    const failed = html(React.createElement(KiwimuRewardBalanceCard, { points: null, status: 'error', onRetry: noop }));
+    assert(failed.includes('重試') && failed.includes('>—<'), 'a failed balance read must offer a retry and not show 0');
+
+    const cardHtml = (props) => html(React.createElement(KiwimuRewardCard, { reward, onRedeem: noop, ...props }));
+    assert(cardHtml({ userPoints: 10, status: 'ready' }).includes('立即兌換'), 'enough server points must allow redeeming');
+    const short = cardHtml({ userPoints: 3, status: 'ready' });
+    assert(short.includes('還需 7 點') && short.includes('disabled'), 'insufficient server points must disable the button and show the shortfall');
+    const guestCard = cardHtml({ userPoints: null, status: 'guest' });
+    assert(guestCard.includes('登入後兌換') && !guestCard.includes('disabled'), 'guests get a login-to-redeem button');
+    for (const status of ['loading', 'error']) {
+      const blocked = cardHtml({ userPoints: null, status });
+      assert(blocked.includes('disabled') && !blocked.includes('立即兌換'), `status "${status}" must not allow redeeming`);
+    }
+  }
+}
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
