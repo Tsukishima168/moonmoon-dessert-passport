@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
+import { getOrderSourceLabel, getOrderStatusLabel } from '../src/lib/orderLabels';
 import { trackEvent } from '../analytics';
 import { trackOutboundNavigation } from '../analytics';
 import type { JourneyMode } from '../src/lib/memberJourney';
@@ -47,20 +48,6 @@ interface PassportHomeDashboardProps {
   authLoading?: boolean;
 }
 
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  pending: '待付款',
-  paid: '已付款',
-  ready: '可取貨',
-  completed: '完成',
-  cancelled: '已取消',
-};
-
-const ORDER_SOURCE_LABEL: Record<string, string> = {
-  shop: '月島甜點商店',
-  map: '月島地圖',
-  moon_map: '月島地圖',
-};
-
 function formatPickupTime(value: string) {
   return new Date(value).toLocaleString('zh-TW', {
     month: 'numeric',
@@ -69,11 +56,6 @@ function formatPickupTime(value: string) {
     minute: '2-digit',
     hour12: false,
   });
-}
-
-function getOrderSourceLabel(order: ShopOrderRecord) {
-  const source = order.source_from || order.checkout_site || '';
-  return Object.hasOwn(ORDER_SOURCE_LABEL, source) ? ORDER_SOURCE_LABEL[source] : '請向門市確認';
 }
 
 function openShopMenu() {
@@ -148,7 +130,7 @@ export default function PassportHomeDashboard({
 
   const statusLabel = useMemo(() => {
     if (!latestOrder) return null;
-    return Object.hasOwn(ORDER_STATUS_LABEL, latestOrder.status) ? ORDER_STATUS_LABEL[latestOrder.status] : '請向門市確認';
+    return getOrderStatusLabel(latestOrder.status);
   }, [latestOrder]);
 
   useEffect(() => {

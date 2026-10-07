@@ -2,33 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ExternalLink, Loader2, Package2, ReceiptText, RefreshCw } from 'lucide-react';
 import { LINKS } from '../constants';
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
-
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  pending: '待付款',
-  paid: '已付款',
-  ready: '可取貨',
-  completed: '完成',
-  cancelled: '已取消',
-};
-
-const ORDER_STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  paid: 'bg-[#E6E8D9] text-[#304F2F] border-[#D8D7C4]',
-  ready: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  completed: 'bg-gray-100 text-gray-700 border-gray-200',
-  cancelled: 'bg-red-100 text-red-700 border-red-200',
-};
+import { getOrderSourceLabel, getOrderStatusLabel, getOrderStatusStyle } from '../src/lib/orderLabels';
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   cash: '現金',
   transfer: '轉帳',
   line_pay: 'LINE Pay',
-};
-
-const ORDER_SOURCE_LABEL: Record<string, string> = {
-  shop: '月島甜點商店',
-  map: '月島地圖',
-  moon_map: '月島地圖',
 };
 
 interface ShopOrderHistoryProps {
@@ -214,11 +193,9 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                       <h4 className="mt-1 text-sm font-black text-brand-black">{buildItemsSummary(order)}</h4>
                     </div>
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-[12px] font-black uppercase tracking-wider ${
-                        ORDER_STATUS_STYLE[order.status] || 'bg-gray-100 text-gray-700 border-gray-200'
-                      }`}
+                      className={`rounded-full border px-2.5 py-1 text-[12px] font-black uppercase tracking-wider ${getOrderStatusStyle(order.status)}`}
                     >
-                      {Object.hasOwn(ORDER_STATUS_LABEL, order.status) ? ORDER_STATUS_LABEL[order.status] : '請向門市確認'}
+                      {getOrderStatusLabel(order.status)}
                     </span>
                   </div>
 
@@ -226,7 +203,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
                       <p className="font-bold uppercase tracking-wider text-gray-600">來源</p>
                       <p className="mt-1 font-semibold text-brand-black/80">
-                        {Object.hasOwn(ORDER_SOURCE_LABEL, order.source_from || order.checkout_site || '') ? ORDER_SOURCE_LABEL[order.source_from || order.checkout_site || ''] : '請向門市確認'}
+                        {getOrderSourceLabel(order)}
                       </p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">

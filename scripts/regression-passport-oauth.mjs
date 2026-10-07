@@ -986,6 +986,57 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
   assertEqual(uiItems.join(','), seededItems.join(','), 'REDEEMABLE_ITEMS must match the reward_items seed (id|points|category)');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 訂單標籤：狀態／來源顯示（src/lib/orderLabels.ts 由兩個元件共用）
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  const labels = await loadTsModule('src/lib/orderLabels.ts');
+  const { getOrderStatusLabel, getOrderStatusStyle, getOrderSourceLabel } = labels;
+
+  // shop 仍會產生 confirmed／preparing，不能掉到「請向門市確認」。
+  const expectedStatus = {
+    pending: '待付款',
+    paid: '已付款',
+    confirmed: '已確認',
+    preparing: '製作中',
+    ready: '可取貨',
+    completed: '完成',
+    cancelled: '已取消',
+  };
+  for (const [status, label] of Object.entries(expectedStatus)) {
+    assertEqual(getOrderStatusLabel(status), label, `status label for ${status}`);
+    assert(getOrderStatusStyle(status).includes('bg-'), `status ${status} must have a badge style`);
+  }
+  // confirmed／preparing 沿用 paid 色票，不新增顏色。
+  assertEqual(getOrderStatusStyle('confirmed'), getOrderStatusStyle('paid'), 'confirmed reuses the paid palette');
+  assertEqual(getOrderStatusStyle('preparing'), getOrderStatusStyle('paid'), 'preparing reuses the paid palette');
+  assertEqual(getOrderStatusLabel('totally_unknown'), '請向門市確認', 'unknown status keeps the store-confirmation fallback');
+  assertEqual(getOrderStatusLabel(null), '請向門市確認', 'null status keeps the fallback');
+  // 原型鍵不能變成顯示值或樣式。
+  for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    assertEqual(getOrderStatusLabel(key), '請向門市確認', `prototype key ${key} must not become a status label`);
+    assertEqual(getOrderStatusStyle(key), getOrderStatusStyle('__unknown__'), `prototype key ${key} must not become a status style`);
+    assertEqual(getOrderSourceLabel({ checkout_site: key, source_from: key }), '月島甜點', `prototype key ${key} must not become a source label`);
+  }
+
+  // 來源以 checkout_site 為準；source_from 是站間歸因（passport／gacha／mbti／direct），不能把正常訂單打成「請向門市確認」。
+  assertEqual(getOrderSourceLabel({ checkout_site: 'shop', source_from: 'passport' }), '月島甜點商店', 'shop order attributed to passport must show the shop');
+  assertEqual(getOrderSourceLabel({ checkout_site: 'shop', source_from: 'mbti' }), '月島甜點商店', 'shop order attributed to mbti must show the shop');
+  assertEqual(getOrderSourceLabel({ checkout_site: 'map', source_from: 'gacha' }), '月島地圖', 'map order attributed to gacha must show the map');
+  assertEqual(getOrderSourceLabel({ checkout_site: 'map', source_from: null }), '月島地圖', 'map order without attribution must show the map');
+  assertEqual(getOrderSourceLabel({ checkout_site: null, source_from: 'moon_map' }), '月島地圖', 'source_from is only a fallback when checkout_site is unknown');
+  assertEqual(getOrderSourceLabel({ checkout_site: null, source_from: 'direct' }), '月島甜點', 'unknown source falls back to the neutral brand label');
+  assertEqual(getOrderSourceLabel({}), '月島甜點', 'missing source falls back to the neutral brand label');
+
+  // 兩個元件不再各自維護一份標籤表，也不再以 source_from 優先查來源。
+  for (const file of ['components/ShopOrderHistory.tsx', 'components/PassportHomeDashboard.tsx']) {
+    const src = read(file);
+    assert(!src.includes('const ORDER_STATUS_LABEL') && !src.includes('const ORDER_SOURCE_LABEL'), `${file} must use src/lib/orderLabels.ts instead of its own label tables`);
+    assert(src.includes("from '../src/lib/orderLabels'"), `${file} must import the shared order labels`);
+    assert(!src.includes('order.source_from ||'), `${file} must not prefer source_from over checkout_site`);
+  }
+}
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 
