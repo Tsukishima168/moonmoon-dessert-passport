@@ -34,7 +34,7 @@ export default function RedeemPage() {
         'Invite slots not full': '邀請尚未集滿',
         'Already redeemed': '已兌換，無法重複使用',
       }
-      setRedeemError(msgMap[error.message] ?? '寫入失敗，請再試')
+      setRedeemError(Object.hasOwn(msgMap, error.message) ? msgMap[error.message] : '核銷未完成，請確認網路後再試；若持續發生，請聯繫門市負責人。')
       setRedeeming(false)
     } else {
       setRedeemSuccess(true)
@@ -62,9 +62,9 @@ export default function RedeemPage() {
         invalid_password: '密碼錯誤',
         invalid_code: '兌換碼格式不正確',
         invalid_used_or_expired: '兌換碼不存在、已核銷或已過期',
-        server_configuration_error: '伺服器密碼設定異常，請聯繫管理員',
+        server_configuration_error: '目前無法核銷，請聯繫門市負責人協助。',
       }
-      setRedeemError(msgMap[error.message] ?? '核銷失敗，請再試')
+      setRedeemError(Object.hasOwn(msgMap, error.message) ? msgMap[error.message] : '核銷未完成，請確認網路後再試；若持續發生，請聯繫門市負責人。')
       setRedeeming(false)
       return
     }
@@ -169,7 +169,7 @@ export default function RedeemPage() {
         {redeemSuccess && (
           <div className="bg-brand-lime rounded-2xl p-6 text-center">
             <p className="text-brand-black font-medium">✓ 兌換完成</p>
-            <p className="text-brand-black/50 text-xs mt-1">護照 #{passportNum.padStart(3, '0')} 已寫入兌換紀錄</p>
+            <p className="text-brand-black/50 text-xs mt-1">護照 #{passportNum.padStart(3, '0')} 已完成兌換</p>
           </div>
         )}
 

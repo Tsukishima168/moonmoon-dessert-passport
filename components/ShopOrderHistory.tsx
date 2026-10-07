@@ -26,9 +26,9 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
 };
 
 const ORDER_SOURCE_LABEL: Record<string, string> = {
-  shop: 'Shop',
-  map: 'Map',
-  moon_map: 'Map',
+  shop: '月島甜點商店',
+  map: '月島地圖',
+  moon_map: '月島地圖',
 };
 
 interface ShopOrderHistoryProps {
@@ -42,7 +42,7 @@ function formatDateTime(value: string) {
 
 function buildItemsSummary(order: ShopOrderRecord) {
   if (!Array.isArray(order.items) || order.items.length === 0) {
-    return '未帶入品項';
+    return '商品明細請向門市確認';
   }
 
   return order.items
@@ -148,7 +148,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
       ) : loading ? (
         <div className="flex items-center justify-center gap-2 p-8 text-sm font-bold text-gray-500">
           <Loader2 size={16} className="animate-spin" />
-          正在同步你的 shop 訂單...
+          正在讀取你的甜點訂單…
         </div>
       ) : error ? (
         <div className="space-y-4 p-4">
@@ -170,7 +170,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
             <Package2 size={22} className="mx-auto text-brand-black/60" />
             <p className="mt-3 text-sm font-black text-brand-black">還沒有同步到你的甜點訂單</p>
             <p className="mt-2 text-xs font-medium leading-relaxed text-gray-500">
-              下次在 shop 登入同一個帳號下單後，這裡就會自動累積你的消費足跡。
+              在月島甜點商店使用同一個帳號下單後，可在這裡查看訂單紀錄。
             </p>
           </div>
           <button
@@ -218,7 +218,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                         ORDER_STATUS_STYLE[order.status] || 'bg-gray-100 text-gray-700 border-gray-200'
                       }`}
                     >
-                      {ORDER_STATUS_LABEL[order.status] || order.status}
+                      {Object.hasOwn(ORDER_STATUS_LABEL, order.status) ? ORDER_STATUS_LABEL[order.status] : '請向門市確認'}
                     </span>
                   </div>
 
@@ -226,7 +226,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
                       <p className="font-bold uppercase tracking-wider text-gray-600">來源</p>
                       <p className="mt-1 font-semibold text-brand-black/80">
-                        {ORDER_SOURCE_LABEL[order.source_from || order.checkout_site || ''] || order.source_from || order.checkout_site || '未設定'}
+                        {Object.hasOwn(ORDER_SOURCE_LABEL, order.source_from || order.checkout_site || '') ? ORDER_SOURCE_LABEL[order.source_from || order.checkout_site || ''] : '請向門市確認'}
                       </p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
@@ -240,7 +240,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
                       <p className="font-bold uppercase tracking-wider text-gray-600">付款方式</p>
                       <p className="mt-1 font-semibold text-brand-black/80">
-                        {PAYMENT_METHOD_LABEL[order.payment_method || ''] || '未設定'}
+                        {Object.hasOwn(PAYMENT_METHOD_LABEL, order.payment_method || '') ? PAYMENT_METHOD_LABEL[order.payment_method || ''] : '請向門市確認'}
                       </p>
                     </div>
                     <div className="rounded-xl bg-brand-gray/10 px-3 py-2">
@@ -252,10 +252,10 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                   {order.payment_method === 'line_pay' && (
                     <div className="mt-3 rounded-xl border border-brand-black/10 bg-brand-lime/10 px-3 py-2">
                       <p className="text-[12px] font-bold uppercase tracking-wider text-brand-black/65">
-                        Line Pay 交易號
+                        LINE Pay 交易號
                       </p>
                       <p className="mt-1 break-all font-mono text-[12px] font-semibold text-brand-black/80">
-                        {order.linepay_transaction_id || '尚未回填'}
+                        {order.linepay_transaction_id || '目前沒有交易號，付款狀態請向門市確認'}
                       </p>
                     </div>
                   )}

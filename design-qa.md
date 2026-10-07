@@ -5,7 +5,17 @@
 - 分支：`codex/passport-green-simplify-20261006`
 - 預覽：http://127.0.0.1:5225/?screen=passport&tab=hub
 - **Final result: passed（本機視覺與已測導覽範圍）**
-- 狀態：本機版本；未 push、合併或部署。
+- 狀態：此10/06深綠版已經由 PR39／40 合併並正式部署。最終 `origin/main` `ad8d40f5b78a6449ba0d6347bdf8f0bdb1cd0000`，Production `dpl_E7LqNMi4Gwic8uN46dKLp69CjYti` READY，alias `passport.kiwimu.com`。10/07公開文字與CTA修補為獨立未發布分支。
+- 部署證據：10/07接手審查 `/Users/pensoair/.codex/visualizations/2026/10/07/kiwimu-green-review/passport-review.md`；本文件下方為當時本機驗證，不把它當真人正式流程簽收。
+
+## 2026-10-07 公開文字與手機 CTA 修補（未發布）
+
+- 分支 `codex/passport-public-copy-repair-20261007`，base `origin/main ad8d40f`；手機 landing CTA 使用內容寬，原52px高度與角色圖片配置保留。
+- 登入、徽章、同步與訂單失敗改成顧客可理解的狀態與下一步。未知欄位不直出代碼；callback／session／provider原始診斷保留在console，SSO broker error契約保留。
+- 積分來源沿用remote或local fallback，顯示為「積分紀錄／此裝置積分」，不把探索紀錄當作已確認會員兌換餘額；獎勵只提供說明，未掛載RewardShop。
+- 作者機械驗證：`tsc --noEmit` exit0、`npm run build` exit0，含既有OAuth／SSO／SW／reward ledger／points guard／debug-backdoor、32 journey與5 hydration斷言；53項actual-source VM檢查通過。`git diff --check`通過。
+- 本機loopback `http://127.0.0.1:5235/`回應200；沒有複製env。主對話CUA已測四种寬度landing／訪客hub，CTA187px寬、52px高、無溢出；reviewer設計40個actual-source／AST檢核由主對話執行通過。審查員額度受限，最終patch尚未獨立簽收。
+- 證據：`/Users/pensoair/.codex/visualizations/2026/10/07/kiwimu-public-copy-repair/passport/`；未merge/deploy；真人auth／設定保存／訂單／點數／印章／核銷／DB與環境設定未變更。送審Git與hash以同日SSOT及final-manifest回讀為準。
 
 ## 收斂結果
 
@@ -52,4 +62,4 @@
 
 本輪未操作真實 Google 登入、定位、打卡、會員資料保存、點數、印章、核銷或 DB migration。Safari／iPhone 實機、真人會員及實體獎勵尚待驗收；既有 server authority、LINE 設定、店員憑證輪替與評論替代章政策不因視覺升級完成。
 
-部署時需另驗正式 PWA 更新、正式登入／帳號同步與訂單狀態。回滾可撤回此分支的視覺提交，不涉及資料庫回滾。
+10/06正式PWA與公開版面已由10/07接手審查核對；真人正式登入／帳號同步與訂單狀態仍待驗收。本輪10/07修補尚未發布，驗證紀錄見 CURRENT 置頂。回滾可撤回此分支的視覺提交，不涉及資料庫回滾。

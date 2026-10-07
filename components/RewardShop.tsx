@@ -117,7 +117,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                 reward_price_changed: '兌換點數已更新，請重新整理後再試。',
                 insufficient_points: '積分不足，無法兌換此福利。',
             };
-            setErrorMessage(msgMap[error?.message || ''] || '兌換失敗，請稍後再試。');
+            setErrorMessage(Object.hasOwn(msgMap, error?.message || '') ? msgMap[error?.message || ''] : '兌換未完成，請稍後再試；若持續發生，請聯繫月島協助。');
             setRedeeming(false);
             setPendingReward(null);
             return;

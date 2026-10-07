@@ -305,6 +305,8 @@ const SsoBrokerScreen = () => {
           這個視窗只用來完成登入。完成後會自動回到原本頁面。
         </p>
         {error ? (
+          <>
+          <p role="alert" className="mt-5 text-sm font-semibold leading-7 text-red-700">{error}</p>
           <button
             type="button"
             onClick={() => {
@@ -315,9 +317,10 @@ const SsoBrokerScreen = () => {
           >
             重新登入
           </button>
+          </>
         ) : (
           <p className="mt-6 animate-pulse text-xs font-black uppercase tracking-[0.2em] text-brand-black/65">
-            Opening Google...
+            正在開啟 Google 登入…
           </p>
         )}
       </div>
@@ -614,7 +617,7 @@ function App() {
           trackEvent('stamp_claim_failed', { reason: 'unsupported_reward_id', reward_id: rewardParam });
           setAppNotice({
             tone: 'error',
-            message: `目前尚未支援這個限定徽章（${rewardParam}），請通知管理員協助確認。`,
+            message: '這個徽章連結目前無法使用，請回原活動頁重新開啟；若仍無法領取，請聯繫月島協助。',
           });
         } else {
           const result = await consumeRewardClaim(claimCodeParam, rewardParam);
@@ -633,13 +636,13 @@ function App() {
               } else {
                 setAppNotice({
                   tone: 'error',
-                  message: '此兌換碼無效、已被使用，或與目前要領取的徽章不符。',
+                  message: '此領取碼無效、已被使用，或不適用於這枚徽章。請回原活動頁確認領取連結。',
                 });
               }
             } else if (errorReason === 'unconfigured') {
               setAppNotice({
                 tone: 'error',
-                message: 'Passport 尚未完成 reward claim 設定，請先確認 Supabase 環境變數。',
+                message: '徽章領取暫時無法使用，請稍後從原活動頁重試；若持續發生，請聯繫月島協助。',
               });
             } else if (errorReason === 'auth_required') {
               savePendingRewardClaim({ code: claimCodeParam, rewardId: rewardParam });

@@ -141,7 +141,7 @@ export async function loadProfileCenterDraft(
       draft: baseDraft,
       syncStatus: {
         tone: 'warning',
-        message: '尚未同步到會員資料，目前先使用本機草稿。',
+        message: '目前無法讀取會員資料，先顯示此裝置的設定。請確認網路後重新整理。',
       },
     };
   }
@@ -183,7 +183,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'warning',
-        message: '會員同步暫時無法使用，這次變更先保留在本機草稿。',
+        message: '會員同步暫時無法使用，變更只保留在此裝置。請稍後重新開啟會員中心確認。',
       },
     };
   }
@@ -200,7 +200,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'warning',
-        message: '尚未同步到會員資料，這次變更先保留在本機草稿。',
+        message: '會員資料未同步成功，變更只保留在此裝置。請確認網路後重新開啟會員中心確認。',
       },
     };
   }
@@ -252,7 +252,7 @@ export async function saveProfileCenterDraftToProfile(
     return {
       syncStatus: {
         tone: 'error',
-        message: '會員資料尚未保存成功，請確認網路後再試一次。',
+        message: '會員資料未保存成功，變更只保留在此裝置。請確認網路後再試一次。',
       },
     };
   }

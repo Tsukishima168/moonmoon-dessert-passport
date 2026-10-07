@@ -489,7 +489,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             <ShieldCheck size={24} className="text-brand-lime-dark" />
                             <div>
                                 <h3 className="text-sm font-black text-brand-black uppercase">登入後查看會員紀錄</h3>
-                                <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可同步會員資料，並查看帳號的印章與積分；訪客紀錄先保留在這個裝置。</p>
+                                <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可查看會員資料與訂單；探索印章先保留在此裝置，實體獎勵需由門市確認資格。</p>
                             </div>
                             <button
                                 disabled={authLoading}
@@ -571,7 +571,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         <div className="space-y-4">
                             <KiwimuSectionIntro eyebrow="Stamp Milestones">
                                 <p>
-                                    這裡是集章里程碑的說明。實體獎勵尚未開放自行兌換；領取條件與核銷須由門市確認，達到章數不代表已領取。
+                                    查看集章里程碑。實體獎勵需到門市確認資格並核銷，無法在此自行兌換；集滿章數不代表已領取。
                                 </p>
                             </KiwimuSectionIntro>
                             {REWARD_TIERS.map((reward) => {
@@ -630,7 +630,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                 <p role={profileCenterSyncStatus.tone === 'error' ? 'alert' : 'status'} className={`member-sync-message ${profileCenterSyncStatus.tone === 'error' ? 'is-error' : ''}`}>{profileCenterSyncStatus.message}</p>
                             )}
                             <details className="member-disclosure member-settings">
-                                <summary><span className="member-summary-title"><Settings size={20} aria-hidden="true" />帳號設定與探索紀錄</span><span className="member-summary-meta" role="status">{{ idle: '確認中', syncing: '保存中', success: '已同步', warning: '本機草稿', error: '未保存' }[profileCenterSyncStatus.tone]}</span><ChevronDown size={18} aria-hidden="true" /></summary>
+                                <summary><span className="member-summary-title"><Settings size={20} aria-hidden="true" />帳號設定與探索紀錄</span><span className="member-summary-meta" role="status">{{ idle: '確認中', syncing: '保存中', success: '已同步', warning: '僅此裝置', error: '未保存' }[profileCenterSyncStatus.tone]}</span><ChevronDown size={18} aria-hidden="true" /></summary>
                                 <div className="member-settings-content">
                                 {user && <div className="member-account-actions"><p>目前使用 Google 會員帳號。</p><button type="button" className="member-button" disabled={signingOut} onClick={async () => { setSigningOut(true); try { await signOut(); } finally { setSigningOut(false); } }}><LogOut size={16} aria-hidden="true" />{signingOut ? '登出中…' : '登出這個帳號'}</button></div>}
                                 <ProfileCenter
