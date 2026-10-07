@@ -269,7 +269,7 @@ html {
  .member-landing { padding-top:110px; }
  .member-landing-stage { padding:32px; grid-template-columns:1fr; gap:8px; border-radius:22px; }
  .member-landing-stage img { max-width:260px; justify-self:center; }
- .member-landing-stage .member-button { width:100%; }
+ .member-landing-stage .member-button { width:fit-content; max-width:100%; }
  .member-landing-stage h1 { font-size:34px; }
 }
 @media (max-width:430px) {

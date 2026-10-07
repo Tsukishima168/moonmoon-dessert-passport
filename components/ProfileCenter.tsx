@@ -246,7 +246,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
               description={
                 mbtiType
                   ? `目前已帶入 ${mbtiType}，之後可決定是否出現在公開護照頁。`
-                  : '目前尚未從 MBTI 站帶入結果。'
+                  : '還沒有測驗結果。完成免費 MBTI 測驗後，可回來查看。'
               }
               onToggle={() => updateDraft('isMbtiPublic', !draft.isMbtiPublic)}
             />
@@ -341,7 +341,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           <div className="flex items-start gap-2">
             <Sparkles size={16} className="mt-0.5 text-brand-lime-dark" />
             <p className="text-[12px] font-medium leading-relaxed text-brand-black/65">
-              請以上方同步狀態為準。若尚未同步成功，這次變更會先保留在本機草稿，換裝置前請確認已保存。
+              請以上方同步狀態為準。未同步的變更只保留在此裝置，換裝置前請確認已保存至會員資料。
             </p>
           </div>
         </section>

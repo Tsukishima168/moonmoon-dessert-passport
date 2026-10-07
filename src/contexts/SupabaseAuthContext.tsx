@@ -18,7 +18,6 @@ import {
   ensureRedirectTo,
   getAndClearPendingRedirectTo,
   getAndClearRedirectTo,
-  getOAuthRedirectUrl,
   getPendingRedirectTo,
   saveRedirectTo,
 } from '../lib/authStorage';
@@ -84,7 +83,10 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)) {
         return;
       }
-      setError(authFlowError);
+      console.error('[SupabaseAuth] OAuth callback failed:', authFlowError);
+      setError(params.get('error') === 'access_denied'
+        ? '這次登入已取消。要查看會員資料，請重新使用 Google 登入。'
+        : '登入未完成，請重新使用 Google 登入；若持續發生，請聯繫月島協助。');
       removeOAuthCallbackParamsFromCurrentUrl();
     }
 
@@ -135,7 +137,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
     // 初始取得 session
     client.auth.getSession().then(({ data: { session }, error: sessionError }) => {
       if (sessionError) {
-        setError(sessionError.message);
+        console.error('[SupabaseAuth] Session check failed:', sessionError);
+        setError('無法確認登入狀態，請確認網路後重新整理；若仍無法登入，請再使用 Google 登入。');
       }
       handleSignedInUser(session?.user ?? null);
       // 即使 PKCE exchange 默默失敗（無 session、無 error param），URL 仍可能殘留 ?code/state。
@@ -190,7 +193,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
   const signInWithGoogle = async (returnTo?: string) => {
     const client = supabase;
     if (!client) {
-      setError('Supabase Auth 尚未設定完成，Google 登入目前不可用。');
+      console.error('[SupabaseAuth] Google sign-in unavailable: missing client configuration.');
+      setError('Google 登入暫時無法使用，請稍後再試；若持續發生，請聯繫月島協助。');
       return;
     }
 
@@ -214,13 +218,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     if (signInError) {
       clearRedirectState();
-      const redirectUrl = getOAuthRedirectUrl();
-      const message = signInError.message.toLowerCase().includes('redirect')
-        ? `Google 登入 redirect 設定有誤，請確認 Supabase Auth 的 Redirect URL 是否包含：${redirectUrl}`
-        : `Google 登入失敗：${signInError.message}`;
-
       console.error('[SupabaseAuth] Google sign-in failed:', signInError);
-      setError(message);
+      setError('無法開啟 Google 登入，請稍後再試；若持續發生，請聯繫月島協助。');
     }
   };
 

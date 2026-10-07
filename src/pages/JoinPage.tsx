@@ -13,11 +13,11 @@ export default function JoinPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    if (!passportId) { setError('無效的邀請連結'); setLoading(false); return }
+    if (!passportId) { setError('這個邀請連結無法使用，請向邀請者索取新連結。'); setLoading(false); return }
     getPassportPublic(passportId).then(({ data, error }) => {
-      if (error || !data) { setError('找不到這張護照'); setLoading(false); return }
-      if (data.status !== 'active') { setError('此護照已暫停使用'); setLoading(false); return }
-      if (data.invite_slots_used >= data.invite_slots_total) { setError('此護照的邀請名額已滿'); setLoading(false); return }
+      if (error || !data) { setError('目前無法讀取這張護照，請確認網路後重新整理，或向邀請者確認連結。'); setLoading(false); return }
+      if (data.status !== 'active') { setError('此護照已暫停使用，請聯繫邀請者確認。'); setLoading(false); return }
+      if (data.invite_slots_used >= data.invite_slots_total) { setError('此護照的邀請名額已滿，請聯繫邀請者確認其他參與方式。'); setLoading(false); return }
       setPassport(data)
       setLoading(false)
     })
@@ -30,7 +30,7 @@ export default function JoinPage() {
     setSubmitting(true)
     const { error } = await createInvitationPublic({ passport_id: passportId, contact: handle, contact_type: 'ig' })
     if (error) {
-      setError('送出失敗，請稍後再試')
+      setError('邀請未送出，請確認網路後重新開啟邀請連結再試。')
       setSubmitting(false)
       return
     }
@@ -73,7 +73,7 @@ export default function JoinPage() {
               type="text"
               value={igHandle}
               onChange={e => setIgHandle(e.target.value)}
-              placeholder="ig_username"
+              placeholder="你的 IG 帳號"
               className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30"
               autoComplete="off"
             />

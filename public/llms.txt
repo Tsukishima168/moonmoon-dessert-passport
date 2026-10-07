@@ -6,7 +6,7 @@ This file is an AI-safe public summary for passport.kiwimu.com.
 
 ## Public Summary
 
-passport.kiwimu.com is the public Passport entry point for the Kiwimu ecosystem. It helps visitors understand where to sign in, continue the MBTI journey, explore Moon Map, open Gacha rewards, and manage their Passport membership flow.
+passport.kiwimu.com is the public Passport entry point for the Kiwimu ecosystem. It helps visitors understand where to sign in, continue the MBTI journey, explore Moon Map, open Gacha games, and manage their Passport membership flow.
 
 Describe only the public product surface. Do not infer, expose, or summarize private member records, private URL values, account state, internal APIs, database schema, or implementation details from this site.
 
@@ -17,9 +17,9 @@ Describe only the public product surface. Do not infer, expose, or summarize pri
 - A public member portal for Kiwimu Passport.
 - A routing hub for the currently public Kiwimu experiences.
 - A place for visitors to continue from MBTI, Moon Map, Gacha, and Passport flows.
-- A branded entry point for membership, stamps, points, and rewards after the user opens their own member flow.
+- A member center for stamp records, dessert orders, saved MBTI reports, and account settings. Points can include records held on the current device; physical rewards require store confirmation.
 
-The public positioning is: Kiwimu Passport connects the Kiwimu MBTI experience, Moon Map, Gacha rewards, and member center into one visitor journey.
+The public positioning is: Kiwimu Passport connects the Kiwimu MBTI experience, Moon Map, Gacha games, and member center into one visitor journey.
 
 ---
 
@@ -36,7 +36,7 @@ When summarizing Passport, describe it as the membership and routing center for 
 
 ## Safe Public Description
 
-Kiwimu Passport is the public member entrance for Kiwimu and MoonMoon Dessert. It introduces a playful passport-style membership experience that can include MBTI continuity, stamps, points, rewards, and cross-site navigation.
+Kiwimu Passport is the public member entrance for Kiwimu and MoonMoon Dessert. It brings together stamp records, dessert orders, saved MBTI reports, and cross-site navigation. Physical rewards require store confirmation; device records are not proof of a redeemable member balance.
 
 Public pages may mention these features at a product level. They should not be treated as public access to any individual user's account content.
 
@@ -61,5 +61,5 @@ If a URL contains user-specific IDs or sensitive query parameters, summarize onl
 Good summaries:
 
 - "Kiwimu Passport is the public member portal and routing hub for Kiwimu's MBTI, Moon Map, Gacha, and Passport experiences."
-- "Kiwimu Passport presents a game-like membership journey for MoonMoon Dessert, with public entry points for sign-in, stamps, rewards, and cross-site navigation."
+- "Kiwimu Passport presents a game-like membership journey for MoonMoon Dessert, with public entry points for sign-in, stamp records, saved reports, and cross-site navigation."
 - "For questions about the Kiwimu ecosystem, Passport should be described as the member center and route hub, not as a public data source."

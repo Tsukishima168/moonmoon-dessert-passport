@@ -56,9 +56,9 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 };
 
 const ORDER_SOURCE_LABEL: Record<string, string> = {
-  shop: 'Shop',
-  map: 'Map',
-  moon_map: 'Map',
+  shop: '月島甜點商店',
+  map: '月島地圖',
+  moon_map: '月島地圖',
 };
 
 function formatPickupTime(value: string) {
@@ -73,7 +73,7 @@ function formatPickupTime(value: string) {
 
 function getOrderSourceLabel(order: ShopOrderRecord) {
   const source = order.source_from || order.checkout_site || '';
-  return ORDER_SOURCE_LABEL[source] || source || '未設定';
+  return Object.hasOwn(ORDER_SOURCE_LABEL, source) ? ORDER_SOURCE_LABEL[source] : '請向門市確認';
 }
 
 function openShopMenu() {
@@ -148,7 +148,7 @@ export default function PassportHomeDashboard({
 
   const statusLabel = useMemo(() => {
     if (!latestOrder) return null;
-    return ORDER_STATUS_LABEL[latestOrder.status] || latestOrder.status;
+    return Object.hasOwn(ORDER_STATUS_LABEL, latestOrder.status) ? ORDER_STATUS_LABEL[latestOrder.status] : '請向門市確認';
   }, [latestOrder]);
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export default function PassportHomeDashboard({
         id: 'checkin',
         eyebrow: 'Today',
         title: checkinStreak > 0 ? `已連續簽到 ${checkinStreak} 天，今天也來坐坐` : '今天來簽到，留下一次回訪',
-        description: '完成每日簽到後，首頁點數會立即更新。',
+        description: '完成每日簽到後，此裝置的回訪紀錄與積分會更新。',
         label: '今日簽到',
         icon: <Calendar size={15} />,
         run: onOpenCheckin,
@@ -281,8 +281,8 @@ export default function PassportHomeDashboard({
           <div className="member-card-top"><span>月島會員護照</span><span className="member-card-mode">{passportMode}</span></div>
           <img src="/assets/member-green/kiwimu-welcome-841d2d20d0.webp" alt="Kiwimu 在綠葉旁等待你的下一次回訪" width="1517" height="1037" fetchPriority="high" />
           <div className="member-card-holder"><span>{hasIdentity ? displayName : '月島旅人'}</span><span>No. {passportCoverNumber}</span></div>
-          <div className="member-card-stats"><div><span>{hasIdentity ? '護照積分' : '本機積分'}</span><strong>{points.toLocaleString()}<small>P</small></strong></div><div><span>探索印章</span><strong>{unlockedCount}<small>枚</small></strong></div></div>
-          <p>{hasIdentity ? '資料以目前登入帳號與同步狀態為準。' : '訪客紀錄保留在此裝置。'}</p>
+          <div className="member-card-stats"><div><span>{hasIdentity ? '積分紀錄' : '此裝置積分'}</span><strong>{points.toLocaleString()}<small>P</small></strong></div><div><span>探索印章</span><strong>{unlockedCount}<small>枚</small></strong></div></div>
+          <p>{hasIdentity ? '積分可能包含此裝置紀錄；會員可兌換餘額與領取資格請向門市確認。' : '積分與探索印章保留於此裝置，會員可兌換餘額需另行確認。'}</p>
         </div>
       </section>
 
@@ -309,7 +309,7 @@ export default function PassportHomeDashboard({
       </details>
 
       <div className="member-quiet-links"><button type="button" onClick={() => trackSectionClick('return_store', 'journey', () => onGoJourney('store'))}><MapPin size={16} aria-hidden="true" />我已到店，查看集章方式<ArrowRight size={15} aria-hidden="true" /></button><button type="button" onClick={() => trackSectionClick('next_unlock', 'rewards', onGoRewards)}>獎勵說明<ArrowRight size={15} aria-hidden="true" /></button></div>
-      <p className="member-record-note"><ShieldCheck size={14} aria-hidden="true" />探索印章先保留於此裝置；線上簽到與到店集章分開，實體獎勵尚未開放自行兌換。</p>
+      <p className="member-record-note"><ShieldCheck size={14} aria-hidden="true" />線上探索與到店集章分開；實體獎勵需由門市確認領取資格。</p>
     </div>
   );
 }

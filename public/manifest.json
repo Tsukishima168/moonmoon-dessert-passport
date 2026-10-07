@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Kiwimu Passport 會員中心",
   "short_name": "Passport",
-  "description": "Kiwimu 與月島甜點的會員入口：Google 登入、跨站身份、MBTI、任務、集章與積分。",
+  "description": "查看月島集章紀錄、甜點訂單與已購 MBTI 報告，繼續你的日常。",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -46,9 +46,9 @@
       "icons": [{ "src": "/icon-192x192-kiwimu-v2.png", "sizes": "192x192" }]
     },
     {
-      "name": "集章獎勵",
+      "name": "獎勵說明",
       "short_name": "集章",
-      "description": "查看任務與集章獎勵",
+      "description": "查看集章里程碑與門市領取說明",
       "url": "/?screen=passport&tab=rewards",
       "icons": [{ "src": "/icon-192x192-kiwimu-v2.png", "sizes": "192x192" }]
     },

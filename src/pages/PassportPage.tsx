@@ -11,16 +11,16 @@ export default function PassportPage() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!id) { setError('無效的護照連結'); setLoading(false); return }
+    if (!id) { setError('這個護照連結無法使用，請向分享者索取新連結。'); setLoading(false); return }
     getPassportPublic(id).then(({ data, error }) => {
-      if (error || !data) setError('找不到護照')
+      if (error || !data) setError('目前無法讀取護照，請確認網路與連結後重新整理。')
       else setPassport(data)
       setLoading(false)
     })
   }, [id])
 
   if (loading) return <StatusView text="載入中..." />
-  if (error || !passport) return <StatusView text={error ?? '找不到護照'} />
+  if (error || !passport) return <StatusView text={error ?? '目前無法讀取護照，請確認網路與連結後重新整理。'} />
 
   const canRedeem = passport.invite_slots_used >= passport.invite_slots_total && !passport.pudding_claimed
   const slotsLeft = passport.invite_slots_total - passport.invite_slots_used
@@ -57,7 +57,7 @@ export default function PassportPage() {
             已邀請 <span className="text-brand-lime font-medium">{passport.invite_slots_used}</span> / {passport.invite_slots_total} 位
           </p>
           {slotsLeft > 0 && (
-            <p className="text-brand-bg/40 text-xs mt-1">再邀請 {slotsLeft} 位朋友，即可兌換月島布丁</p>
+            <p className="text-brand-bg/40 text-xs mt-1">再邀請 {slotsLeft} 位朋友，即可到門市確認布丁領取資格</p>
           )}
         </div>
 
@@ -68,8 +68,8 @@ export default function PassportPage() {
             {passport.pudding_claimed
               ? '✓ 已兌換'
               : canRedeem
-              ? '🎉 可兌換！帶護照連結到店讓店員確認'
-              : `集滿 ${passport.invite_slots_total} 個邀請即可兌換`}
+              ? '已達邀請門檻，請帶護照連結到門市確認領取資格'
+              : `集滿 ${passport.invite_slots_total} 個邀請後，請由門市確認領取資格`}
           </p>
         </div>
 

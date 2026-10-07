@@ -1,14 +1,31 @@
 # CURRENT.md — passport.kiwimu.com
 
+## 2026-10-07｜主對話收尾｜本機驗證完成，待獨立簽收與上線核定
+
+- ✅ 主對話CUA 320／390／768／1280px：首頁CTA內容寬187px、高52px，landing／訪客會員頁無水平溢出、可見破圖0。
+- ✅ Reviewer設計的40個actual-source／AST mock檢核由主對話執行通過：callback／SSO診斷、未知訂單欄位／prototype鍵、profile失敗、領取／核銷失敗與points fallback契約保留。`root-reviewer-probes.json:1`。
+- 📌 自我更正：reviewer fixture將export宣告當expression導致初次編譯失敗；只修外部測試fixture後再跑，非App回歸。不將未完成reviewer的結論稱獨立APPROVE。
+- ⚠️ 審查員因帳戶額度中止，最終patch尚未獨立簽收；未真人登入、簽到／集章／核銷、改點數或DB。
+- 📌 最終交付索引與hash：/Users/pensoair/.codex/visualizations/2026/10/07/kiwimu-public-copy-repair/passport/final-manifest.json；原作者證據保留為歷史，新的final-manifest才是送審版本。未部署；合併上線需Penso同意。
+
+
+## Snapshot · 2026-10-07（公開文字與手機 CTA 修補；未發布）
+
+- 基準為 fresh fetch 的 `origin/main` `ad8d40f5b78a6449ba0d6347bdf8f0bdb1cd0000`。10/06 深綠版已經由 PR39／40 合併並部署；歷史本機檢核不表示目前仍未上線。
+- 本輪分支 `codex/passport-public-copy-repair-20261007`：手機 landing CTA 改內容寬，保留52px；登入／徽章／同步／訂單／公開護照提示改為顧客可理解的狀態與下一步。原始 auth 診斷與 SSO broker 錯誤契約保留，點數與獎勵行為未變。
+- 積分顯示既有 remote 或 local fallback，改以「積分紀錄／此裝置積分」說明；探索紀錄與實際會員可兌換餘額不混稱。RewardShop 未掛載，獎勵頁只提供說明。
+- 作者機械驗證：tsc／build／既有 OAuth、SSO、SW、reward ledger、points guard 回歸與32 journey／5 hydration斷言通過；53項 actual-source隔離VM檢查通過。獨立 source／CUA 由主 agent 接續，尚未獨立簽收。本輪未 commit／push／merge／deploy，亦未真人登入、保存會員資料、簽到、發章、核銷或改 DB／環境設定。
+- 私有交付證據：`/Users/pensoair/.codex/visualizations/2026/10/07/kiwimu-public-copy-repair/passport/`。
+
 ## Snapshot · 2026-10-06（月島深綠改版）
 
 - 分支 `codex/passport-green-simplify-20261006`（base＝main `0646b77`）：Codex 作者 commit「收斂深綠會員首頁與集章入口」＋ Claude 配色統一修正。Codex 獨立審查 APPROVE（40 個 mocked behavior checks：登出、訂單重試／取消、水合、URL 分頁、獎勵頁純說明）。
 - Claude 配色統一：PWA manifest `background_color`／`theme_color` 由舊 lime `#D4FF00` 改為 `#F5F0E8`／`#1F2F1F`；移除深色模式 `theme-color #111111`（頁面深色模式仍是奶油白＋深綠，瀏覽器頂色應一致）。
 - Claude 細節修正：會員首頁標題在 320px 斷成「在月島，留／一份日常。」→ 改為逗號後換行（兩段 inline-block span），桌機仍一行。
 - Claude 接手重驗：tsc exit 0；`npm run build`（含 OAuth／SSO／points-sync／member journey／hydration 迴歸）通過；本機 preview 1280／768／390／320 無水平溢出、無 console error、按鈕 ≥44px；Kiwimu 角色圖未裁切（object-fit: contain）。
-- 待 Penso 判斷：手機首頁「開啟會員中心」是整排寬的金色主按鈕，沒擋到 Kiwimu，但與先前「CTA 要小」的偏好不同。
+- 當時待判斷：手機首頁「開啟會員中心」為整排寬的金色主按鈕；10/07 修補分支改為內容寬，此修補尚未發布。
 - 未做：Google 登入、集章、兌換、點數同步實操；實機 Safari／LINE 瀏覽器。
-- 已上線（PR #39 squash `7e0076c`）。上線後配色細節統一（獨立比對差異表 P1–P9＋補兩處）：Hero 圓角 24／手機 22px；焦點框改 2px #304F2F、深綠 Hero 內金色，舊 #111＋lime 光暈限縮在 Universe rail；muted／邊框 token 對齊 #5F6856／#D8D7C4；`brand-lime-dark` 等小字綠統一 #304F2F；訂單藍色狀態標籤改淡綠；PWA 安裝提示、App 通知 toast 與對話框的黑／lime 硬陰影改柔和陰影＋#D8D7C4 細邊；字體改 Noto Sans TC（Inter 未載入）、移除 DM Serif；載入頁白底改奶油白。tsc、build＋迴歸測試通過；390px 實測無 console error、無溢出。
+- 已上線（PR #39 squash `7e0076c`、PR #40 `ad8d40f`；正式部署 `dpl_E7LqNMi4Gwic8uN46dKLp69CjYti` READY，alias `passport.kiwimu.com`）。上線後配色細節統一（獨立比對差異表 P1–P9＋補兩處）：Hero 圓角 24／手機 22px；焦點框改 2px #304F2F、深綠 Hero 內金色，舊 #111＋lime 光暈限縮在 Universe rail；muted／邊框 token 對齊 #5F6856／#D8D7C4；`brand-lime-dark` 等小字綠統一 #304F2F；訂單藍色狀態標籤改淡綠；PWA 安裝提示、App 通知 toast 與對話框的黑／lime 硬陰影改柔和陰影＋#D8D7C4 細邊；字體改 Noto Sans TC（Inter 未載入）、移除 DM Serif；載入頁白底改奶油白。tsc、build＋迴歸測試通過；390px 實測無 console error、無溢出。
 
 ## Snapshot · 2026-10-04 (Codex 接手 Claude 安全修補)
 
@@ -20,7 +37,7 @@
 
 ## Snapshot · 2026-10-04 (security: client-side backdoors)
 
-Status: `fix/passport-security-20261004` 已實作與驗證，尚未 push／deploy
+Status（當時快照）：`fix/passport-security-20261004` 已實作與驗證；目前程式已包含於10/06正式主線 `ad8d40f`。Migration／真人流程狀態仍以 canonical SSOT 最新記錄為準。
 
 - `?debug=1` 全解鎖印章：只在開發建置（`import.meta.env.DEV`）有效；正式 bundle 已 tree-shake 掉，`npm test` 會檢查 `dist/` 不含該分支。
 - `?action=add_points` 積分同步：改由 `src/lib/pointsSyncGuard.ts` 驗證。只有 `document.referrer` origin 不是 `https://gacha.kiwimu.com`（vercel 別名讀不到 `.kiwimu.com` ACK cookie，已移除），或 amount／ts／source 格式不對才拒絕（不入帳、不寫 ACK、送 GA4 `points_sync_rejected`，只帶 `reason`）。通過後入帳 `min(amount, MAX_PER_SYNC=400, 滾動 24 小時剩餘額度 MAX_PER_DAY=600)`，一律寫 ACK（30 天，Gacha 游標前進，超出部分作廢，Penso 2026-10-04 決定），超量時 `points_sync_received` 帶 `capped: true`；重複 ts 只補 ACK。處理完會把同步參數從 `window.__PASSPORT_INITIAL_SEARCH__` 拿掉。
@@ -33,7 +50,7 @@ Status: `fix/passport-security-20261004` 已實作與驗證，尚未 push／depl
 
 ## Snapshot · 2026-07-15
 
-Status: `五站共用視覺語言已完成本機整合與瀏覽器驗證，尚未 commit／push／deploy`
+Status（當時快照）：`五站共用視覺語言已完成本機整合與瀏覽器驗證`；此公開 rail 已包含於10/06正式主線 `ad8d40f`。
 
 - All public routes now mount the shared Kiwimu Universe rail; the landing page adds the `02 / Member identity` role label.
 - Global headers, route shells, app notices, and viewport offsets now consume the rail-height token on desktop and mobile, preventing fixed-header overlap and duplicate rail-height scrolling.
