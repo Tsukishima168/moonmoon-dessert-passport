@@ -1037,6 +1037,67 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 護照公開讀取：「找不到」與「讀取失敗」要分開說明（src/api/passportSystem.ts）
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  // passportSystem.ts 只依賴 supabase client；把那一行 import 換成可控的假 client 後實跑。
+  const ts = require('typescript');
+  const importLine = "import { supabase } from '../lib/supabase'";
+  const apiSource = read('src/api/passportSystem.ts');
+  assert(apiSource.includes(importLine), 'passportSystem.ts supabase import line changed; update this regression harness');
+  const loadApi = (supabaseStub, salt) => {
+    const { outputText } = ts.transpileModule(apiSource.replace(importLine, `const supabase = ${supabaseStub};`), {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    });
+    return import(`data:text/javascript;base64,${Buffer.from(`${outputText}\n// ${salt}`).toString('base64')}`);
+  };
+  const api = await loadApi('{ rpc: async () => globalThis.__fakePassportRpcResult }', 'configured');
+  const withRpcResult = (result) => {
+    globalThis.__fakePassportRpcResult = result;
+  };
+
+  // RPC 回 ok:false / Passport not found（找不到）。
+  withRpcResult({ data: { ok: false, error: 'Passport not found' }, error: null });
+  let res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.data === null && api.isPassportNotFoundError(res.error), 'ok:false Passport not found must be classified as not found');
+
+  // 連結不是合法 UUID：Postgres 22P02，也是連結問題而不是網路問題。
+  withRpcResult({ data: null, error: Object.assign(new Error('invalid input syntax for type uuid: "abc"'), { code: '22P02' }) });
+  res = await api.getPassportPublic('abc');
+  assert(api.isPassportNotFoundError(res.error), 'invalid uuid link (22P02) must be classified as not found');
+
+  // 真正的讀取失敗（網路／伺服器／未設定）不能被說成找不到。
+  withRpcResult({ data: null, error: Object.assign(new Error('TypeError: Failed to fetch'), { code: '' }) });
+  res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !api.isPassportNotFoundError(res.error), 'network failure must stay a read failure, not "not found"');
+  withRpcResult({ data: null, error: Object.assign(new Error('permission denied for function get_passport_public'), { code: '42501' }) });
+  res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !api.isPassportNotFoundError(res.error), 'server-side RPC failure must stay a read failure, not "not found"');
+  withRpcResult({ data: { ok: false, error: 'Unknown error' }, error: null });
+  res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !api.isPassportNotFoundError(res.error), 'other ok:false errors must stay read failures');
+  const unconfiguredApi = await loadApi('null', 'unconfigured');
+  res = await unconfiguredApi.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !unconfiguredApi.isPassportNotFoundError(res.error), 'unconfigured supabase must stay a read failure');
+  assert(api.isPassportNotFoundError(null) === false && api.isPassportNotFoundError(undefined) === false, 'no error is never "not found"');
+
+  // 成功讀取。
+  withRpcResult({ data: { ok: true, data: { id: 'p1', passport_number: 1 } }, error: null });
+  res = await api.getPassportPublic('p1');
+  assert(res.error === null && res.data && res.data.id === 'p1', 'successful read must return data without error');
+
+  delete globalThis.__fakePassportRpcResult;
+
+  // 兩個頁面要把兩種狀況分成不同文案。
+  const joinPage = read('src/pages/JoinPage.tsx');
+  const passportPage = read('src/pages/PassportPage.tsx');
+  assert(joinPage.includes("isPassportNotFoundError(error)") && joinPage.includes('找不到這張護照，請向邀請者確認連結。'), 'JoinPage must show a not-found message for missing passports');
+  assert(joinPage.includes('目前無法讀取這張護照，請確認網路後重新整理'), 'JoinPage must keep the network read-failure message');
+  assert(passportPage.includes("isPassportNotFoundError(error)") && passportPage.includes('找不到這本護照，請向分享者確認連結。'), 'PassportPage must show a not-found message for missing passports');
+  assert(passportPage.includes('目前無法讀取護照，請確認網路與連結後重新整理。'), 'PassportPage must keep the network read-failure message');
+}
+
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
 assert(fs.existsSync(swPath), 'dist/sw.js is missing; run npm run build before npm test');
 

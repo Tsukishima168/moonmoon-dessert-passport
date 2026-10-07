@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getPassportPublic, type PassportPublic } from '../api/passportSystem'
+import { getPassportPublic, isPassportNotFoundError, type PassportPublic } from '../api/passportSystem'
 import PageHeader from '../components/PageHeader'
 
 export default function PassportPage() {
@@ -13,7 +13,8 @@ export default function PassportPage() {
   useEffect(() => {
     if (!id) { setError('這個護照連結無法使用，請向分享者索取新連結。'); setLoading(false); return }
     getPassportPublic(id).then(({ data, error }) => {
-      if (error || !data) setError('目前無法讀取護照，請確認網路與連結後重新整理。')
+      if (isPassportNotFoundError(error)) setError('找不到這本護照，請向分享者確認連結。')
+      else if (error || !data) setError('目前無法讀取護照，請確認網路與連結後重新整理。')
       else setPassport(data)
       setLoading(false)
     })
