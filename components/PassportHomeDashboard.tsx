@@ -187,7 +187,7 @@ export default function PassportHomeDashboard({
         id: 'reward',
         eyebrow: 'Ready',
         title: `${nextReward.title}：已達探索里程碑`,
-        description: '可查看獎勵說明；實體領取仍須門市確認與核銷。',
+        description: '可查看獎勵說明；實體獎勵兌換尚未開放。',
         label: '前往集章獎勵',
         icon: <Star size={15} />,
         run: onGoRewards,
@@ -264,7 +264,7 @@ export default function PassportHomeDashboard({
           <img src="/assets/member-green/kiwimu-welcome-841d2d20d0.webp" alt="Kiwimu 在綠葉旁等待你的下一次回訪" width="1517" height="1037" fetchPriority="high" />
           <div className="member-card-holder"><span>{hasIdentity ? displayName : '月島旅人'}</span><span>No. {passportCoverNumber}</span></div>
           <div className="member-card-stats"><div><span>{hasIdentity ? '積分紀錄' : '此裝置積分'}</span><strong>{points.toLocaleString()}<small>P</small></strong></div><div><span>探索印章</span><strong>{unlockedCount}<small>枚</small></strong></div></div>
-          <p>{hasIdentity ? '積分可能包含此裝置紀錄；會員可兌換餘額與領取資格請向門市確認。' : '積分與探索印章保留於此裝置，會員可兌換餘額需另行確認。'}</p>
+          <p>{hasIdentity ? '積分可能包含此裝置紀錄；實體兌換尚未開放。' : '積分與探索印章保留於此裝置；實體兌換尚未開放。'}</p>
         </div>
       </section>
 
@@ -291,7 +291,7 @@ export default function PassportHomeDashboard({
       </details>
 
       <div className="member-quiet-links"><button type="button" onClick={() => trackSectionClick('return_store', 'journey', () => onGoJourney('store'))}><MapPin size={16} aria-hidden="true" />我已到店，查看集章方式<ArrowRight size={15} aria-hidden="true" /></button><button type="button" onClick={() => trackSectionClick('next_unlock', 'rewards', onGoRewards)}>獎勵說明<ArrowRight size={15} aria-hidden="true" /></button></div>
-      <p className="member-record-note"><ShieldCheck size={14} aria-hidden="true" />線上探索與到店集章分開；實體獎勵需由門市確認領取資格。</p>
+      <p className="member-record-note"><ShieldCheck size={14} aria-hidden="true" />線上探索與到店集章分開；實體獎勵兌換尚未開放。</p>
     </div>
   );
 }

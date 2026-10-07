@@ -108,7 +108,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                     ))}
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-brand-black/65">
-                    {mode === 'online' ? '例如先完成免費 MBTI 測驗，下次回來再查看護照紀錄。' : '到店後才使用定位或掃描現場 QR；實體獎勵由門市確認與核銷。'}
+                    {mode === 'online' ? '例如先完成免費 MBTI 測驗，下次回來再查看護照紀錄。' : '到店後才使用定位或掃描現場 QR；實體獎勵兌換尚未開放。'}
                     印章探索進度先保留在此裝置，跨站足跡不會自動換成印章。
                 </p>
             </div>

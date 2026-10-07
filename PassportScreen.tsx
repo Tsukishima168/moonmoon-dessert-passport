@@ -489,7 +489,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             <ShieldCheck size={24} className="text-brand-lime-dark" />
                             <div>
                                 <h3 className="text-sm font-black text-brand-black uppercase">登入後查看會員紀錄</h3>
-                                <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可查看會員資料與訂單；探索印章先保留在此裝置，實體獎勵需由門市確認資格。</p>
+                                <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可查看會員資料與訂單；探索印章先保留在此裝置，實體獎勵兌換尚未開放。</p>
                             </div>
                             <button
                                 disabled={authLoading}
@@ -571,7 +571,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                         <div className="space-y-4">
                             <KiwimuSectionIntro eyebrow="Stamp Milestones">
                                 <p>
-                                    查看集章里程碑。實體獎勵需到門市確認資格並核銷，無法在此自行兌換；集滿章數不代表已領取。
+                                    查看集章里程碑。實體獎勵兌換尚未開放；集滿章數不代表已領取。
                                 </p>
                             </KiwimuSectionIntro>
                             {REWARD_TIERS.map((reward) => {
