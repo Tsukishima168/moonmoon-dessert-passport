@@ -991,7 +991,7 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
 // ─────────────────────────────────────────────────────────────────────────────
 {
   const labels = await loadTsModule('src/lib/orderLabels.ts');
-  const { getOrderStatusLabel, getOrderStatusStyle, getOrderSourceLabel } = labels;
+  const { getOrderStatusLabel, getOrderStatusStyle, getOrderSourceLabel, isPendingPickupStatus } = labels;
 
   // shop 仍會產生 confirmed／preparing，不能掉到「請向門市確認」。
   const expectedStatus = {
@@ -1012,6 +1012,15 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
   assertEqual(getOrderStatusStyle('preparing'), getOrderStatusStyle('paid'), 'preparing reuses the paid palette');
   assertEqual(getOrderStatusLabel('totally_unknown'), '請向門市確認', 'unknown status keeps the store-confirmation fallback');
   assertEqual(getOrderStatusLabel(null), '請向門市確認', 'null status keeps the fallback');
+  // 「待取貨」統計：已付款、已確認、製作中、可取貨都算；待付款、完成、取消與未知狀態不算。
+  for (const status of ['paid', 'confirmed', 'preparing', 'ready']) {
+    assert(isPendingPickupStatus(status) === true, `${status} orders are awaiting pickup`);
+  }
+  for (const status of ['pending', 'completed', 'cancelled', 'totally_unknown', '__proto__', 'constructor', '', null, undefined]) {
+    assert(isPendingPickupStatus(status) === false, `${String(status)} orders are not awaiting pickup`);
+  }
+  assert(!read('components/ShopOrderHistory.tsx').includes('readyCount'), 'ShopOrderHistory pickup stat must use isPendingPickupStatus, not the old ready+paid pair');
+
   // 原型鍵不能變成顯示值或樣式。
   for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
     assertEqual(getOrderStatusLabel(key), '請向門市確認', `prototype key ${key} must not become a status label`);

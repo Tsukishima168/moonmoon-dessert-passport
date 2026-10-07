@@ -39,6 +39,13 @@ function lookup(table: Record<string, string>, key: unknown): string | null {
   return typeof key === 'string' && Object.hasOwn(table, key) ? table[key] : null;
 }
 
+// 已成立、尚未取貨的訂單狀態（paid 已付款、confirmed 已確認、preparing 製作中、ready 可取貨）。
+const PENDING_PICKUP_STATUSES: readonly string[] = ['paid', 'confirmed', 'preparing', 'ready'];
+
+export function isPendingPickupStatus(status: string | null | undefined): boolean {
+  return typeof status === 'string' && PENDING_PICKUP_STATUSES.includes(status);
+}
+
 export function getOrderStatusLabel(status: string | null | undefined): string {
   return lookup(ORDER_STATUS_LABEL, status) ?? ORDER_STATUS_FALLBACK_LABEL;
 }

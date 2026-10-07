@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ExternalLink, Loader2, Package2, ReceiptText, RefreshCw } from 'lucide-react';
 import { LINKS } from '../constants';
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
-import { getOrderSourceLabel, getOrderStatusLabel, getOrderStatusStyle } from '../src/lib/orderLabels';
+import { getOrderSourceLabel, getOrderStatusLabel, getOrderStatusStyle, isPendingPickupStatus } from '../src/lib/orderLabels';
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   cash: '現金',
@@ -37,14 +37,13 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
   const [reloadVersion, setReloadVersion] = useState(0);
 
   const stats = useMemo(() => {
-    const readyCount = orders.filter((order) => order.status === 'ready').length;
-    const paidCount = orders.filter((order) => order.status === 'paid').length;
+    const pendingPickupCount = orders.filter((order) => isPendingPickupStatus(order.status)).length;
     const totalSpent = orders.reduce(
       (sum, order) => sum + Number(order.final_price ?? order.total_price ?? 0),
       0
     );
 
-    return { readyCount, paidCount, totalSpent };
+    return { pendingPickupCount, totalSpent };
   }, [orders]);
 
   useEffect(() => {
@@ -169,7 +168,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
             </div>
             <div className="rounded-2xl border border-brand-black/10 bg-brand-gray/10 p-3">
               <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500">待取貨</p>
-              <p className="mt-2 text-lg font-black text-brand-black">{stats.readyCount + stats.paidCount}</p>
+              <p className="mt-2 text-lg font-black text-brand-black">{stats.pendingPickupCount}</p>
             </div>
             <div className="rounded-2xl border border-brand-black/10 bg-brand-gray/10 p-3">
               <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500">累積金額</p>
