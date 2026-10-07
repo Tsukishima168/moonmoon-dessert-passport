@@ -255,7 +255,14 @@ assert(appTsx.includes('const isInitialSsoBrokerEntry = () => isSsoBrokerMode(ge
 assert(appTsx.includes('{isBrokerEntry ? (') && appTsx.includes('<SsoBrokerScreen />'), 'App must render SSO broker screen only for broker entries');
 assert(authContext.includes('saveSsoBrokerMode(incomingSsoMode);'), 'Auth context must persist popup broker mode before OAuth');
 assert(authContext.includes('removeSsoBrokerParams(params);'), 'Auth context must remove broker-only params from visible URL');
-assert(authContext.includes("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)"), 'Auth context must notify popup opener on OAuth errors');
+assert(authContext.includes("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)"), 'Auth context must notify popup opener on OAuth errors with the customer-facing message');
+assert(!/notifySsoBrokerComplete\([^)]*\bauthFlowError\b/.test(authContext), 'Auth context must never pass the raw OAuth authFlowError into notifySsoBrokerComplete (cross-site leak)');
+assert(
+  authContext.indexOf("console.error('[SupabaseAuth] OAuth callback failed:', authFlowError)") !== -1 &&
+    authContext.indexOf("console.error('[SupabaseAuth] OAuth callback failed:', authFlowError)") <
+      authContext.indexOf("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)"),
+  'Auth context must log the raw OAuth error locally before the popup broker branch returns',
+);
 assert(authContext.includes('if (notifySsoBrokerComplete(pendingRedirect))'), 'Auth context must notify popup opener before pending redirect navigation');
 assert(authContext.includes('if (notifySsoBrokerComplete(redirectTo))'), 'Auth context must notify popup opener before stored redirect navigation');
 assert(rewardLedgerMigration.includes('CREATE TABLE IF NOT EXISTS public.reward_redemptions'), 'Reward ledger table must exist');

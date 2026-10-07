@@ -80,13 +80,16 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       params.get('error_description') ||
       params.get('error');
     if (authFlowError) {
-      if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)) {
+      // 只傳顧客文案：原始 error／error_description 只留在本站 console，不跨站 postMessage 給來源站。
+      const authFlowCustomerMessage = params.get('error') === 'access_denied'
+        ? '這次登入已取消。要查看會員資料，請重新使用 Google 登入。'
+        : '登入未完成，請重新使用 Google 登入；若持續發生，請聯繫月島協助。';
+      // 先記錄再分流，popup broker 分支也要留 log。
+      console.error('[SupabaseAuth] OAuth callback failed:', authFlowError);
+      if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)) {
         return;
       }
-      console.error('[SupabaseAuth] OAuth callback failed:', authFlowError);
-      setError(params.get('error') === 'access_denied'
-        ? '這次登入已取消。要查看會員資料，請重新使用 Google 登入。'
-        : '登入未完成，請重新使用 Google 登入；若持續發生，請聯繫月島協助。');
+      setError(authFlowCustomerMessage);
       removeOAuthCallbackParamsFromCurrentUrl();
     }
 
