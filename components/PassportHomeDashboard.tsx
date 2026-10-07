@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
-import { getOrderSourceLabel, getOrderStatusLabel } from '../src/lib/orderLabels';
+import { getOrderSourceLabel, getOrderStatusLabel, isPendingPickupStatus } from '../src/lib/orderLabels';
 import { trackEvent } from '../analytics';
 import { trackOutboundNavigation } from '../analytics';
 import type { JourneyMode } from '../src/lib/memberJourney';
@@ -194,7 +194,7 @@ export default function PassportHomeDashboard({
       };
     }
 
-    if (latestOrder && ['pending', 'paid', 'ready'].includes(latestOrder.status)) {
+    if (latestOrder && (latestOrder.status === 'pending' || isPendingPickupStatus(latestOrder.status))) {
       return {
         id: 'order',
         eyebrow: getOrderSourceLabel(latestOrder),
