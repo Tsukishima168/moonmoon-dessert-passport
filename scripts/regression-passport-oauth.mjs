@@ -256,7 +256,28 @@ assert(appTsx.includes('{isBrokerEntry ? (') && appTsx.includes('<SsoBrokerScree
 assert(authContext.includes('saveSsoBrokerMode(incomingSsoMode);'), 'Auth context must persist popup broker mode before OAuth');
 assert(authContext.includes('removeSsoBrokerParams(params);'), 'Auth context must remove broker-only params from visible URL');
 assert(authContext.includes("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)"), 'Auth context must notify popup opener on OAuth errors with the customer-facing message');
-assert(!/notifySsoBrokerComplete\([^)]*\bauthFlowError\b/.test(authContext), 'Auth context must never pass the raw OAuth authFlowError into notifySsoBrokerComplete (cross-site leak)');
+// 以括號配對取出每個 notifySsoBrokerComplete(...) 呼叫的完整引數（含巢狀括號），任何引數都不得出現原始 authFlowError。
+const brokerNotifyCalls = (source) => {
+  const calls = [];
+  const marker = 'notifySsoBrokerComplete(';
+  for (let start = source.indexOf(marker); start !== -1; start = source.indexOf(marker, start + 1)) {
+    let depth = 0;
+    let end = start + marker.length - 1;
+    for (; end < source.length; end += 1) {
+      if (source[end] === '(') depth += 1;
+      else if (source[end] === ')' && --depth === 0) break;
+    }
+    calls.push(source.slice(start, end + 1));
+  }
+  return calls;
+};
+const leaksRawAuthError = (source) => brokerNotifyCalls(source).some((call) => /\bauthFlowError\b/.test(call));
+assert(brokerNotifyCalls(authContext).length > 0, 'Auth context must still notify the popup opener through notifySsoBrokerComplete');
+assert(!leaksRawAuthError(authContext), 'Auth context must never pass the raw OAuth authFlowError into notifySsoBrokerComplete (cross-site leak)');
+// 自我檢查：偵測器必須抓得到直接傳入與巢狀包裝兩種洩漏寫法。
+assert(leaksRawAuthError("if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)) {"), 'Leak detector must catch a direct authFlowError argument');
+assert(leaksRawAuthError("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', String(authFlowError))"), 'Leak detector must catch a wrapped authFlowError argument');
+assert(!leaksRawAuthError("if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)) {\n  console.error('x', authFlowError);"), 'Leak detector must ignore authFlowError outside the call');
 assert(
   authContext.indexOf("console.error('[SupabaseAuth] OAuth callback failed:', authFlowError)") !== -1 &&
     authContext.indexOf("console.error('[SupabaseAuth] OAuth callback failed:', authFlowError)") <
