@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getPassportPublic, createInvitationPublic, type PassportPublic } from '../api/passportSystem'
+import { getPassportPublic, createInvitationPublic, isPassportNotFoundError, type PassportPublic } from '../api/passportSystem'
 import PageHeader from '../components/PageHeader'
 
 export default function JoinPage() {
@@ -15,6 +15,7 @@ export default function JoinPage() {
   useEffect(() => {
     if (!passportId) { setError('這個邀請連結無法使用，請向邀請者索取新連結。'); setLoading(false); return }
     getPassportPublic(passportId).then(({ data, error }) => {
+      if (isPassportNotFoundError(error)) { setError('找不到這張護照，請向邀請者確認連結。'); setLoading(false); return }
       if (error || !data) { setError('目前無法讀取這張護照，請確認網路後重新整理，或向邀請者確認連結。'); setLoading(false); return }
       if (data.status !== 'active') { setError('此護照已暫停使用，請聯繫邀請者確認。'); setLoading(false); return }
       if (data.invite_slots_used >= data.invite_slots_total) { setError('此護照的邀請名額已滿，請聯繫邀請者確認其他參與方式。'); setLoading(false); return }

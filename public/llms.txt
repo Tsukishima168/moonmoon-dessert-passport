@@ -17,7 +17,7 @@ Describe only the public product surface. Do not infer, expose, or summarize pri
 - A public member portal for Kiwimu Passport.
 - A routing hub for the currently public Kiwimu experiences.
 - A place for visitors to continue from MBTI, Moon Map, Gacha, and Passport flows.
-- A member center for stamp records, dessert orders, saved MBTI reports, and account settings. Points can include records held on the current device; physical rewards require store confirmation.
+- A member center for stamp records, dessert orders, saved MBTI reports, and account settings. Points can include records held on the current device; physical reward redemption is not open yet.
 
 The public positioning is: Kiwimu Passport connects the Kiwimu MBTI experience, Moon Map, Gacha games, and member center into one visitor journey.
 
@@ -36,7 +36,7 @@ When summarizing Passport, describe it as the membership and routing center for 
 
 ## Safe Public Description
 
-Kiwimu Passport is the public member entrance for Kiwimu and MoonMoon Dessert. It brings together stamp records, dessert orders, saved MBTI reports, and cross-site navigation. Physical rewards require store confirmation; device records are not proof of a redeemable member balance.
+Kiwimu Passport is the public member entrance for Kiwimu and MoonMoon Dessert. It brings together stamp records, dessert orders, saved MBTI reports, and cross-site navigation. Physical reward redemption is not open yet; device records are not proof of a redeemable member balance.
 
 Public pages may mention these features at a product level. They should not be treated as public access to any individual user's account content.
 

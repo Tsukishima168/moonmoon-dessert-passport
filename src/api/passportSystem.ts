@@ -35,6 +35,17 @@ interface RpcResult {
   holder_name?: string
 }
 
+// get_passport_public 找不到護照時回 { ok: false, error: 'Passport not found' }（見 003_rls_public_rpc.sql），
+// getPassportPublic 會把它包成 Error；連結不是合法 UUID 時 Postgres 回 22P02。兩者都是「連結有問題」，
+// 不是網路讀取失敗，頁面要分開說明。
+export const PASSPORT_NOT_FOUND_MESSAGE = 'Passport not found'
+const INVALID_UUID_ERROR_CODE = '22P02'
+
+export function isPassportNotFoundError(error: Error | null | undefined): boolean {
+  if (!error) return false
+  return error.message === PASSPORT_NOT_FOUND_MESSAGE || (error as { code?: unknown }).code === INVALID_UUID_ERROR_CODE
+}
+
 // ── RPC: get_passport_public ──
 export async function getPassportPublic(id: string): Promise<{ data: PassportPublic | null; error: Error | null }> {
   if (!supabase) return { data: null, error: new Error('Supabase not configured') }

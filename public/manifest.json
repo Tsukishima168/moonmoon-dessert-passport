@@ -48,7 +48,7 @@
     {
       "name": "獎勵說明",
       "short_name": "集章",
-      "description": "查看集章里程碑與門市領取說明",
+      "description": "查看集章里程碑與獎勵說明",
       "url": "/?screen=passport&tab=rewards",
       "icons": [{ "src": "/icon-192x192-kiwimu-v2.png", "sizes": "192x192" }]
     },

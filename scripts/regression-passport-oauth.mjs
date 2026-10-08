@@ -255,7 +255,35 @@ assert(appTsx.includes('const isInitialSsoBrokerEntry = () => isSsoBrokerMode(ge
 assert(appTsx.includes('{isBrokerEntry ? (') && appTsx.includes('<SsoBrokerScreen />'), 'App must render SSO broker screen only for broker entries');
 assert(authContext.includes('saveSsoBrokerMode(incomingSsoMode);'), 'Auth context must persist popup broker mode before OAuth');
 assert(authContext.includes('removeSsoBrokerParams(params);'), 'Auth context must remove broker-only params from visible URL');
-assert(authContext.includes("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)"), 'Auth context must notify popup opener on OAuth errors');
+assert(authContext.includes("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)"), 'Auth context must notify popup opener on OAuth errors with the customer-facing message');
+// 以括號配對取出每個 notifySsoBrokerComplete(...) 呼叫的完整引數（含巢狀括號），任何引數都不得出現原始 authFlowError。
+const brokerNotifyCalls = (source) => {
+  const calls = [];
+  const marker = 'notifySsoBrokerComplete(';
+  for (let start = source.indexOf(marker); start !== -1; start = source.indexOf(marker, start + 1)) {
+    let depth = 0;
+    let end = start + marker.length - 1;
+    for (; end < source.length; end += 1) {
+      if (source[end] === '(') depth += 1;
+      else if (source[end] === ')' && --depth === 0) break;
+    }
+    calls.push(source.slice(start, end + 1));
+  }
+  return calls;
+};
+const leaksRawAuthError = (source) => brokerNotifyCalls(source).some((call) => /\bauthFlowError\b/.test(call));
+assert(brokerNotifyCalls(authContext).length > 0, 'Auth context must still notify the popup opener through notifySsoBrokerComplete');
+assert(!leaksRawAuthError(authContext), 'Auth context must never pass the raw OAuth authFlowError into notifySsoBrokerComplete (cross-site leak)');
+// 自我檢查：偵測器必須抓得到直接傳入與巢狀包裝兩種洩漏寫法。
+assert(leaksRawAuthError("if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowError)) {"), 'Leak detector must catch a direct authFlowError argument');
+assert(leaksRawAuthError("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', String(authFlowError))"), 'Leak detector must catch a wrapped authFlowError argument');
+assert(!leaksRawAuthError("if (notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)) {\n  console.error('x', authFlowError);"), 'Leak detector must ignore authFlowError outside the call');
+assert(
+  authContext.indexOf("console.error('[SupabaseAuth] OAuth callback failed:', authFlowError)") !== -1 &&
+    authContext.indexOf("console.error('[SupabaseAuth] OAuth callback failed:', authFlowError)") <
+      authContext.indexOf("notifySsoBrokerComplete(getPendingRedirectTo(), 'error', authFlowCustomerMessage)"),
+  'Auth context must log the raw OAuth error locally before the popup broker branch returns',
+);
 assert(authContext.includes('if (notifySsoBrokerComplete(pendingRedirect))'), 'Auth context must notify popup opener before pending redirect navigation');
 assert(authContext.includes('if (notifySsoBrokerComplete(redirectTo))'), 'Auth context must notify popup opener before stored redirect navigation');
 assert(rewardLedgerMigration.includes('CREATE TABLE IF NOT EXISTS public.reward_redemptions'), 'Reward ledger table must exist');
@@ -977,6 +1005,127 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
     .map((m) => `${m[1]}|${m[2]}|${m[3]}`).sort();
   assert(seededItems.length === 10, `reward_items seed should list 10 rows, found ${seededItems.length}`);
   assertEqual(uiItems.join(','), seededItems.join(','), 'REDEEMABLE_ITEMS must match the reward_items seed (id|points|category)');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 訂單標籤：狀態／來源顯示（src/lib/orderLabels.ts 由兩個元件共用）
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  const labels = await loadTsModule('src/lib/orderLabels.ts');
+  const { getOrderStatusLabel, getOrderStatusStyle, getOrderSourceLabel, isPendingPickupStatus } = labels;
+
+  // shop 仍會產生 confirmed／preparing，不能掉到「請向門市確認」。
+  const expectedStatus = {
+    pending: '待付款',
+    paid: '已付款',
+    confirmed: '已確認',
+    preparing: '製作中',
+    ready: '可取貨',
+    completed: '完成',
+    cancelled: '已取消',
+  };
+  for (const [status, label] of Object.entries(expectedStatus)) {
+    assertEqual(getOrderStatusLabel(status), label, `status label for ${status}`);
+    assert(getOrderStatusStyle(status).includes('bg-'), `status ${status} must have a badge style`);
+  }
+  // confirmed／preparing 沿用 paid 色票，不新增顏色。
+  assertEqual(getOrderStatusStyle('confirmed'), getOrderStatusStyle('paid'), 'confirmed reuses the paid palette');
+  assertEqual(getOrderStatusStyle('preparing'), getOrderStatusStyle('paid'), 'preparing reuses the paid palette');
+  assertEqual(getOrderStatusLabel('totally_unknown'), '請向門市確認', 'unknown status keeps the store-confirmation fallback');
+  assertEqual(getOrderStatusLabel(null), '請向門市確認', 'null status keeps the fallback');
+  // 「待取貨」統計：已付款、已確認、製作中、可取貨都算；待付款、完成、取消與未知狀態不算。
+  for (const status of ['paid', 'confirmed', 'preparing', 'ready']) {
+    assert(isPendingPickupStatus(status) === true, `${status} orders are awaiting pickup`);
+  }
+  for (const status of ['pending', 'completed', 'cancelled', 'totally_unknown', '__proto__', 'constructor', '', null, undefined]) {
+    assert(isPendingPickupStatus(status) === false, `${String(status)} orders are not awaiting pickup`);
+  }
+  assert(!read('components/ShopOrderHistory.tsx').includes('readyCount'), 'ShopOrderHistory pickup stat must use isPendingPickupStatus, not the old ready+paid pair');
+
+  // 原型鍵不能變成顯示值或樣式。
+  for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    assertEqual(getOrderStatusLabel(key), '請向門市確認', `prototype key ${key} must not become a status label`);
+    assertEqual(getOrderStatusStyle(key), getOrderStatusStyle('__unknown__'), `prototype key ${key} must not become a status style`);
+    assertEqual(getOrderSourceLabel({ checkout_site: key, source_from: key }), '月島甜點', `prototype key ${key} must not become a source label`);
+  }
+
+  // 來源以 checkout_site 為準；source_from 是站間歸因（passport／gacha／mbti／direct），不能把正常訂單打成「請向門市確認」。
+  assertEqual(getOrderSourceLabel({ checkout_site: 'shop', source_from: 'passport' }), '月島甜點商店', 'shop order attributed to passport must show the shop');
+  assertEqual(getOrderSourceLabel({ checkout_site: 'shop', source_from: 'mbti' }), '月島甜點商店', 'shop order attributed to mbti must show the shop');
+  assertEqual(getOrderSourceLabel({ checkout_site: 'map', source_from: 'gacha' }), '月島地圖', 'map order attributed to gacha must show the map');
+  assertEqual(getOrderSourceLabel({ checkout_site: 'map', source_from: null }), '月島地圖', 'map order without attribution must show the map');
+  assertEqual(getOrderSourceLabel({ checkout_site: null, source_from: 'moon_map' }), '月島地圖', 'source_from is only a fallback when checkout_site is unknown');
+  assertEqual(getOrderSourceLabel({ checkout_site: null, source_from: 'direct' }), '月島甜點', 'unknown source falls back to the neutral brand label');
+  assertEqual(getOrderSourceLabel({}), '月島甜點', 'missing source falls back to the neutral brand label');
+
+  // 兩個元件不再各自維護一份標籤表，也不再以 source_from 優先查來源。
+  for (const file of ['components/ShopOrderHistory.tsx', 'components/PassportHomeDashboard.tsx']) {
+    const src = read(file);
+    assert(!src.includes('const ORDER_STATUS_LABEL') && !src.includes('const ORDER_SOURCE_LABEL'), `${file} must use src/lib/orderLabels.ts instead of its own label tables`);
+    assert(src.includes("from '../src/lib/orderLabels'"), `${file} must import the shared order labels`);
+    assert(!src.includes('order.source_from ||'), `${file} must not prefer source_from over checkout_site`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 護照公開讀取：「找不到」與「讀取失敗」要分開說明（src/api/passportSystem.ts）
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  // passportSystem.ts 只依賴 supabase client；把那一行 import 換成可控的假 client 後實跑。
+  const ts = require('typescript');
+  const importLine = "import { supabase } from '../lib/supabase'";
+  const apiSource = read('src/api/passportSystem.ts');
+  assert(apiSource.includes(importLine), 'passportSystem.ts supabase import line changed; update this regression harness');
+  const loadApi = (supabaseStub, salt) => {
+    const { outputText } = ts.transpileModule(apiSource.replace(importLine, `const supabase = ${supabaseStub};`), {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    });
+    return import(`data:text/javascript;base64,${Buffer.from(`${outputText}\n// ${salt}`).toString('base64')}`);
+  };
+  const api = await loadApi('{ rpc: async () => globalThis.__fakePassportRpcResult }', 'configured');
+  const withRpcResult = (result) => {
+    globalThis.__fakePassportRpcResult = result;
+  };
+
+  // RPC 回 ok:false / Passport not found（找不到）。
+  withRpcResult({ data: { ok: false, error: 'Passport not found' }, error: null });
+  let res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.data === null && api.isPassportNotFoundError(res.error), 'ok:false Passport not found must be classified as not found');
+
+  // 連結不是合法 UUID：Postgres 22P02，也是連結問題而不是網路問題。
+  withRpcResult({ data: null, error: Object.assign(new Error('invalid input syntax for type uuid: "abc"'), { code: '22P02' }) });
+  res = await api.getPassportPublic('abc');
+  assert(api.isPassportNotFoundError(res.error), 'invalid uuid link (22P02) must be classified as not found');
+
+  // 真正的讀取失敗（網路／伺服器／未設定）不能被說成找不到。
+  withRpcResult({ data: null, error: Object.assign(new Error('TypeError: Failed to fetch'), { code: '' }) });
+  res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !api.isPassportNotFoundError(res.error), 'network failure must stay a read failure, not "not found"');
+  withRpcResult({ data: null, error: Object.assign(new Error('permission denied for function get_passport_public'), { code: '42501' }) });
+  res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !api.isPassportNotFoundError(res.error), 'server-side RPC failure must stay a read failure, not "not found"');
+  withRpcResult({ data: { ok: false, error: 'Unknown error' }, error: null });
+  res = await api.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !api.isPassportNotFoundError(res.error), 'other ok:false errors must stay read failures');
+  const unconfiguredApi = await loadApi('null', 'unconfigured');
+  res = await unconfiguredApi.getPassportPublic('00000000-0000-0000-0000-000000000000');
+  assert(res.error && !unconfiguredApi.isPassportNotFoundError(res.error), 'unconfigured supabase must stay a read failure');
+  assert(api.isPassportNotFoundError(null) === false && api.isPassportNotFoundError(undefined) === false, 'no error is never "not found"');
+
+  // 成功讀取。
+  withRpcResult({ data: { ok: true, data: { id: 'p1', passport_number: 1 } }, error: null });
+  res = await api.getPassportPublic('p1');
+  assert(res.error === null && res.data && res.data.id === 'p1', 'successful read must return data without error');
+
+  delete globalThis.__fakePassportRpcResult;
+
+  // 兩個頁面要把兩種狀況分成不同文案。
+  const joinPage = read('src/pages/JoinPage.tsx');
+  const passportPage = read('src/pages/PassportPage.tsx');
+  assert(joinPage.includes("isPassportNotFoundError(error)") && joinPage.includes('找不到這張護照，請向邀請者確認連結。'), 'JoinPage must show a not-found message for missing passports');
+  assert(joinPage.includes('目前無法讀取這張護照，請確認網路後重新整理'), 'JoinPage must keep the network read-failure message');
+  assert(passportPage.includes("isPassportNotFoundError(error)") && passportPage.includes('找不到這本護照，請向分享者確認連結。'), 'PassportPage must show a not-found message for missing passports');
+  assert(passportPage.includes('目前無法讀取護照，請確認網路與連結後重新整理。'), 'PassportPage must keep the network read-failure message');
 }
 
 const swPath = path.join(repoRoot, 'dist', 'sw.js');
