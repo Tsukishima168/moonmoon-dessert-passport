@@ -1,6 +1,6 @@
 # Passport 會員中心收斂：設計與回歸檢核
 
-## 2026-10-13 森林導覽候選（實作中，未發布）
+## 2026-10-13 森林導覽候選（本機驗證完成，未發布）
 
 Penso同意導覽螢光綠改日光金；本輪先做Passport，其他四站尚未同步。
 
@@ -12,7 +12,13 @@ Penso同意導覽螢光綠改日光金；本輪先做Passport，其他四站尚�
 - Escape回焦、外點／焦點離開／視窗失焦關閉、切桌機關閉；展覽另開頁noopener/noreferrer，回原頁保留更多按鈕焦點。
 - 保留五站原URL／from合約；只新增既有公開森林展覽URL，不動登入／點數／印章／兌換。
 
-下方是歷史版面紀錄；本輪驗證結果待收尾回填，不能當既有32旅程／5 hydration已重跑。
+本輪build／tsc、既有OAuth／SSO／SW／reward／points guard、32旅程、5 hydration與新增70 rail source斷言通過。隔離Chromium24案（四寬度×五頁20、文字200%2、popup／resize2）通過；外部寫入0。作者內建瀏覽器390／1280與more已親看，320核銷頁溢出0。
+
+另以獨立commit修補既有320核銷頁12px溢出：兩種模式手機上下排列，欄位可收縮、按鈕≥44px；AST排除className後與原版完全相同，無核銷邏輯變更。
+
+獨立程式覆核APPROVE：自行既有tests／tsc、11 effect fixture、5 mutation rejection；六檔覆核diff SHA256 `98d93b7e151a72bfd0ff81ae760796199320b0878ec7450f50f39c1c06da74fb`。其後僅加入本驗證文件／公開截圖，runtime維持。Node fixture非真實React/DOM，不當Safari簽收。
+
+公開截圖與驗證細節：[docs/qa/forest-navigation-20261013/README.md](docs/qa/forest-navigation-20261013/README.md)。預覽 http://127.0.0.1:5250/?screen=passport&tab=hub 。本輪尚未正式發布，其他四站尚未同步。下方保留歷史版面快照。
 
 - 日期：2026-10-06
 - 比較基準：main `0646b77`，沿用 Penso 已選定的 Gacha 第 1 稿深綠、奶油白與柔金。
