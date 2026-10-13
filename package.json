@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm test",
-    "test": "node scripts/regression-passport-oauth.mjs && node scripts/test-member-journey.mjs && node scripts/test-member-hydration.mjs",
+    "test": "node scripts/regression-passport-oauth.mjs && node scripts/test-member-journey.mjs && node scripts/test-member-hydration.mjs && node scripts/test-universe-rail.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

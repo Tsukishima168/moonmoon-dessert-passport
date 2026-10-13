@@ -111,8 +111,8 @@ export default function RedeemPage() {
             required
           />
           {mode === 'reward' ? (
-            <div className="flex gap-2">
-              <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1 min-w-0">
                 <span className="text-brand-bg/50 text-sm">CODE</span>
                 <input
                   type="text"
@@ -126,14 +126,14 @@ export default function RedeemPage() {
               <button
                 type="submit"
                 disabled={redeeming || Boolean(fulfilledReward)}
-                className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40"
+                className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40 min-h-11 shrink-0"
               >
                 {redeeming ? '核銷中...' : '核銷'}
               </button>
             </div>
           ) : (
-            <div className="flex gap-2">
-              <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1 min-w-0">
                 <span className="text-brand-bg/50 text-sm">#</span>
                 <input
                   type="number"
@@ -149,7 +149,7 @@ export default function RedeemPage() {
               <button
                 type="submit"
                 disabled={redeeming || redeemSuccess}
-                className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40"
+                className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40 min-h-11 shrink-0"
               >
                 {redeeming ? '確認中...' : '確認兌換'}
               </button>
