@@ -76,104 +76,108 @@ export default function RedeemPage() {
   return (
     <div className="ku-passport-route-shell bg-brand-bg font-sans">
       <PageHeader />
-      <div className="max-w-md mx-auto px-5 pt-28 pb-10">
+      <main className="redeem-main">
 
-        <div className="mb-8">
-          <p className="text-xs text-brand-black/40 tracking-widest uppercase">月島端驗證</p>
-          <h1 className="text-3xl text-brand-black mt-2">兌換核銷</h1>
+        <div className="redeem-head">
+          <p className="redeem-eyebrow">月島端驗證</p>
+          <h1 className="redeem-title">兌換核銷</h1>
         </div>
 
-        <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-brand-black/5 p-1">
-          <button
-            type="button"
-            onClick={() => { setMode('reward'); setRedeemError(null); setRedeemSuccess(false) }}
-            className={`rounded-xl py-2 text-sm font-medium ${mode === 'reward' ? 'bg-brand-black text-brand-bg' : 'text-brand-black/50'}`}
-          >
-            點數兌換碼
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('passport'); setRedeemError(null); setFulfilledReward(null) }}
-            className={`rounded-xl py-2 text-sm font-medium ${mode === 'passport' ? 'bg-brand-black text-brand-bg' : 'text-brand-black/50'}`}
-          >
-            護照布丁
-          </button>
-        </div>
+        <div className="redeem-card">
 
-        <form onSubmit={mode === 'reward' ? handleRewardFulfill : handleRedeem} className="space-y-3 mb-6">
-          <input
-            type="password"
-            value={pwInput}
-            onChange={e => { setPwInput(e.target.value); setRedeemError(null) }}
-            placeholder="店員密碼"
-            className="w-full bg-brand-black/5 border border-brand-black/10 text-brand-black rounded-2xl px-5 py-4 text-sm outline-hidden placeholder:text-brand-black/30"
-            autoComplete="current-password"
-            required
-          />
-          {mode === 'reward' ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1 min-w-0">
-                <span className="text-brand-bg/50 text-sm">CODE</span>
-                <input
-                  type="text"
-                  value={redemptionCode}
-                  onChange={e => { setRedemptionCode(e.target.value.toUpperCase()); setRedeemError(null); setFulfilledReward(null) }}
-                  placeholder="AB12CD34EF56"
-                  className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30 min-w-0"
-                  required
-                />
+          <div className="redeem-toggle">
+            <button
+              type="button"
+              onClick={() => { setMode('reward'); setRedeemError(null); setRedeemSuccess(false) }}
+              className={`redeem-toggle-btn${mode === 'reward' ? ' is-active' : ''}`}
+            >
+              點數兌換碼
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('passport'); setRedeemError(null); setFulfilledReward(null) }}
+              className={`redeem-toggle-btn${mode === 'passport' ? ' is-active' : ''}`}
+            >
+              護照布丁
+            </button>
+          </div>
+
+          <form onSubmit={mode === 'reward' ? handleRewardFulfill : handleRedeem} className="redeem-form">
+            <input
+              type="password"
+              value={pwInput}
+              onChange={e => { setPwInput(e.target.value); setRedeemError(null) }}
+              placeholder="店員密碼"
+              className="redeem-input"
+              autoComplete="current-password"
+              required
+            />
+            {mode === 'reward' ? (
+              <div className="redeem-row">
+                <div className="redeem-field">
+                  <span className="redeem-field-label">CODE</span>
+                  <input
+                    type="text"
+                    value={redemptionCode}
+                    onChange={e => { setRedemptionCode(e.target.value.toUpperCase()); setRedeemError(null); setFulfilledReward(null) }}
+                    placeholder="AB12CD34EF56"
+                    className="redeem-field-input"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={redeeming || Boolean(fulfilledReward)}
+                  className="member-button member-button-gold redeem-submit"
+                >
+                  {redeeming ? '核銷中...' : '核銷'}
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={redeeming || Boolean(fulfilledReward)}
-                className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40 min-h-11 shrink-0"
-              >
-                {redeeming ? '核銷中...' : '核銷'}
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="flex items-center bg-brand-black rounded-2xl px-5 py-4 gap-2 flex-1 min-w-0">
-                <span className="text-brand-bg/50 text-sm">#</span>
-                <input
-                  type="number"
-                  value={passportNum}
-                  onChange={e => { setPassportNum(e.target.value); setRedeemError(null) }}
-                  placeholder="001"
-                  min={1}
-                  max={100}
-                  className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30 w-16"
-                  required
-                />
+            ) : (
+              <div className="redeem-row">
+                <div className="redeem-field">
+                  <span className="redeem-field-label">#</span>
+                  <input
+                    type="number"
+                    value={passportNum}
+                    onChange={e => { setPassportNum(e.target.value); setRedeemError(null) }}
+                    placeholder="001"
+                    min={1}
+                    max={100}
+                    className="redeem-field-input"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={redeeming || redeemSuccess}
+                  className="member-button member-button-gold redeem-submit"
+                >
+                  {redeeming ? '確認中...' : '確認兌換'}
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={redeeming || redeemSuccess}
-                className="bg-brand-lime text-brand-black rounded-2xl px-6 text-sm font-medium disabled:opacity-40 min-h-11 shrink-0"
-              >
-                {redeeming ? '確認中...' : '確認兌換'}
-              </button>
+            )}
+            {redeemError && <p className="redeem-error">{redeemError}</p>}
+          </form>
+
+          {fulfilledReward && (
+            <div className="redeem-result">
+              <p className="redeem-result-title">✓ 核銷完成</p>
+              <p className="redeem-result-body">{fulfilledReward.reward_name}</p>
+              <p className="redeem-result-note">兌換碼 {fulfilledReward.redemption_code} 已核銷</p>
             </div>
           )}
-          {redeemError && <p className="text-red-400 text-xs px-1">{redeemError}</p>}
-        </form>
 
-        {fulfilledReward && (
-          <div className="bg-brand-lime rounded-2xl p-6 text-center">
-            <p className="text-brand-black font-medium">✓ 核銷完成</p>
-            <p className="text-brand-black/70 text-sm mt-2">{fulfilledReward.reward_name}</p>
-            <p className="text-brand-black/50 text-xs mt-1">兌換碼 {fulfilledReward.redemption_code} 已核銷</p>
-          </div>
-        )}
+          {redeemSuccess && (
+            <div className="redeem-result">
+              <p className="redeem-result-title">✓ 兌換完成</p>
+              <p className="redeem-result-note">護照 #{passportNum.padStart(3, '0')} 已完成兌換</p>
+            </div>
+          )}
 
-        {redeemSuccess && (
-          <div className="bg-brand-lime rounded-2xl p-6 text-center">
-            <p className="text-brand-black font-medium">✓ 兌換完成</p>
-            <p className="text-brand-black/50 text-xs mt-1">護照 #{passportNum.padStart(3, '0')} 已完成兌換</p>
-          </div>
-        )}
+        </div>
 
-      </div>
+      </main>
     </div>
   )
 }

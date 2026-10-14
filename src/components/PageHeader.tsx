@@ -6,7 +6,7 @@ export default function PageHeader() {
   return (
     <header className="ku-passport-fixed-header fixed left-0 right-0 z-50 px-6 py-6 flex justify-between items-center pointer-events-none">
       <div className="pointer-events-auto">
-        <a href="/" aria-label="回首頁">
+        <a href="/" aria-label="回首頁" className="flex min-h-11 items-center -my-1.5 md:-my-1">
           <img
             src={KIWIMU_LOGO}
             alt="Kiwimu"
