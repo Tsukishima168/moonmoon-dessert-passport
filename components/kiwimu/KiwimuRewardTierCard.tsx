@@ -25,11 +25,11 @@ export const KiwimuRewardTierCard: React.FC<KiwimuRewardTierCardProps> = ({
       <div className="flex items-center gap-4">
         <div
           className={`flex h-12 w-12 items-center justify-center rounded-xl border-2 border-brand-black shadow-[2px_2px_0px_black] ${
-            isUnlocked && !isRedeemed ? 'bg-brand-lime' : 'bg-white'
+            isUnlocked && !isRedeemed ? 'bg-brand-gold' : 'bg-white'
           }`}
         >
           {isRedeemed ? (
-            <CheckCircle2 size={24} className="text-brand-lime-dark" />
+            <CheckCircle2 size={24} className="text-brand-green" />
           ) : (
             <Gift size={24} className="text-brand-black" />
           )}

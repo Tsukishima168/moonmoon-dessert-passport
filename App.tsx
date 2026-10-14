@@ -243,7 +243,7 @@ const Header = ({
             disabled={authLoading}
             aria-label={authLoading ? '確認登入狀態中' : '使用 Google 登入'}
             onClick={() => void signInWithGoogle()}
-            className="flex items-center gap-1.5 text-xs bg-brand-lime border border-brand-black text-brand-black ml-1 px-3 py-2 min-h-11 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-px hover:shadow-[1px_1px_0px_black] transition-all"
+            className="flex items-center gap-1.5 text-xs bg-brand-gold border border-brand-black text-brand-black ml-1 px-3 py-2 min-h-11 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-px hover:shadow-[1px_1px_0px_black] transition-all"
           >
             <LogIn size={14} /> <span className="hidden sm:inline">Google </span>{authLoading ? '確認中…' : '登入'}
           </button>
@@ -292,7 +292,7 @@ const SsoBrokerScreen = () => {
   return (
     <div className="ku-passport-route-shell flex items-center justify-center bg-brand-cream px-6 text-center">
       <div className="w-full max-w-sm rounded-[24px] border border-[#D8D7C4] bg-white p-8 shadow-[0_16px_32px_#10211530]">
-        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#D8D7C4] bg-brand-lime">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#D8D7C4] bg-brand-gold">
           <LogIn size={22} className="text-brand-black" />
         </div>
         <p className="mb-3 text-[12px] font-black uppercase tracking-[0.28em] text-brand-black/65">
@@ -313,7 +313,7 @@ const SsoBrokerScreen = () => {
               startedRef.current = false;
               void signInWithGoogle();
             }}
-            className="mt-6 w-full rounded-full border border-[#D8D7C4] bg-brand-lime px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-black shadow-[0_8px_28px_#1F2F1F26]"
+            className="mt-6 w-full rounded-full border border-[#D8D7C4] bg-brand-gold px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-black shadow-[0_8px_28px_#1F2F1F26]"
           >
             重新登入
           </button>
@@ -711,7 +711,7 @@ function App() {
 
 
   return (
-    <div className="ku-passport-app-shell font-sans selection:bg-brand-lime selection:text-brand-black">
+    <div className="ku-passport-app-shell font-sans selection:bg-brand-gold selection:text-brand-black">
       {isBrokerEntry ? (
         <SsoBrokerScreen />
       ) : (
@@ -727,7 +727,7 @@ function App() {
           <div
             className={`flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-[0_8px_28px_#1F2F1F26] ${
               appNotice.tone === 'success'
-                ? 'border-[#D8D7C4] bg-brand-lime text-brand-black'
+                ? 'border-[#D8D7C4] bg-brand-gold text-brand-black'
                 : 'border-red-200 bg-red-50 text-red-700'
             }`}
           >

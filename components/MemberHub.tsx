@@ -159,7 +159,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
             {/* Header Bar */}
             <div className="border-b border-brand-black/10 bg-white px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-brand-black">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand-black/10 bg-brand-lime/40">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand-black/10 bg-brand-gold/40">
                         <Trophy size={15} className="text-brand-black" />
                     </div>
                     <h2 className="text-sm font-bold tracking-tight uppercase">月島足跡</h2>
@@ -174,7 +174,7 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
             {/* Progress Bar (Subtle) */}
             <div className="h-1 w-full bg-gray-100">
                 <div
-                    className="h-full bg-brand-lime transition-all duration-1000"
+                    className="h-full bg-brand-gold transition-all duration-1000"
                     style={{ width: `${completionRate}%` }}
                 />
             </div>
@@ -227,9 +227,9 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
 
                 {/* Completion Message */}
                 {publicVisitedSites.length === PUBLIC_MOONMOON_SITES.length && (
-                    <div className="mt-4 p-3 rounded-xl bg-brand-lime/10 border border-brand-lime/30 flex items-center gap-2.5">
-                        <Sparkles size={16} className="text-brand-lime-dark" />
-                        <p className="text-[12px] font-bold text-brand-lime-dark uppercase">
+                    <div className="mt-4 p-3 rounded-xl bg-brand-gold/10 border border-brand-gold/30 flex items-center gap-2.5">
+                        <Sparkles size={16} className="text-brand-green" />
+                        <p className="text-[12px] font-bold text-brand-green uppercase">
                             你已完成目前開放的探索足跡。足跡不代表已集章或取得兌換資格。
                         </p>
                     </div>

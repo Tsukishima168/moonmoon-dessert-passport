@@ -21,16 +21,16 @@ export const Button: React.FC<ButtonProps> = ({
   
   const variants = {
     // Lime background, Black Text, thin black border
-    primary: "bg-brand-lime text-brand-black border-brand-black hover:bg-white hover:shadow-[2px_2px_0px_rgba(0,0,0,1)]",
+    primary: "bg-brand-gold text-brand-black border-brand-black hover:bg-white hover:shadow-[2px_2px_0px_rgba(0,0,0,1)]",
     
     // Solid Black
-    black: "bg-brand-black text-brand-lime border-brand-black hover:bg-gray-800",
+    black: "bg-brand-black text-brand-gold border-brand-black hover:bg-gray-800",
     
     // White background, Black border
     secondary: "bg-white text-brand-black border-brand-black hover:bg-brand-gray",
     
     // Outlined transparent
-    outline: "bg-transparent border-brand-black text-brand-black hover:bg-brand-lime",
+    outline: "bg-transparent border-brand-black text-brand-black hover:bg-brand-gold",
     
     // Ghost
     ghost: "border-transparent text-gray-500 hover:text-brand-black hover:bg-black/5",

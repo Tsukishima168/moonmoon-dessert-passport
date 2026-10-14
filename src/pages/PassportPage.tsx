@@ -49,13 +49,13 @@ export default function PassportPage() {
               <div
                 key={i}
                 className={`flex-1 h-1.5 rounded-full transition-all ${
-                  i < passport.invite_slots_used ? 'bg-brand-lime' : 'bg-white/15'
+                  i < passport.invite_slots_used ? 'bg-brand-gold' : 'bg-white/15'
                 }`}
               />
             ))}
           </div>
           <p className="text-brand-bg text-sm">
-            已邀請 <span className="text-brand-lime font-medium">{passport.invite_slots_used}</span> / {passport.invite_slots_total} 位
+            已邀請 <span className="text-brand-gold font-medium">{passport.invite_slots_used}</span> / {passport.invite_slots_total} 位
           </p>
           {slotsLeft > 0 && (
             <p className="text-brand-bg/40 text-xs mt-1">再邀請 {slotsLeft} 位朋友，即可到門市確認布丁領取資格</p>
@@ -63,7 +63,7 @@ export default function PassportPage() {
         </div>
 
         {/* Pudding status */}
-        <div className={`rounded-2xl p-6 mb-6 ${canRedeem ? 'bg-brand-lime' : 'bg-brand-gray'}`}>
+        <div className={`rounded-2xl p-6 mb-6 ${canRedeem ? 'bg-brand-gold' : 'bg-brand-gray'}`}>
           <p className="text-brand-black/50 text-xs tracking-widest uppercase mb-1">月島布丁</p>
           <p className="text-brand-black font-medium text-sm">
             {passport.pudding_claimed

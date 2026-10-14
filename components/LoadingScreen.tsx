@@ -6,7 +6,7 @@ const LoadingScreen: React.FC = () => {
         <div role="status" aria-label="正在載入會員護照" className="fixed inset-0 z-100 bg-brand-bg flex flex-col items-center justify-center p-8">
             {/* Brand Logo - Center Area */}
             <div className="relative mb-8 animate-float">
-                <div className="absolute -inset-4 bg-brand-lime/20 rounded-full blur-2xl animate-pulse" />
+                <div className="absolute -inset-4 bg-brand-gold/20 rounded-full blur-2xl animate-pulse" />
                 <img
                     src={BRANDING.STANDARDIZED_CHINESE_LOGO}
                     alt="月島甜點店"
@@ -16,7 +16,7 @@ const LoadingScreen: React.FC = () => {
 
             {/* Progress Indicator */}
             <div className="w-full max-w-[200px] h-1.5 bg-gray-100 rounded-full border border-brand-black overflow-hidden relative">
-                <div className="absolute inset-0 bg-brand-lime animate-loading-bar" />
+                <div className="absolute inset-0 bg-brand-gold animate-loading-bar" />
             </div>
 
             {/* Loading Status */}

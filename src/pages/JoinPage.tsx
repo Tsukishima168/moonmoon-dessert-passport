@@ -82,7 +82,7 @@ export default function JoinPage() {
           <button
             type="submit"
             disabled={!igHandle.trim() || submitting}
-            className="w-full bg-brand-lime text-brand-black rounded-full py-4 text-sm tracking-wide font-medium disabled:opacity-50 transition-opacity hover:opacity-80"
+            className="w-full bg-brand-gold text-brand-black rounded-full py-4 text-sm tracking-wide font-medium disabled:opacity-50 transition-opacity hover:opacity-80"
           >
             {submitting ? '送出中...' : '確認接受邀請'}
           </button>
