@@ -338,7 +338,8 @@ html {
 .member-account-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:18px; border-bottom:1px solid var(--member-line); font-size:13px; color:var(--member-muted); }
 
 /* Redeem (staff): one cream floating card in the same family as the hub passport card.
-   Contrast: muted #5f6856 on cream (5.14:1), #d8d7c4 on dark green; touch targets >= 44px. */
+   Light surface: fields are cream/white, the single dark element is the primary action.
+   Contrast: muted #5f6856 on cream (5.14:1); touch targets >= 44px. */
 .redeem-main { width:min(100%,560px); margin-inline:auto; padding:max(112px,14vh) 20px 64px; font-family:'Noto Sans TC',sans-serif; color:var(--member-ink); }
 .redeem-head { margin-bottom:24px; }
 .redeem-eyebrow { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; color:var(--member-muted); }
@@ -351,15 +352,17 @@ html {
 .redeem-input { width:100%; min-height:56px; padding:0 20px; border:1px solid var(--member-line); border-radius:12px; background:#fffdf8; color:var(--member-ink); font-size:16px; }
 .redeem-input::placeholder { color:var(--member-muted); opacity:1; }
 .redeem-row { display:flex; flex-direction:column; gap:16px; }
-.redeem-field { display:flex; align-items:center; gap:8px; flex:1; min-width:0; padding-inline:20px; border-radius:12px; background:#1f2f1f; }
-.redeem-field-label { flex-shrink:0; font-size:14px; font-weight:600; color:#d8d7c4; }
-.redeem-field-input { flex:1; min-width:0; min-height:56px; padding:0; border:0; background:transparent; color:#f5f0e8; font-size:16px; }
-.redeem-field-input::placeholder { color:#d8d7c4b3; opacity:1; }
+.redeem-field { display:flex; align-items:center; gap:8px; flex:1; min-width:0; padding-inline:19px; border:1px solid var(--member-line); border-radius:12px; background:#fffdf8; }
+.redeem-field-label { flex-shrink:0; font-size:14px; font-weight:600; color:var(--member-muted); }
+.redeem-field-input { flex:1; min-width:0; min-height:54px; padding:0; border:0; background:transparent; color:var(--member-ink); font-size:16px; }
+.redeem-field-input::placeholder { color:var(--member-muted); opacity:1; }
 .redeem-field-input[type=number] { -moz-appearance:textfield; appearance:textfield; }
 .redeem-field-input[type=number]::-webkit-inner-spin-button, .redeem-field-input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 .redeem-field:has(input:focus-visible) { outline:2px solid #304f2f; outline-offset:2px; }
 #root .redeem-field input:focus-visible { outline:none; box-shadow:none; }
-.redeem-submit { flex-shrink:0; white-space:nowrap; }
+/* Primary action on a light (cream) surface: solid deep green with cream text, not gold. */
+.redeem-submit { flex-shrink:0; white-space:nowrap; min-height:56px; border-color:transparent; background:#1f2f1f; color:#f5f0e8; }
+.redeem-submit:hover { background:#304f2f; }
 .redeem-error { color:#b91c1c; font-size:14px; line-height:1.6; padding-inline:4px; }
 .redeem-result { padding:24px; border-radius:16px; background:#d7c678; color:#1f2f1f; text-align:center; }
 .redeem-result-title { font-size:16px; font-weight:700; }

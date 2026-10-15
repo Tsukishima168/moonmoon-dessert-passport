@@ -128,7 +128,7 @@ export default function RedeemPage() {
                 <button
                   type="submit"
                   disabled={redeeming || Boolean(fulfilledReward)}
-                  className="member-button member-button-gold redeem-submit"
+                  className="member-button redeem-submit"
                 >
                   {redeeming ? '核銷中...' : '核銷'}
                 </button>
@@ -151,7 +151,7 @@ export default function RedeemPage() {
                 <button
                   type="submit"
                   disabled={redeeming || redeemSuccess}
-                  className="member-button member-button-gold redeem-submit"
+                  className="member-button redeem-submit"
                 >
                   {redeeming ? '確認中...' : '確認兌換'}
                 </button>
