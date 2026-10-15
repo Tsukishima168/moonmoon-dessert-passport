@@ -68,21 +68,21 @@ export default function JoinPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="bg-brand-black rounded-2xl px-4 py-3 flex items-center mb-4">
-            <span className="text-brand-bg/40 text-sm mr-2">@</span>
+          <div className="bg-white border border-[#D8D7C4] rounded-2xl px-4 flex items-center mb-4">
+            <span className="text-[#5F6856] text-sm mr-2">@</span>
             <input
               type="text"
               value={igHandle}
               onChange={e => setIgHandle(e.target.value)}
               placeholder="你的 IG 帳號"
-              className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30"
+              className="flex-1 min-h-12 bg-transparent text-brand-black text-sm outline-hidden placeholder:text-[#5F6856]"
               autoComplete="off"
             />
           </div>
           <button
             type="submit"
             disabled={!igHandle.trim() || submitting}
-            className="w-full bg-brand-gold text-brand-black rounded-full py-4 text-sm tracking-wide font-medium disabled:opacity-50 transition-opacity hover:opacity-80"
+            className="w-full bg-brand-black text-brand-bg rounded-full py-4 text-sm tracking-wide font-medium disabled:opacity-50 transition-colors hover:bg-brand-green"
           >
             {submitting ? '送出中...' : '確認接受邀請'}
           </button>

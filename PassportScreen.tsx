@@ -494,7 +494,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             <button
                                 disabled={authLoading}
                                 onClick={() => void signInWithGoogle()}
-                                className="w-full py-2.5 bg-brand-gold text-brand-black rounded-xl text-xs font-black uppercase tracking-wider border-2 border-brand-black shadow-[2px_2px_0px_black] active:translate-y-[2px] active:shadow-none transition-all"
+                                className="w-full py-2.5 bg-brand-black text-brand-bg rounded-xl text-xs font-black uppercase tracking-wider border-2 border-brand-black hover:bg-brand-green transition-colors disabled:opacity-65"
                             >
                                 {authLoading ? '確認登入狀態中…' : '使用 Google 登入'}
                             </button>
@@ -543,7 +543,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => window.open(LINKS.NAVIGATION, '_blank')}
-                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-gold px-3 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
+                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-black px-3 py-2 text-[12px] font-black uppercase tracking-wider text-brand-bg transition-colors hover:bg-brand-green"
                                                 >
                                                     導航前往月島
                                                     <ExternalLink size={12} />

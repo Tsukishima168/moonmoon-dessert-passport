@@ -158,7 +158,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                                 externalPending === nextStamp.id ? (
                                     <button
                                         onClick={() => handleExternalComplete(nextStamp.id)}
-                                        className="w-full py-3 bg-brand-gold text-brand-black rounded-xl font-bold text-sm border-2 border-brand-black shadow-[3px_3px_0px_black] active:translate-y-0.5 flex items-center justify-center gap-2"
+                                        className="w-full py-3 bg-brand-black text-brand-bg rounded-xl font-bold text-sm border-2 border-brand-black hover:bg-brand-green transition-colors flex items-center justify-center gap-2"
                                     >
                                         <Check size={16} /> 確認完成
                                     </button>

@@ -243,7 +243,7 @@ const Header = ({
             disabled={authLoading}
             aria-label={authLoading ? '確認登入狀態中' : '使用 Google 登入'}
             onClick={() => void signInWithGoogle()}
-            className="flex items-center gap-1.5 text-xs bg-brand-gold border border-brand-black text-brand-black ml-1 px-3 py-2 min-h-11 rounded-full font-bold shadow-[2px_2px_0px_black] hover:bg-white hover:translate-y-px hover:shadow-[1px_1px_0px_black] transition-all"
+            className="flex items-center gap-1.5 text-xs bg-brand-black border border-brand-black text-brand-bg ml-1 px-3 py-2 min-h-11 rounded-full font-bold hover:bg-brand-green transition-colors disabled:opacity-65"
           >
             <LogIn size={14} /> <span className="hidden sm:inline">Google </span>{authLoading ? '確認中…' : '登入'}
           </button>
@@ -313,7 +313,7 @@ const SsoBrokerScreen = () => {
               startedRef.current = false;
               void signInWithGoogle();
             }}
-            className="mt-6 w-full rounded-full border border-[#D8D7C4] bg-brand-gold px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-black shadow-[0_8px_28px_#1F2F1F26]"
+            className="mt-6 w-full rounded-full border border-brand-black bg-brand-black px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-brand-bg shadow-[0_8px_28px_#1F2F1F26] hover:bg-brand-green transition-colors"
           >
             重新登入
           </button>
