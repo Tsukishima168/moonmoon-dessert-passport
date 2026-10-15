@@ -358,8 +358,9 @@ html {
 .redeem-field-input::placeholder { color:var(--member-muted); opacity:1; }
 .redeem-field-input[type=number] { -moz-appearance:textfield; appearance:textfield; }
 .redeem-field-input[type=number]::-webkit-inner-spin-button, .redeem-field-input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-.redeem-field:has(input:focus-visible) { outline:2px solid #304f2f; outline-offset:2px; }
-#root .redeem-field input:focus-visible { outline:none; box-shadow:none; }
+/* Focus ring lives on the field frame via :focus-within (no :has() / :focus-visible dependency), the inner input's own ring is replaced by it. */
+.redeem-field:focus-within { outline:2px solid #304f2f; outline-offset:2px; }
+#root .redeem-field input:focus { outline:none; box-shadow:none; }
 /* Primary action on a light (cream) surface: solid deep green with cream text, not gold. */
 .redeem-submit { flex-shrink:0; white-space:nowrap; min-height:56px; border-color:transparent; background:#1f2f1f; color:#f5f0e8; }
 .redeem-submit:hover { background:#304f2f; }
