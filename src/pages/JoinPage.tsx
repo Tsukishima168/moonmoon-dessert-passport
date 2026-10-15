@@ -49,7 +49,7 @@ export default function JoinPage() {
         <div className="max-w-md mx-auto px-5 pt-28 pb-10 text-center">
           <p className="text-4xl mb-4">🎉</p>
           <h1 className="font-sans font-black text-2xl text-brand-black mb-2">已接受邀請</h1>
-          <p className="text-brand-black/50 text-sm">你已成功加入 {passport?.holder_name} 的 Kiwimu 宇宙</p>
+          <p className="text-[#5F6856] text-sm">你已成功加入 {passport?.holder_name} 的 Kiwimu 宇宙</p>
         </div>
       </div>
     )
@@ -60,11 +60,11 @@ export default function JoinPage() {
       <PageHeader />
       <div className="max-w-md mx-auto px-5 pt-28 pb-10">
         <div className="mb-8">
-          <p className="text-xs text-brand-black/40 tracking-widest uppercase">邀請加入</p>
+          <p className="text-xs text-[#5F6856] tracking-widest uppercase">邀請加入</p>
           <h1 className="font-sans font-black text-3xl text-brand-black mt-2">
             你被 {passport?.holder_name} 邀請了
           </h1>
-          <p className="text-brand-black/50 text-sm mt-1">填入你的 IG 帳號，接受邀請</p>
+          <p className="text-[#5F6856] text-sm mt-1">填入你的 IG 帳號，接受邀請</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -95,7 +95,7 @@ export default function JoinPage() {
 function StatusView({ text }: { text: string }) {
   return (
     <div className="ku-passport-route-shell bg-brand-bg flex items-center justify-center">
-      <p className="text-brand-black/40 text-sm">{text}</p>
+      <p className="text-[#5F6856] text-sm">{text}</p>
     </div>
   )
 }

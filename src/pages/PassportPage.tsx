@@ -34,16 +34,16 @@ export default function PassportPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <p className="text-xs text-brand-black/40 tracking-widest uppercase">Kiwimu Passport</p>
+          <p className="text-xs text-[#5F6856] tracking-widest uppercase">Kiwimu Passport</p>
           <h1 className="font-sans font-black text-5xl text-brand-black mt-2">
             #{String(passport.passport_number).padStart(3, '0')}
           </h1>
-          <p className="text-brand-black/60 mt-1">{passport.holder_name}</p>
+          <p className="text-[#5F6856] mt-1">{passport.holder_name}</p>
         </div>
 
         {/* Invite progress */}
         <div className="bg-brand-black rounded-2xl p-6 mb-4">
-          <p className="text-brand-bg/40 text-xs tracking-widest uppercase mb-4">邀請進度</p>
+          <p className="text-[#D8D7C4] text-xs tracking-widest uppercase mb-4">邀請進度</p>
           <div className="flex gap-2 mb-4">
             {Array.from({ length: passport.invite_slots_total }).map((_, i) => (
               <div
@@ -58,13 +58,13 @@ export default function PassportPage() {
             已邀請 <span className="text-brand-gold font-medium">{passport.invite_slots_used}</span> / {passport.invite_slots_total} 位
           </p>
           {slotsLeft > 0 && (
-            <p className="text-brand-bg/40 text-xs mt-1">再邀請 {slotsLeft} 位朋友，即可到門市確認布丁領取資格</p>
+            <p className="text-[#D8D7C4] text-xs mt-1">再邀請 {slotsLeft} 位朋友，即可到門市確認布丁領取資格</p>
           )}
         </div>
 
         {/* Pudding status */}
         <div className={`rounded-2xl p-6 mb-6 ${canRedeem ? 'bg-brand-gold' : 'bg-brand-gray'}`}>
-          <p className="text-brand-black/50 text-xs tracking-widest uppercase mb-1">月島布丁</p>
+          <p className="text-brand-green text-xs tracking-widest uppercase mb-1">月島布丁</p>
           <p className="text-brand-black font-medium text-sm">
             {passport.pudding_claimed
               ? '✓ 已兌換'
@@ -89,11 +89,11 @@ export default function PassportPage() {
         )}
 
         {!canInvite && passport.status === 'active' && (
-          <p className="text-center text-brand-black/40 text-sm py-4">邀請名額已用完</p>
+          <p className="text-center text-[#5F6856] text-sm py-4">邀請名額已用完</p>
         )}
 
         {passport.status === 'suspended' && (
-          <p className="text-center text-red-400 text-sm py-4">此護照已暫停使用</p>
+          <p className="text-center text-red-700 text-sm py-4">此護照已暫停使用</p>
         )}
 
       </div>
@@ -104,7 +104,7 @@ export default function PassportPage() {
 function StatusView({ text }: { text: string }) {
   return (
     <div className="ku-passport-route-shell bg-brand-bg flex items-center justify-center">
-      <p className="text-brand-black/40 text-sm">{text}</p>
+      <p className="text-[#5F6856] text-sm">{text}</p>
     </div>
   )
 }
