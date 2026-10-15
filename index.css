@@ -372,3 +372,9 @@ html {
 @media (min-width:768px) { .redeem-main { padding-top:max(112px,calc(50vh - 232px)); } }
 @media (max-width:760px) { .redeem-title { font-size:28px; } }
 @media (max-width:430px) { .redeem-main { padding-inline:16px; } .redeem-card { padding:24px 20px; } }
+
+/* Moved from styles/kiwimu-universe.css (the shared rail kit no longer carries site rules). */
+:where(#root) button { min-height: 2.75rem; min-width: 2.75rem; }
+@media (max-width: 40rem) {
+  #root :is(input:not([type='hidden']):not([type='checkbox']):not([type='radio']), select, textarea) { font-size: 1rem; }
+}
