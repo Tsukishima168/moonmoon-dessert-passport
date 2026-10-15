@@ -1,5 +1,18 @@
 # CURRENT.md — passport.kiwimu.com
 
+## 2026-10-15｜五站風格升級 Phase B（passport）｜共用 rail kit 安裝完成，本機驗證通過；未 push／未部署
+
+- 分支 `claude/style-upgrade-20261014`，接在 Phase A 之後。
+- **rail kit**：`components/KiwimuUniverseRail.tsx`、`styles/kiwimu-universe.css` 與共用 kit byte-identical（`verify-rail.mjs --scan` PASS）。掛載 `onTrack={trackEvent}`（`analytics.ts`，自動加 `site_id: passport`）、`getLoginStatus` 用 `readSupabaseLoginStatus(supabase)`（唯讀）。舊 rail 檔內兩條全域規則（`#root button` 44px、手機表單 16px）搬進 `index.css`。`scripts/test-universe-rail.mjs` 換成 kit 版（161 項斷言，未刪測試）。每個 rail 連結點擊送 12 欄 `universe_nav_click`，同分頁導覽；GA4 文件見 `GA4_連結放置位置一覽.md` §八。
+- **字體**：Noto Sans TC 400/500/700/900 與 JetBrains Mono 500–700 改由 `index.html` 唯一載入（kit 不再 @import）；Space Grotesk 在 passport 零使用，不再載入。
+- **安全區**：`viewport-fit=cover` 保留；Chromium CDP 模擬 top inset 47px 時 rail padding-top 47、高 96、`--ku-rail-height` 96px，fixed route header top 96，不重疊，展開面板不超出視窗。iOS 實機未測。
+- **主按鈕依表面**：淺色面改深綠實心＋奶油字（App header「登入」、SSO「重新登入」、JoinPage「確認接受邀請」、獎勵頁訪客登入、「導航前往月島」、旅程「確認完成」），深色面（hub／landing 深綠 Hero）維持柔金。PassportPage 的柔金「月島布丁」是狀態卡、不是按鈕，維持柔金。
+- **hub 設定區**（預設收合）：3 處對比不足與 24px 輸入框已修；窄螢幕（<420px）頭像與名稱欄上下排列（320px 時名稱欄原本只有 18px 寬）。
+- **/redeem 無障礙**：三個輸入欄 aria-label、錯誤 `role="alert"`、完成卡 `role="status"`、模式鈕 `aria-pressed`；AST 排除 className 與 aria-*／role 後仍與原版等價。
+- **JoinPage／PassportPage** 次要文字對比全部 ≥4.5:1。
+- `index.html` 底部的隱藏 h1 是靜態的「AI／搜尋語意層」（品牌介紹與地址，註明與東京月島無關），在 `#root` 之外，所以每個路由都有第 2 個 h1；本輪保留不動。
+- 驗證與證據：`/Users/pensoair/Desktop/Web-Projects/sites/.worktrees/style-20261014-qa/passport/`（`results.json` 的 `phaseB` 區塊、`DELIVERY.md`）。已知未處理：`KiwimuUniverseNav.tsx`（未掛載）仍會送 2 欄的同名事件；`Button.tsx` primary 變體與 `ShopOrderHistory.tsx` 為未掛載元件，仍是柔金；CheckinModal 等舊元件內仍有霓虹色硬陰影類名（被 `.member-center` 規則壓掉，未逐一清除）。
+
 ## 2026-10-14｜五站風格升級 Phase A（passport）｜本機完成，未 push／未部署；Phase B（rail kit）待調度者通知
 
 - 基準 `origin/main` `3dd513f`；分支 `claude/style-upgrade-20261014`（worktree `.worktrees/style-20261014-passport-kiwimu-com`）。動機：10/14 獨立驗收報告給 B+，扣分在 /redeem 完成度與對比、PWA 提示壓首屏、token 名實倒置。只動呈現，auth／點數／集章／兌換／核銷邏輯與 Supabase 未動；共用 rail 檔與 `index.tsx` 的 rail 掛載未動（Phase B）。
