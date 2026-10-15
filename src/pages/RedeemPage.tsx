@@ -90,6 +90,7 @@ export default function RedeemPage() {
               type="button"
               onClick={() => { setMode('reward'); setRedeemError(null); setRedeemSuccess(false) }}
               className={`redeem-toggle-btn${mode === 'reward' ? ' is-active' : ''}`}
+              aria-pressed={mode === 'reward'}
             >
               點數兌換碼
             </button>
@@ -97,6 +98,7 @@ export default function RedeemPage() {
               type="button"
               onClick={() => { setMode('passport'); setRedeemError(null); setFulfilledReward(null) }}
               className={`redeem-toggle-btn${mode === 'passport' ? ' is-active' : ''}`}
+              aria-pressed={mode === 'passport'}
             >
               護照布丁
             </button>
@@ -109,6 +111,7 @@ export default function RedeemPage() {
               onChange={e => { setPwInput(e.target.value); setRedeemError(null) }}
               placeholder="店員密碼"
               className="redeem-input"
+              aria-label="店員密碼"
               autoComplete="current-password"
               required
             />
@@ -122,6 +125,7 @@ export default function RedeemPage() {
                     onChange={e => { setRedemptionCode(e.target.value.toUpperCase()); setRedeemError(null); setFulfilledReward(null) }}
                     placeholder="AB12CD34EF56"
                     className="redeem-field-input"
+                    aria-label="兌換碼 CODE"
                     required
                   />
                 </div>
@@ -145,6 +149,7 @@ export default function RedeemPage() {
                     min={1}
                     max={100}
                     className="redeem-field-input"
+                    aria-label="護照編號"
                     required
                   />
                 </div>
@@ -157,11 +162,11 @@ export default function RedeemPage() {
                 </button>
               </div>
             )}
-            {redeemError && <p className="redeem-error">{redeemError}</p>}
+            {redeemError && <p className="redeem-error" role="alert">{redeemError}</p>}
           </form>
 
           {fulfilledReward && (
-            <div className="redeem-result">
+            <div className="redeem-result" role="status">
               <p className="redeem-result-title">✓ 核銷完成</p>
               <p className="redeem-result-body">{fulfilledReward.reward_name}</p>
               <p className="redeem-result-note">兌換碼 {fulfilledReward.redemption_code} 已核銷</p>
@@ -169,7 +174,7 @@ export default function RedeemPage() {
           )}
 
           {redeemSuccess && (
-            <div className="redeem-result">
+            <div className="redeem-result" role="status">
               <p className="redeem-result-title">✓ 兌換完成</p>
               <p className="redeem-result-note">護照 #{passportNum.padStart(3, '0')} 已完成兌換</p>
             </div>
