@@ -1,8 +1,8 @@
 # Passport 會員中心收斂：設計與回歸檢核
 
-## 2026-10-13 森林導覽候選（本機驗證完成，未發布）
+## 2026-10-13 森林導覽｜已合併上線（PR43／44）
 
-Penso同意導覽螢光綠改日光金；本輪先做Passport，其他四站尚未同步。
+Penso同意導覽螢光綠改日光金；本輪先做Passport（當時其他四站尚未同步，現況見本節末的狀態更新）。
 
 - 配色：導覽森林深綠 `#1F2F1F`、文字奶油白 `#F5F0E8`、次要文字 `#D8D7C4`、目前站與焦點日光金 `#D7C678`，不使用螢光或硬陰影。
 - 文字：Noto Sans TC，入口14px、展覽提示12px；所有控制至少44px。
@@ -18,7 +18,7 @@ Penso同意導覽螢光綠改日光金；本輪先做Passport，其他四站尚�
 
 獨立程式覆核APPROVE：自行既有tests／tsc、11 effect fixture、5 mutation rejection；六檔覆核diff SHA256 `98d93b7e151a72bfd0ff81ae760796199320b0878ec7450f50f39c1c06da74fb`。其後僅加入本驗證文件／公開截圖，runtime維持。Node fixture非真實React/DOM，不當Safari簽收。
 
-公開截圖與驗證細節：[docs/qa/forest-navigation-20261013/README.md](docs/qa/forest-navigation-20261013/README.md)。預覽 http://127.0.0.1:5250/?screen=passport&tab=hub 。本輪尚未正式發布，其他四站尚未同步。下方保留歷史版面快照。
+公開截圖與驗證細節：[docs/qa/forest-navigation-20261013/README.md](docs/qa/forest-navigation-20261013/README.md)。預覽 http://127.0.0.1:5250/?screen=passport&tab=hub 。狀態更新（2026-10-14）：本節已合併上線——導覽為 PR43（`e2eb495`），手機更多入口文字放大換行為 PR44（`3dd513f`）；五站導覽現況見 `kiwimu-com/docs/style-audit-20261014/REPORT.md`。上方是當時的本機驗證紀錄，預覽網址已失效。下方保留歷史版面快照。
 
 - 日期：2026-10-06
 - 比較基準：main `0646b77`，沿用 Penso 已選定的 Gacha 第 1 稿深綠、奶油白與柔金。

@@ -1,5 +1,17 @@
 # CURRENT.md — passport.kiwimu.com
 
+## 2026-10-14｜五站風格升級 Phase A（passport）｜本機完成，未 push／未部署；Phase B（rail kit）待調度者通知
+
+- 基準 `origin/main` `3dd513f`；分支 `claude/style-upgrade-20261014`（worktree `.worktrees/style-20261014-passport-kiwimu-com`）。動機：10/14 獨立驗收報告給 B+，扣分在 /redeem 完成度與對比、PWA 提示壓首屏、token 名實倒置。只動呈現，auth／點數／集章／兌換／核銷邏輯與 Supabase 未動；共用 rail 檔與 `index.tsx` 的 rail 掛載未動（Phase B）。
+- **P1 /redeem**（`b0493d0`、`faefc5e`）：表單收進與 hub 會員卡同族的奶油浮起卡（radius 20、柔陰影、單欄 560px、桌機視覺置中），加 `<main>`。依「主行動依表面決定」規則，奶油卡上的核銷／確認兌換按鈕為深綠實心＋奶油字（12.47:1，hover 中綠 #304F2F），CODE／# 欄位改淺色以免與按鈕並排難分。「月島端驗證」「護照布丁」placeholder、錯誤與完成卡文字對比全 ≥4.5:1；「回首頁」連結與輸入框 ≥44px（logo 位置不變）；欄位焦點為外圈 2px #304F2F。390／320／1440 對比不足 0、<44px 0、水平溢出 0。RedeemPage 以 AST 排除 className 並攤平無屬性 div／section／main 後與原版相同（826 token、sha 一致；5 個變異對照全數判對），即除樣式與包裝元素外 JSX 邏輯與文案不變。
+- **P2 PWA「已可離線開啟」**（`c805e38`）：由滿寬膠囊改為內容寬（142×34）、底部 safe-area＋16px、不攔截點擊；原本已有 4.2 秒消失但無淡出，現於最後 0.6 秒淡出，reduced-motion 不淡出、時間到直接移除。首訪 5 秒後元素已移除（390／1440，首頁與 hub 皆實測）。SW 註冊與更新邏輯未動。
+- **P3 reduced-motion**（`28d1c3a`）：全域 catch-all（同 map 寫法）。reduce 下首頁、hub、journey、redeem 的 transition／animation >0.01ms 元素為 0（改前首頁 1：`button.flex.items-center.gap-1.5` 0.15s；載入頁另有 3 個循環動畫）。
+- **P4 token**（`e1d0407`）：舊 lime token 改名 `brand-gold`（70 處，#D7C678 柔金）、舊 lime-dark 改名 `brand-green`（10 處；#304F2F 是中綠，不是 gold 的深色）；以舊名 grep 全 repo 為 0 筆，無動態組字串。編譯後 JS 各 chunk 改名後逐位元相同、CSS leaf 規則 902 條集合相同；首頁／hub／journey／兌換頁 390、1440 與改名前 build 像素差 0。順手把未被引用的 `KiwimuMetricCard` accent `'lime'` 對齊 `'gold'`；`RewardShop.tsx`（未掛載）僅被動改了一個 class 名稱以滿足 grep 為 0。
+- **P5**：全域 `:focus-visible` 為 2px、offset 2px，淺色面 #304F2F、深綠 Hero 內 #D7C678，未更動。fixed route header 為 `top: var(--ku-rail-height)`，無寫死頂部值（量到 49px＝rail 高）；`viewport-fit=cover` 保留。依 header 高度寫死的內容留白：`.member-landing` padding-top 116px（≤760px 為 110px）、JoinPage／PassportPage `pt-28`、`.redeem-main` 112px——Phase B 讓 rail 吃 safe-area 時 header 會隨變數下移，但這些留白需一併檢視。
+- **P6**：`design-qa.md` 第一節狀態改為已合併上線（PR43／44）；本節為本輪紀錄。
+- 驗證：`npx tsc --noEmit` exit 0；`npm run build`（含 OAuth／SSO／SW／reward ledger／points guard、32 journey、5 hydration、70 rail 斷言）全綠。QA 證據（截圖、量測 JSON、腳本）在 `/Users/pensoair/Desktop/Web-Projects/sites/.worktrees/style-20261014-qa/passport/`，`results.json` 為數字總表、`DELIVERY.md` 為索引。
+- 已知限制與待辦：(1) 未在有瀏海的實機驗證 safe-area（headless 的 env() 為 0，只驗 calc 結果 16px）；Safari／LINE 實機未測。(2) 同樣違反「淺色面主按鈕用深綠實心」的既有按鈕未動（App header「登入」膠囊、JoinPage 主按鈕、PassportPage 完成卡），不在 Phase A 清單。(3) hub 設定區（預設收合的 details）展開後仍有 3 處對比不足（約 3.96–4.49:1）與 1 個 24px 高輸入框，改前即存在，不在本輪範圍。(4) `index.html` 的隱藏語意 h1 使每個路由有 2 個 h1。(5) /redeem 輸入欄無獨立 label，僅靠 placeholder 當可及名稱；加 aria-label 屬新增屬性，本輪為守住 AST 等價未做。(6) 錯誤訊息未加 `role="alert"`，同理。
+
 ## 2026-10-07｜主對話收尾｜本機驗證完成，待獨立簽收與上線核定
 
 - ✅ 主對話CUA 320／390／768／1280px：首頁CTA內容寬187px、高52px，landing／訪客會員頁無水平溢出、可見破圖0。
