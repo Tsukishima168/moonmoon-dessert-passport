@@ -78,3 +78,33 @@ https://moonmoon-dessert-passport.vercel.app/?utm_source=door&utm_medium=qr&utm_
 
 - 以上連結已使用正式網址 **https://moonmoon-dessert-passport.vercel.app**，可直接複製貼到 QR Code 產生器、LINE／IG／海報使用。
 - 若日後改用自有網域，再以新網址替換上述連結即可。
+
+---
+
+## 八、站內導覽事件 `universe_nav_click`（Kiwimu Universe 導覽列）
+
+會員護照頂端的森林導覽列（人格測驗／會員護照／島嶼地圖／遊戲中心／甜點預訂／森林展覽，手機版其餘收在「更多」）每一次連結點擊都會送出 `universe_nav_click`，包含「本站」連結、「更多」面板內的連結與森林展覽。事件由共用導覽核心（`components/KiwimuUniverseRail.tsx`）組裝，passport 的 `trackEvent`（`analytics.ts`）送出並額外加上 `site_id: passport`；只有正式網域會載入 gtag，localhost／預覽網域只會在 console 警告。
+
+導覽連結本身的來源參數不變：跨站連結帶 `?from=passport_universe_rail`，本站連結不帶，森林展覽（`canopy.kiwimu.com`）另開分頁、不帶 `from`。
+
+| 參數 | 值／說明 |
+|------|----------|
+| `site_id` | `passport`（由 passport 的 `trackEvent` 加入） |
+| `source_site` | 事件發生的站，恆為 `passport` |
+| `target_site` | 被點的連結：`kiwimu`／`passport`／`map`／`gacha`／`shop`／`canopy` |
+| `viewport` | 視窗尺寸字串，例如 `390x844` |
+| `viewport_width`／`viewport_height` | 視窗寬、高（px） |
+| `viewport_category` | `mobile`（≤640）／`tablet`（≤1024）／`desktop`／`unknown` |
+| `login_status` | `authenticated`／`anonymous`／`unknown`（見下方備註） |
+| `surface` | 恆為 `universe_rail` |
+| `link_name` | `MBTI`／`Passport`／`Map`／`Gacha`／`Shop`／`Canopy` |
+| `entry_surface` | 同 `surface` |
+| `destination_type` | 站內連結 `cross_site_nav`；森林展覽 `external` |
+| `transport_type` | 恆為 `beacon`（跨頁導覽時用 beacon 送出） |
+
+分析備註：
+- 本站連結也會送（`source_site` 等於 `target_site`），看「跨站導流」請用 `source_site != target_site` 過濾。
+- `login_status` 只在導覽列掛載時讀取一次（唯讀 session 檢查，不觸發登入或同步）；Supabase 未設定、讀取失敗，或掛載後極早的點擊會是 `unknown`；同一頁內登入／登出不會即時更新，要重新載入才反映。
+- 新參數若要在 GA4 報表中當維度使用，需要在 GA4 後台登錄自訂維度；本次沒有動 GA4 後台。
+- 舊的 `components/KiwimuUniverseNav.tsx` 也會送同名事件但只有 `surface`、`target_site_id` 兩個欄位；它目前沒有被任何頁面掛載，所以 GA4 只會收到上表的 12 欄形狀。
+
