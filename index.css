@@ -160,7 +160,7 @@ html {
 .member-shell { width:min(100%,1168px); margin-inline:auto; padding:0 32px 48px; }
 .member-header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:36px 0 24px; }
 .member-header h1 { font-size:32px; font-weight:800; letter-spacing:-.04em; line-height:1.4; margin:4px 0 0; }
-.member-eyebrow { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; }
+.member-eyebrow { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; }
 .member-header .member-eyebrow { color:var(--member-muted); }
 .member-back { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--member-muted); flex-shrink:0; }
 .member-tabs { display:flex; gap:28px; border-bottom:1px solid var(--member-line); margin-bottom:28px; }
@@ -184,11 +184,11 @@ html {
 .member-card-mode { font-size:12px; color:#304f2f; border:1px solid #d2d8c2; border-radius:99px; padding:4px 8px; font-weight:400; white-space:nowrap; }
 .member-passport-card img { display:block; width:100%; height:136px; object-fit:contain; margin:10px 0; }
 .member-card-holder>span:first-child { overflow-wrap:anywhere; }
-.member-card-holder>span:last-child { font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; color:var(--member-muted); }
+.member-card-holder>span:last-child { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; white-space:nowrap; color:var(--member-muted); }
 .member-card-stats { display:grid; grid-template-columns:1fr 1fr; gap:18px; border-top:1px solid #d7dbc8; padding-top:16px; margin-top:14px; }
 .member-card-stats div { display:flex; flex-direction:column; gap:2px; }
 .member-card-stats span { font-size:12px; color:var(--member-muted); }
-.member-card-stats strong { font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:500; line-height:1.4; }
+.member-card-stats strong { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:26px; font-weight:500; line-height:1.4; }
 .member-card-stats small { font-family:'Noto Sans TC',sans-serif; font-size:12px; margin-left:6px; }
 .member-passport-card>p { font-size:12px; line-height:1.6; color:var(--member-muted); margin-top:12px; }
 .member-essentials { display:grid; grid-template-columns:1fr 1fr; margin:28px 0 24px; border-top:1px solid var(--member-line); border-bottom:1px solid var(--member-line); }
@@ -211,7 +211,7 @@ html {
 .member-order-content h3 { color:var(--member-ink); font-size:17px; font-weight:700; }
 .member-order-content .member-button { margin-top:16px; }
 .member-order-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.member-order-number { font-family:'JetBrains Mono',monospace; font-size:12px; overflow-wrap:anywhere; margin-top:6px; }
+.member-order-number { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; overflow-wrap:anywhere; margin-top:6px; }
 .member-state { padding:3px 9px; border-radius:99px; background:#e6ebda; color:#304f2f; font-size:12px; }
 .member-order-facts { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:20px 0; }
 .member-order-facts dt { font-size:12px; }
@@ -242,7 +242,7 @@ html {
 .member-landing-stage .member-button { margin-top:28px; }
 .member-landing-stage img { width:100%; height:auto; object-fit:contain; }
 .member-landing-note { display:block; font-size:12px; color:#d7ddd0; line-height:1.8; margin-top:14px; }
-.member-landing-footer { font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.1em; color:var(--member-muted); padding:24px 0; }
+.member-landing-footer { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; letter-spacing:.1em; color:var(--member-muted); padding:24px 0; }
 .ku-passport-fixed-header { padding-inline:max(24px,calc((100vw - 1104px)/2)); }
 .ku-passport-fixed-header :is(button,[class*='shadow-']) { box-shadow:none; }
 #root :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #304f2f; outline-offset:2px; box-shadow:none; }
@@ -342,7 +342,7 @@ html {
    Contrast: muted #5f6856 on cream (5.14:1); touch targets >= 44px. */
 .redeem-main { width:min(100%,560px); margin-inline:auto; padding:max(112px,14vh) 20px 64px; font-family:'Noto Sans TC',sans-serif; color:var(--member-ink); }
 .redeem-head { margin-bottom:24px; }
-.redeem-eyebrow { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; color:var(--member-muted); }
+.redeem-eyebrow { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; color:var(--member-muted); }
 .redeem-title { font-size:32px; font-weight:800; letter-spacing:-.04em; line-height:1.4; margin-top:4px; }
 .redeem-card { display:flex; flex-direction:column; gap:24px; padding:32px; border:1px solid #d7c67860; border-radius:20px; background:#f3f0e4; box-shadow:0 16px 32px #10211530; }
 .redeem-toggle { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:4px; border-radius:16px; background:#1f2f1f0d; }
