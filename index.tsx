@@ -5,7 +5,9 @@ import App from './App';
 import PassportPage from './src/pages/PassportPage';
 import JoinPage from './src/pages/JoinPage';
 import RedeemPage from './src/pages/RedeemPage';
-import KiwimuUniverseRail from './components/KiwimuUniverseRail';
+import KiwimuUniverseRail, { readSupabaseLoginStatus } from './components/KiwimuUniverseRail';
+import { trackEvent } from './analytics';
+import { supabase } from './src/lib/supabase';
 import './styles/kiwimu-universe.css';
 
 const rootElement = document.getElementById('root');
@@ -16,13 +18,16 @@ if (!rootElement) {
 import { LiffProvider } from './src/contexts/LiffContext';
 import { SupabaseAuthProvider } from './src/contexts/SupabaseAuthContext';
 
+// Read-only login probe for the shared rail (null client => 'unknown'); no auth side effects.
+const getRailLoginStatus = () => readSupabaseLoginStatus(supabase);
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <SupabaseAuthProvider>
       <LiffProvider>
         <BrowserRouter>
-          <KiwimuUniverseRail currentSite="passport" />
+          <KiwimuUniverseRail currentSite="passport" onTrack={trackEvent} getLoginStatus={getRailLoginStatus} />
           <Routes>
             <Route path="/passport/:id" element={<PassportPage />} />
             <Route path="/join/:passportId" element={<JoinPage />} />

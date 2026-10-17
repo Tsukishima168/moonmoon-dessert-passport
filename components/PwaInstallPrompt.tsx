@@ -92,6 +92,7 @@ const PwaInstallPrompt: React.FC = () => {
     typeof navigator !== 'undefined' ? !navigator.onLine : false
   ));
   const [showOfflineReady, setShowOfflineReady] = useState(false);
+  const [offlineReadyLeaving, setOfflineReadyLeaving] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -151,12 +152,26 @@ const PwaInstallPrompt: React.FC = () => {
     }
 
     setShowOfflineReady(true);
+    setOfflineReadyLeaving(false);
+    // The hint is informational only: fade it out over the last 600ms of its 4.2s life.
+    // With reduced motion it simply disappears at the end instead of fading.
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fadeTimer = prefersReducedMotion
+      ? undefined
+      : window.setTimeout(() => setOfflineReadyLeaving(true), 3600);
     const timer = window.setTimeout(() => {
       setShowOfflineReady(false);
+      setOfflineReadyLeaving(false);
       setOfflineReady(false);
     }, 4200);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      if (fadeTimer !== undefined) {
+        window.clearTimeout(fadeTimer);
+      }
+    };
   }, [offlineReady, setOfflineReady]);
 
   const dismissInstallPrompt = () => {
@@ -181,7 +196,7 @@ const PwaInstallPrompt: React.FC = () => {
     return (
       <div className="fixed inset-x-0 bottom-0 z-80 flex justify-center px-4 pointer-events-none" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-full border border-[#D8D7C4] bg-brand-black px-4 py-3 text-white shadow-[0_8px_28px_#1F2F1F26]" role="status" aria-live="polite">
-          <WifiOff className="h-4 w-4 shrink-0 text-brand-lime" />
+          <WifiOff className="h-4 w-4 shrink-0 text-brand-gold" />
           <p className="flex-1 text-xs font-black uppercase tracking-[0.16em]">離線模式</p>
         </div>
       </div>
@@ -192,7 +207,7 @@ const PwaInstallPrompt: React.FC = () => {
     return (
       <div className="fixed inset-x-0 bottom-0 z-80 flex justify-center px-4 pointer-events-none" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[24px] border border-[#D8D7C4] bg-white/95 p-2 pl-4 shadow-[0_8px_28px_#1F2F1F26] backdrop-blur-md" role="status" aria-live="polite">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-brand-black bg-brand-lime">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-brand-black bg-brand-gold">
             <RefreshCw className="h-5 w-5 text-brand-black" />
           </div>
           <div className="min-w-0 flex-1">
@@ -204,7 +219,7 @@ const PwaInstallPrompt: React.FC = () => {
             onClick={() => void updateServiceWorker(true)}
             className="inline-flex h-10 items-center gap-1.5 rounded-full border border-brand-black bg-brand-black px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition-transform hover:-translate-y-0.5"
           >
-            <RefreshCw className="h-3.5 w-3.5 text-brand-lime" />
+            <RefreshCw className="h-3.5 w-3.5 text-brand-gold" />
             更新
           </button>
           <button
@@ -222,8 +237,8 @@ const PwaInstallPrompt: React.FC = () => {
 
   if (showOfflineReady) {
     return (
-      <div className="fixed inset-x-0 bottom-0 z-80 flex justify-center px-4 pointer-events-none" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-        <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-full border border-[#D8D7C4] bg-white px-4 py-3 text-brand-black shadow-[0_8px_28px_#1F2F1F26]" role="status" aria-live="polite">
+      <div className="fixed inset-x-0 bottom-0 z-80 flex justify-center px-4 pointer-events-none" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
+        <div className={`pointer-events-none flex w-fit max-w-full items-center gap-2 rounded-full border border-[#D8D7C4] bg-white px-4 py-2 text-brand-black shadow-[0_8px_28px_#1F2F1F26] transition-opacity duration-500 ease-out ${offlineReadyLeaving ? 'opacity-0' : 'opacity-100'}`} role="status" aria-live="polite">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <p className="flex-1 text-xs font-black uppercase tracking-[0.16em]">已可離線開啟</p>
         </div>
@@ -250,7 +265,7 @@ const PwaInstallPrompt: React.FC = () => {
   return (
     <div className="fixed inset-x-0 bottom-0 z-80 flex justify-center px-4 pointer-events-none" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
       <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[24px] border border-[#D8D7C4] bg-white/95 p-2 pl-4 shadow-[0_8px_28px_#1F2F1F26] backdrop-blur-md">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-brand-black bg-brand-lime">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-brand-black bg-brand-gold">
           {isNativeInstall ? (
             <Smartphone className="h-5 w-5 text-brand-black" />
           ) : (
@@ -267,7 +282,7 @@ const PwaInstallPrompt: React.FC = () => {
             onClick={() => void installApp()}
             className="inline-flex h-10 items-center gap-1.5 rounded-full border border-brand-black bg-brand-black px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition-transform hover:-translate-y-0.5"
           >
-            <Download className="h-3.5 w-3.5 text-brand-lime" />
+            <Download className="h-3.5 w-3.5 text-brand-gold" />
             安裝
           </button>
         ) : (

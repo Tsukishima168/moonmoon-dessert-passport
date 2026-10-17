@@ -102,7 +102,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                     {(['online', 'store'] as const).map(value => (
                         <button key={value} type="button" aria-pressed={mode === value}
                             onClick={() => onModeChange(value)}
-                            className={`min-h-11 rounded-xl border border-brand-black px-3 py-3 text-xs font-bold ${mode === value ? 'bg-brand-lime text-brand-black' : 'bg-white text-brand-black/70'}`}>
+                            className={`min-h-11 rounded-xl border border-brand-black px-3 py-3 text-xs font-bold ${mode === value ? 'bg-brand-gold text-brand-black' : 'bg-white text-brand-black/70'}`}>
                             {value === 'online' ? '先做線上任務' : '我已到店'}
                         </button>
                     ))}
@@ -121,7 +121,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                     </p>
 
                     <div className="flex items-center gap-5">
-                        <div className={`w-16 h-16 rounded-2xl bg-brand-lime flex items-center justify-center border-2 border-brand-black shadow-[3px_3px_0px_black] shrink-0 ${getAnimClass(nextStamp.animationType)}`}>
+                        <div className={`w-16 h-16 rounded-2xl bg-brand-gold flex items-center justify-center border-2 border-brand-black shadow-[3px_3px_0px_black] shrink-0 ${getAnimClass(nextStamp.animationType)}`}>
                             {React.createElement(IconMap[nextStamp.icon] || MapPin, { size: 32, className: 'text-brand-black' })}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -158,7 +158,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                                 externalPending === nextStamp.id ? (
                                     <button
                                         onClick={() => handleExternalComplete(nextStamp.id)}
-                                        className="w-full py-3 bg-brand-lime text-brand-black rounded-xl font-bold text-sm border-2 border-brand-black shadow-[3px_3px_0px_black] active:translate-y-0.5 flex items-center justify-center gap-2"
+                                        className="w-full py-3 bg-brand-black text-brand-bg rounded-xl font-bold text-sm border-2 border-brand-black hover:bg-brand-green transition-colors flex items-center justify-center gap-2"
                                     >
                                         <Check size={16} /> 確認完成
                                     </button>
@@ -206,7 +206,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                             <span className="text-xs font-bold text-brand-black">已收集印章 ({collectedStamps.length})</span>
                             <div className="flex -space-x-1.5 focus-within:z-10">
                                 {collectedStamps.slice(0, 5).map(s => (
-                                    <div key={s.id} className="w-6 h-6 rounded-lg bg-brand-lime border border-brand-black flex items-center justify-center">
+                                    <div key={s.id} className="w-6 h-6 rounded-lg bg-brand-gold border border-brand-black flex items-center justify-center">
                                         {React.createElement(IconMap[s.icon] || MapPin, { size: 12, className: 'text-brand-black' })}
                                     </div>
                                 ))}
@@ -222,12 +222,12 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                                     key={stamp.id}
                                     className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-gray-200"
                                 >
-                                    <div className="w-8 h-8 rounded-lg bg-brand-lime/10 border border-brand-lime/30 flex items-center justify-center shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-brand-gold/10 border border-brand-gold/30 flex items-center justify-center shrink-0">
                                         {React.createElement(IconMap[stamp.icon] || MapPin, { size: 16, className: 'text-brand-black' })}
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-[11px] font-bold text-brand-black truncate">{stamp.name}</p>
-                                        <p className="text-[9px] text-brand-lime-dark font-bold">COMPLETED</p>
+                                        <p className="text-[9px] text-brand-green font-bold">COMPLETED</p>
                                     </div>
                                 </div>
                             ))}

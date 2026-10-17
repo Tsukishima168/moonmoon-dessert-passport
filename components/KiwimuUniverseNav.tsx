@@ -56,7 +56,7 @@ export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
             公開入口
           </h2>
         </div>
-        <span className="rounded-full border border-brand-black/10 bg-brand-lime/70 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black">
+        <span className="rounded-full border border-brand-black/10 bg-brand-gold/70 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-black">
           Hub
         </span>
       </div>
@@ -75,7 +75,7 @@ export const KiwimuUniverseNav: React.FC<KiwimuUniverseNavProps> = ({
                 className={`${compact ? 'min-w-[132px]' : ''} min-h-[86px] rounded-2xl border-2 border-brand-black bg-brand-black p-3 text-white shadow-[2px_2px_0px_black]`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <Icon size={18} className="shrink-0 text-brand-lime" />
+                  <Icon size={18} className="shrink-0 text-brand-gold" />
                   <span className="rounded-full border border-white/15 px-2 py-0.5 text-[12px] font-black uppercase tracking-[0.14em] text-white/65">
                     Now
                   </span>

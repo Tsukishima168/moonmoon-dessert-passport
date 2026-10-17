@@ -1,5 +1,30 @@
 # CURRENT.md — passport.kiwimu.com
 
+## 2026-10-15｜五站風格升級 Phase B（passport）｜共用 rail kit 安裝完成，本機驗證通過；未 push／未部署
+
+- 分支 `claude/style-upgrade-20261014`，接在 Phase A 之後。
+- **rail kit**：`components/KiwimuUniverseRail.tsx`、`styles/kiwimu-universe.css` 與共用 kit byte-identical（`verify-rail.mjs --scan` PASS）。掛載 `onTrack={trackEvent}`（`analytics.ts`，自動加 `site_id: passport`）、`getLoginStatus` 用 `readSupabaseLoginStatus(supabase)`（唯讀）。舊 rail 檔內兩條全域規則（`#root button` 44px、手機表單 16px）搬進 `index.css`。`scripts/test-universe-rail.mjs` 換成 kit 版（161 項斷言，未刪測試）。每個 rail 連結點擊送 12 欄 `universe_nav_click`，同分頁導覽；GA4 文件見 `GA4_連結放置位置一覽.md` §八。
+- **字體**：Noto Sans TC 400/500/700/900 與 JetBrains Mono 500–700 改由 `index.html` 唯一載入（kit 不再 @import）；Space Grotesk 在 passport 零使用，不再載入。
+- **安全區**：`viewport-fit=cover` 保留；Chromium CDP 模擬 top inset 47px 時 rail padding-top 47、高 96、`--ku-rail-height` 96px，fixed route header top 96，不重疊，展開面板不超出視窗。iOS 實機未測。
+- **主按鈕依表面**：淺色面改深綠實心＋奶油字（App header「登入」、SSO「重新登入」、JoinPage「確認接受邀請」、獎勵頁訪客登入、「導航前往月島」、旅程「確認完成」），深色面（hub／landing 深綠 Hero）維持柔金。PassportPage 的柔金「月島布丁」是狀態卡、不是按鈕，維持柔金。
+- **hub 設定區**（預設收合）：3 處對比不足與 24px 輸入框已修；窄螢幕（<420px）頭像與名稱欄上下排列（320px 時名稱欄原本只有 18px 寬）。
+- **/redeem 無障礙**：三個輸入欄 aria-label、錯誤 `role="alert"`、完成卡 `role="status"`、模式鈕 `aria-pressed`；AST 排除 className 與 aria-*／role 後仍與原版等價。
+- **JoinPage／PassportPage** 次要文字對比全部 ≥4.5:1。
+- `index.html` 底部的隱藏 h1 是靜態的「AI／搜尋語意層」（品牌介紹與地址，註明與東京月島無關），在 `#root` 之外，所以每個路由都有第 2 個 h1；本輪保留不動。
+- 驗證與證據：`/Users/pensoair/Desktop/Web-Projects/sites/.worktrees/style-20261014-qa/passport/`（`results.json` 的 `phaseB` 區塊、`DELIVERY.md`）。已知未處理：`KiwimuUniverseNav.tsx`（未掛載）仍會送 2 欄的同名事件；`Button.tsx` primary 變體與 `ShopOrderHistory.tsx` 為未掛載元件，仍是柔金；CheckinModal 等舊元件內仍有霓虹色硬陰影類名（被 `.member-center` 規則壓掉，未逐一清除）。
+
+## 2026-10-14｜五站風格升級 Phase A（passport）｜本機完成，未 push／未部署；Phase B（rail kit）待調度者通知
+
+- 基準 `origin/main` `3dd513f`；分支 `claude/style-upgrade-20261014`（worktree `.worktrees/style-20261014-passport-kiwimu-com`）。動機：10/14 獨立驗收報告給 B+，扣分在 /redeem 完成度與對比、PWA 提示壓首屏、token 名實倒置。只動呈現，auth／點數／集章／兌換／核銷邏輯與 Supabase 未動；共用 rail 檔與 `index.tsx` 的 rail 掛載未動（Phase B）。
+- **P1 /redeem**（`b0493d0`、`faefc5e`）：表單收進與 hub 會員卡同族的奶油浮起卡（radius 20、柔陰影、單欄 560px、桌機視覺置中），加 `<main>`。依「主行動依表面決定」規則，奶油卡上的核銷／確認兌換按鈕為深綠實心＋奶油字（12.47:1，hover 中綠 #304F2F），CODE／# 欄位改淺色以免與按鈕並排難分。「月島端驗證」「護照布丁」placeholder、錯誤與完成卡文字對比全 ≥4.5:1；「回首頁」連結與輸入框 ≥44px（logo 位置不變）；欄位焦點為外圈 2px #304F2F。390／320／1440 對比不足 0、<44px 0、水平溢出 0。RedeemPage 以 AST 排除 className 並攤平無屬性 div／section／main 後與原版相同（826 token、sha 一致；5 個變異對照全數判對），即除樣式與包裝元素外 JSX 邏輯與文案不變。
+- **P2 PWA「已可離線開啟」**（`c805e38`）：由滿寬膠囊改為內容寬（142×34）、底部 safe-area＋16px、不攔截點擊；原本已有 4.2 秒消失但無淡出，現於最後 0.6 秒淡出，reduced-motion 不淡出、時間到直接移除。首訪 5 秒後元素已移除（390／1440，首頁與 hub 皆實測）。SW 註冊與更新邏輯未動。
+- **P3 reduced-motion**（`28d1c3a`）：全域 catch-all（同 map 寫法）。reduce 下首頁、hub、journey、redeem 的 transition／animation >0.01ms 元素為 0（改前首頁 1：`button.flex.items-center.gap-1.5` 0.15s；載入頁另有 3 個循環動畫）。
+- **P4 token**（`e1d0407`）：舊 lime token 改名 `brand-gold`（70 處，#D7C678 柔金）、舊 lime-dark 改名 `brand-green`（10 處；#304F2F 是中綠，不是 gold 的深色）；以舊名 grep 全 repo 為 0 筆，無動態組字串。編譯後 JS 各 chunk 改名後逐位元相同、CSS leaf 規則 902 條集合相同；首頁／hub／journey／兌換頁 390、1440 與改名前 build 像素差 0。順手把未被引用的 `KiwimuMetricCard` accent `'lime'` 對齊 `'gold'`；`RewardShop.tsx`（未掛載）僅被動改了一個 class 名稱以滿足 grep 為 0。
+- **P5**：全域 `:focus-visible` 為 2px、offset 2px，淺色面 #304F2F、深綠 Hero 內 #D7C678，未更動。fixed route header 為 `top: var(--ku-rail-height)`，無寫死頂部值（量到 49px＝rail 高）；`viewport-fit=cover` 保留。依 header 高度寫死的內容留白：`.member-landing` padding-top 116px（≤760px 為 110px）、JoinPage／PassportPage `pt-28`、`.redeem-main` 112px——Phase B 讓 rail 吃 safe-area 時 header 會隨變數下移，但這些留白需一併檢視。
+- **P6**：`design-qa.md` 第一節狀態改為已合併上線（PR43／44）；本節為本輪紀錄。
+- 驗證：`npx tsc --noEmit` exit 0；`npm run build`（含 OAuth／SSO／SW／reward ledger／points guard、32 journey、5 hydration、70 rail 斷言）全綠。QA 證據（截圖、量測 JSON、腳本）在 `/Users/pensoair/Desktop/Web-Projects/sites/.worktrees/style-20261014-qa/passport/`，`results.json` 為數字總表、`DELIVERY.md` 為索引。
+- 已知限制與待辦：(1) 未在有瀏海的實機驗證 safe-area（headless 的 env() 為 0，只驗 calc 結果 16px）；Safari／LINE 實機未測。(2) 同樣違反「淺色面主按鈕用深綠實心」的既有按鈕未動（App header「登入」膠囊、JoinPage 主按鈕、PassportPage 完成卡），不在 Phase A 清單。(3) hub 設定區（預設收合的 details）展開後仍有 3 處對比不足（約 3.96–4.49:1）與 1 個 24px 高輸入框，改前即存在，不在本輪範圍。(4) `index.html` 的隱藏語意 h1 使每個路由有 2 個 h1。(5) /redeem 輸入欄無獨立 label，僅靠 placeholder 當可及名稱；加 aria-label 屬新增屬性，本輪為守住 AST 等價未做。(6) 錯誤訊息未加 `role="alert"`，同理。
+
 ## 2026-10-07｜主對話收尾｜本機驗證完成，待獨立簽收與上線核定
 
 - ✅ 主對話CUA 320／390／768／1280px：首頁CTA內容寬187px、高52px，landing／訪客會員頁無水平溢出、可見破圖0。
@@ -25,7 +50,7 @@
 - Claude 接手重驗：tsc exit 0；`npm run build`（含 OAuth／SSO／points-sync／member journey／hydration 迴歸）通過；本機 preview 1280／768／390／320 無水平溢出、無 console error、按鈕 ≥44px；Kiwimu 角色圖未裁切（object-fit: contain）。
 - 當時待判斷：手機首頁「開啟會員中心」為整排寬的金色主按鈕；10/07 修補分支改為內容寬，此修補尚未發布。
 - 未做：Google 登入、集章、兌換、點數同步實操；實機 Safari／LINE 瀏覽器。
-- 已上線（PR #39 squash `7e0076c`、PR #40 `ad8d40f`；正式部署 `dpl_E7LqNMi4Gwic8uN46dKLp69CjYti` READY，alias `passport.kiwimu.com`）。上線後配色細節統一（獨立比對差異表 P1–P9＋補兩處）：Hero 圓角 24／手機 22px；焦點框改 2px #304F2F、深綠 Hero 內金色，舊 #111＋lime 光暈限縮在 Universe rail；muted／邊框 token 對齊 #5F6856／#D8D7C4；`brand-lime-dark` 等小字綠統一 #304F2F；訂單藍色狀態標籤改淡綠；PWA 安裝提示、App 通知 toast 與對話框的黑／lime 硬陰影改柔和陰影＋#D8D7C4 細邊；字體改 Noto Sans TC（Inter 未載入）、移除 DM Serif；載入頁白底改奶油白。tsc、build＋迴歸測試通過；390px 實測無 console error、無溢出。
+- 已上線（PR #39 squash `7e0076c`、PR #40 `ad8d40f`；正式部署 `dpl_E7LqNMi4Gwic8uN46dKLp69CjYti` READY，alias `passport.kiwimu.com`）。上線後配色細節統一（獨立比對差異表 P1–P9＋補兩處）：Hero 圓角 24／手機 22px；焦點框改 2px #304F2F、深綠 Hero 內金色，舊 #111＋lime 光暈限縮在 Universe rail；muted／邊框 token 對齊 #5F6856／#D8D7C4；深綠小字 token（舊名 lime-dark，2026-10-14 起改為 brand-green）統一 #304F2F；訂單藍色狀態標籤改淡綠；PWA 安裝提示、App 通知 toast 與對話框的黑／lime 硬陰影改柔和陰影＋#D8D7C4 細邊；字體改 Noto Sans TC（Inter 未載入）、移除 DM Serif；載入頁白底改奶油白。tsc、build＋迴歸測試通過；390px 實測無 console error、無溢出。
 
 ## Snapshot · 2026-10-04 (Codex 接手 Claude 安全修補)
 

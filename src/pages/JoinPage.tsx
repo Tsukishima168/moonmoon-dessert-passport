@@ -49,7 +49,7 @@ export default function JoinPage() {
         <div className="max-w-md mx-auto px-5 pt-28 pb-10 text-center">
           <p className="text-4xl mb-4">🎉</p>
           <h1 className="font-sans font-black text-2xl text-brand-black mb-2">已接受邀請</h1>
-          <p className="text-brand-black/50 text-sm">你已成功加入 {passport?.holder_name} 的 Kiwimu 宇宙</p>
+          <p className="text-[#5F6856] text-sm">你已成功加入 {passport?.holder_name} 的 Kiwimu 宇宙</p>
         </div>
       </div>
     )
@@ -60,29 +60,29 @@ export default function JoinPage() {
       <PageHeader />
       <div className="max-w-md mx-auto px-5 pt-28 pb-10">
         <div className="mb-8">
-          <p className="text-xs text-brand-black/40 tracking-widest uppercase">邀請加入</p>
+          <p className="text-xs text-[#5F6856] tracking-widest uppercase">邀請加入</p>
           <h1 className="font-sans font-black text-3xl text-brand-black mt-2">
             你被 {passport?.holder_name} 邀請了
           </h1>
-          <p className="text-brand-black/50 text-sm mt-1">填入你的 IG 帳號，接受邀請</p>
+          <p className="text-[#5F6856] text-sm mt-1">填入你的 IG 帳號，接受邀請</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="bg-brand-black rounded-2xl px-4 py-3 flex items-center mb-4">
-            <span className="text-brand-bg/40 text-sm mr-2">@</span>
+          <div className="bg-white border border-[#D8D7C4] rounded-2xl px-4 flex items-center mb-4">
+            <span className="text-[#5F6856] text-sm mr-2">@</span>
             <input
               type="text"
               value={igHandle}
               onChange={e => setIgHandle(e.target.value)}
               placeholder="你的 IG 帳號"
-              className="flex-1 bg-transparent text-brand-bg text-sm outline-hidden placeholder:text-brand-bg/30"
+              className="flex-1 min-h-12 bg-transparent text-brand-black text-sm outline-hidden placeholder:text-[#5F6856]"
               autoComplete="off"
             />
           </div>
           <button
             type="submit"
             disabled={!igHandle.trim() || submitting}
-            className="w-full bg-brand-lime text-brand-black rounded-full py-4 text-sm tracking-wide font-medium disabled:opacity-50 transition-opacity hover:opacity-80"
+            className="w-full bg-brand-black text-brand-bg rounded-full py-4 text-sm tracking-wide font-medium disabled:opacity-50 transition-colors hover:bg-brand-green"
           >
             {submitting ? '送出中...' : '確認接受邀請'}
           </button>
@@ -95,7 +95,7 @@ export default function JoinPage() {
 function StatusView({ text }: { text: string }) {
   return (
     <div className="ku-passport-route-shell bg-brand-bg flex items-center justify-center">
-      <p className="text-brand-black/40 text-sm">{text}</p>
+      <p className="text-[#5F6856] text-sm">{text}</p>
     </div>
   )
 }

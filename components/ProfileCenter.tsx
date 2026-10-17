@@ -48,7 +48,7 @@ const PrivacySeal: React.FC<PrivacySealProps> = ({
       onClick={onToggle}
       className={`relative overflow-hidden rounded-[1.6rem] border-2 p-4 text-left transition-all ${
         checked
-          ? 'border-brand-black bg-brand-lime text-brand-black shadow-[3px_3px_0px_black]'
+          ? 'border-brand-black bg-brand-gold text-brand-black shadow-[3px_3px_0px_black]'
           : 'border-brand-black/10 bg-white text-brand-black'
       }`}
     >
@@ -115,7 +115,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
     <KiwimuPanel padded={false} className="border-brand-black/20 shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
       <div className="border-b border-brand-black/10 bg-white px-4 py-3 text-brand-black">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand-black/10 bg-brand-lime/40">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand-black/10 bg-brand-gold/40">
             <UserRound size={15} className="text-brand-black" />
           </div>
           <div>
@@ -135,14 +135,14 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                 <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/65">
                   Holder Record
                 </p>
-                <p className="mt-1 text-xs font-bold text-brand-black/60">
+                <p className="mt-1 text-xs font-bold text-[#5F6856]">
                   這裡維護護照名稱、公開印記與陪伴角色。
                 </p>
               </div>
               <span
                 className={`rounded-full border px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.16em] ${
                   hasIdentity
-                    ? 'border-brand-black bg-brand-lime text-brand-black'
+                    ? 'border-brand-black bg-brand-gold text-brand-black'
                     : 'border-brand-black/10 bg-brand-gray/10 text-brand-black/65'
                 }`}
               >
@@ -150,7 +150,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
               </span>
             </div>
 
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col items-start gap-6 min-[420px]:flex-row min-[420px]:gap-4">
               <div className="relative shrink-0">
                 <div className="rounded-[1.75rem] border-2 border-brand-black bg-brand-black p-1 shadow-[3px_3px_0px_black]">
                   <img
@@ -164,7 +164,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                 </div>
               </div>
 
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 w-full flex-1">
                 <div className="rounded-3xl border border-brand-black/10 bg-brand-gray/10 px-3 py-2">
                   <p className="text-[12px] font-black uppercase tracking-[0.18em] text-brand-black/65">
                     護照顯示名
@@ -176,12 +176,12 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                       value={draft.displayName}
                       onChange={(event) => updateDraft('displayName', event.target.value)}
                       placeholder="輸入你想在護照裡顯示的名字"
-                      className="w-full border-none bg-transparent p-0 text-base font-black text-brand-black outline-hidden placeholder:text-brand-black/20"
+                      className="min-h-11 w-full border-none bg-transparent p-0 text-base font-black text-brand-black outline-hidden placeholder:text-[#5F6856]"
                     />
                   </div>
                 </div>
 
-                <p className="mt-3 text-[12px] font-medium leading-relaxed text-brand-black/60">
+                <p className="mt-3 text-[12px] font-medium leading-relaxed text-[#5F6856]">
                   可以使用登入帳號的名稱，也可以改成你想留在護照裡的名字。
                 </p>
               </div>
@@ -226,7 +226,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
 
         <section className="rounded-4xl border-2 border-brand-black bg-brand-black p-4 text-white shadow-[4px_4px_0px_black]">
           <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-brand-lime" />
+            <ShieldCheck size={16} className="text-brand-gold" />
             <div>
               <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
                 Privacy Seals
@@ -284,7 +284,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                   onClick={() => updateDraft('favoriteCharacterId', option.id)}
                   className={`rounded-[1.4rem] border-2 px-3 py-3 text-left transition-all ${
                     isSelected
-                      ? 'border-brand-black bg-brand-lime text-brand-black shadow-[3px_3px_0px_black]'
+                      ? 'border-brand-black bg-brand-gold text-brand-black shadow-[3px_3px_0px_black]'
                       : 'border-brand-black/10 bg-brand-gray/10 text-brand-black/70'
                   }`}
                 >
@@ -306,11 +306,11 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
         </section>
 
         <section className="relative overflow-hidden rounded-4xl border-2 border-brand-black bg-brand-black p-4 text-white shadow-[4px_4px_0px_black]">
-          <div className="absolute -right-6 bottom-0 h-24 w-24 rounded-full bg-brand-lime/15 blur-2xl" />
+          <div className="absolute -right-6 bottom-0 h-24 w-24 rounded-full bg-brand-gold/15 blur-2xl" />
 
           <div className="relative">
             <div className="flex items-center gap-2">
-              <Lock size={16} className="text-brand-lime" />
+              <Lock size={16} className="text-brand-gold" />
               <div>
                 <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
                   Passport Title
@@ -329,7 +329,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                     {passportTitle.hint}。這裡先保留為系統發放欄位。
                   </p>
                 </div>
-                <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-lime">
+                <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-gold">
                   {draft.passportTitleId}
                 </span>
               </div>
@@ -337,10 +337,10 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </div>
         </section>
 
-        <section className="rounded-[1.75rem] border border-brand-lime/30 bg-brand-lime/10 p-3">
+        <section className="rounded-[1.75rem] border border-brand-gold/30 bg-brand-gold/10 p-3">
           <div className="flex items-start gap-2">
-            <Sparkles size={16} className="mt-0.5 text-brand-lime-dark" />
-            <p className="text-[12px] font-medium leading-relaxed text-brand-black/65">
+            <Sparkles size={16} className="mt-0.5 text-brand-green" />
+            <p className="text-[12px] font-medium leading-relaxed text-[#5F6856]">
               請以上方同步狀態為準。未同步的變更只保留在此裝置，換裝置前請確認已保存至會員資料。
             </p>
           </div>

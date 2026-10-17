@@ -70,7 +70,7 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
                 flex items-center justify-between
                 transition-all active:translate-y-0.5 active:shadow-[2px_2px_0px_black]
                 ${canCheckin
-                    ? 'bg-brand-lime hover:bg-brand-lime/90'
+                    ? 'bg-brand-gold hover:bg-brand-gold/90'
                     : 'bg-white hover:bg-gray-50'
                 }
             `}
@@ -83,7 +83,7 @@ const CheckinCard: React.FC<CheckinCardProps> = ({ onOpen }) => {
                 `}>
                     {canCheckin
                         ? <Calendar size={20} className="text-brand-black" />
-                        : <CheckCircle size={20} className="text-brand-lime-dark" />
+                        : <CheckCircle size={20} className="text-brand-green" />
                     }
                 </div>
 

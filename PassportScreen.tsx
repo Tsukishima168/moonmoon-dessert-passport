@@ -486,7 +486,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                     {!user && activeTab === 'rewards' && (
                         <KiwimuPanel className="mb-6" padded={false}>
                             <div className="flex flex-col items-center gap-3 p-4 text-center">
-                            <ShieldCheck size={24} className="text-brand-lime-dark" />
+                            <ShieldCheck size={24} className="text-brand-green" />
                             <div>
                                 <h3 className="text-sm font-black text-brand-black uppercase">登入後查看會員紀錄</h3>
                                 <p className="text-[12px] text-gray-500 font-bold mt-1">登入後可查看會員資料與訂單；探索印章先保留在此裝置，實體獎勵兌換尚未開放。</p>
@@ -494,7 +494,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                             <button
                                 disabled={authLoading}
                                 onClick={() => void signInWithGoogle()}
-                                className="w-full py-2.5 bg-brand-lime text-brand-black rounded-xl text-xs font-black uppercase tracking-wider border-2 border-brand-black shadow-[2px_2px_0px_black] active:translate-y-[2px] active:shadow-none transition-all"
+                                className="w-full py-2.5 bg-brand-black text-brand-bg rounded-xl text-xs font-black uppercase tracking-wider border-2 border-brand-black hover:bg-brand-green transition-colors disabled:opacity-65"
                             >
                                 {authLoading ? '確認登入狀態中…' : '使用 Google 登入'}
                             </button>
@@ -543,7 +543,7 @@ const PassportScreen: React.FC<PassportScreenProps> = ({
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => window.open(LINKS.NAVIGATION, '_blank')}
-                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-3 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
+                                                    className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-black px-3 py-2 text-[12px] font-black uppercase tracking-wider text-brand-bg transition-colors hover:bg-brand-green"
                                                 >
                                                     導航前往月島
                                                     <ExternalLink size={12} />

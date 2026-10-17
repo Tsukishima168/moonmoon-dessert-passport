@@ -90,7 +90,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
 
   return (
     <section className="mb-6 rounded-3xl border-2 border-brand-black bg-white shadow-[4px_4px_0px_black] overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black bg-brand-lime px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b-2 border-brand-black bg-brand-gold px-4 py-3">
         <div>
           <p className="text-[12px] font-black uppercase tracking-[0.2em] text-brand-black/70">Shop Sync</p>
           <h3 className="text-sm font-black text-brand-black uppercase">你的甜點訂單紀錄</h3>
@@ -153,7 +153,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
           </div>
           <button
             onClick={handleOpenShop}
-            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-lime px-4 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-black bg-brand-gold px-4 py-2 text-[12px] font-black uppercase tracking-wider text-brand-black shadow-[2px_2px_0px_black] transition-all hover:bg-white"
           >
             去逛甜點選單
             <ExternalLink size={13} />
@@ -226,7 +226,7 @@ const ShopOrderHistory: React.FC<ShopOrderHistoryProps> = ({ userId, onLogin }) 
                   </div>
 
                   {order.payment_method === 'line_pay' && (
-                    <div className="mt-3 rounded-xl border border-brand-black/10 bg-brand-lime/10 px-3 py-2">
+                    <div className="mt-3 rounded-xl border border-brand-black/10 bg-brand-gold/10 px-3 py-2">
                       <p className="text-[12px] font-bold uppercase tracking-wider text-brand-black/65">
                         LINE Pay 交易號
                       </p>

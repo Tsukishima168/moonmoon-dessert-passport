@@ -215,7 +215,7 @@ const RewardShop: React.FC<RewardShopProps> = ({ onClose, currentPoints }) => {
                             onClick={() => setFilter(type)}
                             className={`flex-1 py-2 rounded-xl border-2 text-[13px] cursor-pointer transition-all ${
                                 filter === type
-                                    ? 'border-brand-black bg-brand-lime font-bold text-brand-black'
+                                    ? 'border-brand-black bg-brand-gold font-bold text-brand-black'
                                     : 'border-gray-200 bg-white font-medium text-gray-400 hover:border-gray-300'
                             }`}
                         >

@@ -3,7 +3,7 @@ import React from 'react';
 interface KiwimuMetricCardProps {
   label: string;
   value: React.ReactNode;
-  accent?: 'default' | 'lime';
+  accent?: 'default' | 'gold';
   className?: string;
 }
 
@@ -14,7 +14,7 @@ export const KiwimuMetricCard: React.FC<KiwimuMetricCardProps> = ({
   className = '',
 }) => {
   const valueClass =
-    accent === 'lime' ? 'text-brand-lime' : 'text-white';
+    accent === 'gold' ? 'text-brand-gold' : 'text-white';
 
   return (
     <div

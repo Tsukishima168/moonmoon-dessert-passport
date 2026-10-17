@@ -201,7 +201,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
             {/* Confetti shimmer */}
             {showConfetti && (
                 <div className="absolute inset-0 pointer-events-none z-10000 flex items-center justify-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-black/85 text-brand-lime animate-bounce shadow-2xl">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-black/85 text-brand-gold animate-bounce shadow-2xl">
                         <Sparkles size={42} />
                     </div>
                 </div>
@@ -219,8 +219,8 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                         <X size={14} />
                     </button>
                     <div className="flex items-center gap-2 mb-1">
-                        <Calendar size={18} className="text-brand-lime" />
-                        <span className="text-xs font-bold tracking-widest text-brand-lime uppercase">Daily Check-in</span>
+                        <Calendar size={18} className="text-brand-gold" />
+                        <span className="text-xs font-bold tracking-widest text-brand-gold uppercase">Daily Check-in</span>
                     </div>
                     <h2 className="text-xl font-bold">{now.getFullYear()} {monthLabel}</h2>
 
@@ -232,7 +232,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                         </div>
                         {nextMilestone && (
                             <span className="inline-flex items-center gap-1.5 text-xs text-white/60">
-                                {NextMilestoneIcon && <NextMilestoneIcon size={12} className="text-brand-lime" />}
+                                {NextMilestoneIcon && <NextMilestoneIcon size={12} className="text-brand-gold" />}
                                 <span>距離 {nextMilestone.label} 還剩 {daysToNextMilestone} 天</span>
                             </span>
                         )}
@@ -259,7 +259,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                                             ? 'ring-2 ring-brand-black ring-offset-1'
                                             : ''}
                                         ${cell.isCheckedIn
-                                            ? 'bg-brand-lime text-brand-black shadow-xs'
+                                            ? 'bg-brand-gold text-brand-black shadow-xs'
                                             : cell.isToday
                                                 ? 'bg-brand-black/5 text-brand-black'
                                                 : 'text-gray-400'
@@ -286,7 +286,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                             key={m.days}
                             className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold
                                 ${streak >= m.days
-                                    ? 'bg-brand-lime border-brand-black text-brand-black'
+                                    ? 'bg-brand-gold border-brand-black text-brand-black'
                                     : 'bg-gray-50 border-gray-200 text-gray-400'
                                 }`}
                         >
@@ -300,7 +300,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                 {/* CTA Section */}
                 <div className="px-4 pb-5">
                     {justCheckedIn ? (
-                        <div className="flex items-center justify-center gap-2 py-3 bg-brand-lime rounded-2xl border-2 border-brand-black shadow-[3px_3px_0px_black]">
+                        <div className="flex items-center justify-center gap-2 py-3 bg-brand-gold rounded-2xl border-2 border-brand-black shadow-[3px_3px_0px_black]">
                             <Sparkles size={18} className="text-brand-black" />
                             <span className="font-bold text-brand-black">+{pointsAwarded}P 領取成功！</span>
                             <span className="text-sm text-brand-black/60">明天再來～</span>
@@ -312,10 +312,10 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                             className="w-full py-3.5 bg-brand-black text-white rounded-2xl font-bold text-sm border-2 border-brand-black shadow-[4px_4px_0px_rgba(212,255,0,0.6)] hover:shadow-[2px_2px_0px_rgba(212,255,0,0.6)] active:translate-y-0.5 transition-all flex items-center justify-center gap-2"
                         >
                             {checking ? (
-                                <span className="animate-spin text-brand-lime">⊙</span>
+                                <span className="animate-spin text-brand-gold">⊙</span>
                             ) : (
                                 <>
-                                    <Calendar size={16} className="text-brand-lime" />
+                                    <Calendar size={16} className="text-brand-gold" />
                                     今日簽到，領取積分
                                 </>
                             )}
@@ -330,7 +330,7 @@ const CheckinModal: React.FC<CheckinModalProps> = ({ onClose, onCheckinComplete 
                     {/* Legend */}
                     <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400">
                         <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-sm bg-brand-lime border border-brand-black/20" />
+                            <div className="w-3 h-3 rounded-sm bg-brand-gold border border-brand-black/20" />
                             <span>已簽到</span>
                         </div>
                         <div className="flex items-center gap-1">

@@ -4,8 +4,8 @@
   --font-sans: 'Noto Sans TC', system-ui, sans-serif;
 
   --color-brand-bg: #f5f0e8;
-  --color-brand-lime: #d7c678;
-  --color-brand-lime-dark: #304f2f;
+  --color-brand-gold: #d7c678;
+  --color-brand-green: #304f2f;
   --color-brand-black: #1f2f1f;
   --color-brand-gray: #e3e0d3;
 
@@ -160,7 +160,7 @@ html {
 .member-shell { width:min(100%,1168px); margin-inline:auto; padding:0 32px 48px; }
 .member-header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:36px 0 24px; }
 .member-header h1 { font-size:32px; font-weight:800; letter-spacing:-.04em; line-height:1.4; margin:4px 0 0; }
-.member-eyebrow { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; }
+.member-eyebrow { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; }
 .member-header .member-eyebrow { color:var(--member-muted); }
 .member-back { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--member-muted); flex-shrink:0; }
 .member-tabs { display:flex; gap:28px; border-bottom:1px solid var(--member-line); margin-bottom:28px; }
@@ -184,11 +184,11 @@ html {
 .member-card-mode { font-size:12px; color:#304f2f; border:1px solid #d2d8c2; border-radius:99px; padding:4px 8px; font-weight:400; white-space:nowrap; }
 .member-passport-card img { display:block; width:100%; height:136px; object-fit:contain; margin:10px 0; }
 .member-card-holder>span:first-child { overflow-wrap:anywhere; }
-.member-card-holder>span:last-child { font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; color:var(--member-muted); }
+.member-card-holder>span:last-child { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; white-space:nowrap; color:var(--member-muted); }
 .member-card-stats { display:grid; grid-template-columns:1fr 1fr; gap:18px; border-top:1px solid #d7dbc8; padding-top:16px; margin-top:14px; }
 .member-card-stats div { display:flex; flex-direction:column; gap:2px; }
 .member-card-stats span { font-size:12px; color:var(--member-muted); }
-.member-card-stats strong { font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:500; line-height:1.4; }
+.member-card-stats strong { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:26px; font-weight:500; line-height:1.4; }
 .member-card-stats small { font-family:'Noto Sans TC',sans-serif; font-size:12px; margin-left:6px; }
 .member-passport-card>p { font-size:12px; line-height:1.6; color:var(--member-muted); margin-top:12px; }
 .member-essentials { display:grid; grid-template-columns:1fr 1fr; margin:28px 0 24px; border-top:1px solid var(--member-line); border-bottom:1px solid var(--member-line); }
@@ -211,7 +211,7 @@ html {
 .member-order-content h3 { color:var(--member-ink); font-size:17px; font-weight:700; }
 .member-order-content .member-button { margin-top:16px; }
 .member-order-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.member-order-number { font-family:'JetBrains Mono',monospace; font-size:12px; overflow-wrap:anywhere; margin-top:6px; }
+.member-order-number { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; overflow-wrap:anywhere; margin-top:6px; }
 .member-state { padding:3px 9px; border-radius:99px; background:#e6ebda; color:#304f2f; font-size:12px; }
 .member-order-facts { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:20px 0; }
 .member-order-facts dt { font-size:12px; }
@@ -242,7 +242,7 @@ html {
 .member-landing-stage .member-button { margin-top:28px; }
 .member-landing-stage img { width:100%; height:auto; object-fit:contain; }
 .member-landing-note { display:block; font-size:12px; color:#d7ddd0; line-height:1.8; margin-top:14px; }
-.member-landing-footer { font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.1em; color:var(--member-muted); padding:24px 0; }
+.member-landing-footer { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; letter-spacing:.1em; color:var(--member-muted); padding:24px 0; }
 .ku-passport-fixed-header { padding-inline:max(24px,calc((100vw - 1104px)/2)); }
 .ku-passport-fixed-header :is(button,[class*='shadow-']) { box-shadow:none; }
 #root :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #304f2f; outline-offset:2px; box-shadow:none; }
@@ -298,6 +298,20 @@ html {
  .member-center *, .member-landing * { scroll-behavior:auto!important; animation:none!important; transition:none!important; }
 }
 
+/* Global reduced-motion catch-all (same form as the Map site): covers everything outside .member-*,
+   e.g. button.flex.items-center.gap-1.5 (0.15s), the PWA hint fade, and the journey loops. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 @media (max-width:430px) {
  .member-passport-card { display:grid; grid-template-columns:82px minmax(0,1fr); gap:10px 12px; padding:16px; }
  .member-card-top { grid-column:1/-1; }
@@ -316,9 +330,52 @@ html {
 .member-journey-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 20px; }
 .member-journey-heading h3 { font-size:17px; font-weight:700; }
 .member-journey-heading span { font-size:12px; color:var(--member-muted); }
-.member-center .bg-brand-lime :is(.text-gray-500,.text-gray-600) { color:#414a3c; }
+.member-center .bg-brand-gold :is(.text-gray-500,.text-gray-600) { color:#414a3c; }
 #root .member-center :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #304f2f; outline-offset:2px; box-shadow:none; }
 #root :is(.member-welcome,.member-landing-stage) :is(button,a,input,select,textarea,summary):focus-visible { outline-color:#d7c678; }
 @media (max-width:430px) { .member-guest-checkin { padding:10px 6px; flex-wrap:wrap; gap:5px; } .member-guest-checkin .member-link { font-size:12px; } .member-summary-meta { max-width:76px; } }
 
 .member-account-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:18px; border-bottom:1px solid var(--member-line); font-size:13px; color:var(--member-muted); }
+
+/* Redeem (staff): one cream floating card in the same family as the hub passport card.
+   Light surface: fields are cream/white, the single dark element is the primary action.
+   Contrast: muted #5f6856 on cream (5.14:1); touch targets >= 44px. */
+.redeem-main { width:min(100%,560px); margin-inline:auto; padding:max(112px,14vh) 20px 64px; font-family:'Noto Sans TC',sans-serif; color:var(--member-ink); }
+.redeem-head { margin-bottom:24px; }
+.redeem-eyebrow { font-family:'JetBrains Mono','Noto Sans TC',monospace; font-size:12px; font-weight:500; letter-spacing:.14em; color:var(--member-muted); }
+.redeem-title { font-size:32px; font-weight:800; letter-spacing:-.04em; line-height:1.4; margin-top:4px; }
+.redeem-card { display:flex; flex-direction:column; gap:24px; padding:32px; border:1px solid #d7c67860; border-radius:20px; background:#f3f0e4; box-shadow:0 16px 32px #10211530; }
+.redeem-toggle { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:4px; border-radius:16px; background:#1f2f1f0d; }
+.redeem-toggle-btn { min-height:44px; padding:8px 12px; border-radius:12px; font-size:14px; font-weight:600; color:var(--member-muted); cursor:pointer; transition:background .16s,color .16s; }
+.redeem-toggle-btn.is-active { background:#1f2f1f; color:#f5f0e8; }
+.redeem-form { display:flex; flex-direction:column; gap:16px; }
+.redeem-input { width:100%; min-height:56px; padding:0 20px; border:1px solid var(--member-line); border-radius:12px; background:#fffdf8; color:var(--member-ink); font-size:16px; }
+.redeem-input::placeholder { color:var(--member-muted); opacity:1; }
+.redeem-row { display:flex; flex-direction:column; gap:16px; }
+.redeem-field { display:flex; align-items:center; gap:8px; flex:1; min-width:0; padding-inline:19px; border:1px solid var(--member-line); border-radius:12px; background:#fffdf8; }
+.redeem-field-label { flex-shrink:0; font-size:14px; font-weight:600; color:var(--member-muted); }
+.redeem-field-input { flex:1; min-width:0; min-height:54px; padding:0; border:0; background:transparent; color:var(--member-ink); font-size:16px; }
+.redeem-field-input::placeholder { color:var(--member-muted); opacity:1; }
+.redeem-field-input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+.redeem-field-input[type=number]::-webkit-inner-spin-button, .redeem-field-input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+/* Focus ring lives on the field frame via :focus-within (no :has() / :focus-visible dependency), the inner input's own ring is replaced by it. */
+.redeem-field:focus-within { outline:2px solid #304f2f; outline-offset:2px; }
+#root .redeem-field input:focus { outline:none; box-shadow:none; }
+/* Primary action on a light (cream) surface: solid deep green with cream text, not gold. */
+.redeem-submit { flex-shrink:0; white-space:nowrap; min-height:56px; border-color:transparent; background:#1f2f1f; color:#f5f0e8; }
+.redeem-submit:hover { background:#304f2f; }
+.redeem-error { color:#b91c1c; font-size:14px; line-height:1.6; padding-inline:4px; }
+.redeem-result { padding:24px; border-radius:16px; background:#d7c678; color:#1f2f1f; text-align:center; }
+.redeem-result-title { font-size:16px; font-weight:700; }
+.redeem-result-body { margin-top:8px; font-size:14px; color:#1f2f1f; }
+.redeem-result-note { margin-top:4px; font-size:13px; color:#304f2f; }
+@media (min-width:640px) { .redeem-row { flex-direction:row; } }
+@media (min-width:768px) { .redeem-main { padding-top:max(112px,calc(50vh - 232px)); } }
+@media (max-width:760px) { .redeem-title { font-size:28px; } }
+@media (max-width:430px) { .redeem-main { padding-inline:16px; } .redeem-card { padding:24px 20px; } }
+
+/* Moved from styles/kiwimu-universe.css (the shared rail kit no longer carries site rules). */
+:where(#root) button { min-height: 2.75rem; min-width: 2.75rem; }
+@media (max-width: 40rem) {
+  #root :is(input:not([type='hidden']):not([type='checkbox']):not([type='radio']), select, textarea) { font-size: 1rem; }
+}
