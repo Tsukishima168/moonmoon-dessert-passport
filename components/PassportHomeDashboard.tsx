@@ -264,7 +264,7 @@ export default function PassportHomeDashboard({
           <img src="/assets/member-green/kiwimu-welcome-841d2d20d0.webp" alt="Kiwimu 在綠葉旁等待你的下一次回訪" width="1517" height="1037" fetchPriority="high" />
           <div className="member-card-holder"><span>{hasIdentity ? displayName : '月島旅人'}</span><span>No. {passportCoverNumber}</span></div>
           <div className="member-card-stats"><div><span>{hasIdentity ? '積分紀錄' : '此裝置積分'}</span><strong>{points.toLocaleString()}<small>P</small></strong></div><div><span>探索印章</span><strong>{unlockedCount}<small>枚</small></strong></div></div>
-          <p>{hasIdentity ? '積分可能包含此裝置紀錄；實體兌換尚未開放。' : '探索印章與積分餘額以此裝置為準，積分異動會另存一份紀錄；實體兌換尚未開放。'}</p>
+          <p>{hasIdentity ? '積分可能包含此裝置紀錄；實體兌換尚未開放。' : '積分與探索印章保留於此裝置；實體兌換尚未開放。'}</p>
         </div>
       </section>
 

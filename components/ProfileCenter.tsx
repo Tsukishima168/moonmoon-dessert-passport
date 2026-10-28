@@ -237,7 +237,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </div>
 
           <p className="mt-2 text-[12px] font-medium leading-relaxed text-white/65">
-            先記下你的公開偏好。公開護照頁目前只顯示護照編號、名稱與邀請進度，不會展示下面這些資料。
+            先記下你的公開偏好。公開護照頁目前只顯示護照編號、持有人名稱、邀請進度與布丁領取狀態，不會展示下面這些資料。
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-3">
