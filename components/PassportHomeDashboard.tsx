@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { getUserShopOrders, type ShopOrderRecord } from '../src/api/orders';
-import { getOrderSourceLabel, getOrderStatusLabel, isPendingPickupStatus } from '../src/lib/orderLabels';
+import { ORDER_STATUS_NOTE, getOrderSourceLabel, getOrderStatusLabel, isPendingPickupStatus } from '../src/lib/orderLabels';
 import { trackEvent } from '../analytics';
 import { trackOutboundNavigation } from '../analytics';
 import type { JourneyMode } from '../src/lib/memberJourney';
@@ -199,7 +199,7 @@ export default function PassportHomeDashboard({
         id: 'order',
         eyebrow: getOrderSourceLabel(latestOrder),
         title: `${statusLabel || '最新訂單'}：${latestOrder.order_id}`,
-        description: '先確認這筆訂單的付款或取貨狀態，再安排下一次到店。',
+        description: '付款與取貨以店家通知為準，再安排下一次到店。',
         label: '查看最新訂單',
         icon: <Package2 size={15} />,
         run: () => {
@@ -264,7 +264,7 @@ export default function PassportHomeDashboard({
           <img src="/assets/member-green/kiwimu-welcome-841d2d20d0.webp" alt="Kiwimu 在綠葉旁等待你的下一次回訪" width="1517" height="1037" fetchPriority="high" />
           <div className="member-card-holder"><span>{hasIdentity ? displayName : '月島旅人'}</span><span>No. {passportCoverNumber}</span></div>
           <div className="member-card-stats"><div><span>{hasIdentity ? '積分紀錄' : '此裝置積分'}</span><strong>{points.toLocaleString()}<small>P</small></strong></div><div><span>探索印章</span><strong>{unlockedCount}<small>枚</small></strong></div></div>
-          <p>{hasIdentity ? '積分可能包含此裝置紀錄；實體兌換尚未開放。' : '積分與探索印章保留於此裝置；實體兌換尚未開放。'}</p>
+          <p>{hasIdentity ? '積分可能包含此裝置紀錄；實體兌換尚未開放。' : '探索印章與積分餘額以此裝置為準，積分異動會另存一份紀錄；實體兌換尚未開放。'}</p>
         </div>
       </section>
 
@@ -285,8 +285,8 @@ export default function PassportHomeDashboard({
           {!userId ? <p>使用首頁的 Google 登入後，這裡會顯示該帳號最近的甜點訂單。</p>
             : loadingOrder ? <p role="status" className="member-loading"><Loader2 size={18} className="animate-spin" />正在讀取最新訂單…</p>
             : orderError ? <div role="alert"><h3>訂單暫時無法讀取</h3><p>{orderError}</p><button type="button" className="member-button" onClick={() => setOrderReload(value => value + 1)}>重試讀取訂單</button></div>
-            : latestOrder ? <div><div className="member-order-heading"><h3>最近一筆訂單</h3><span className="member-state">{statusLabel}</span></div><p className="member-order-number">{latestOrder.order_id}</p><dl className="member-order-facts"><div><dt>取貨時間</dt><dd>{formatPickupTime(latestOrder.pickup_time)}</dd></div><div><dt>訂單金額</dt><dd>NT$ {Number(latestOrder.final_price ?? latestOrder.total_price ?? 0).toLocaleString()}</dd></div><div><dt>訂購來源</dt><dd>{getOrderSourceLabel(latestOrder)}</dd></div></dl><button type="button" className="member-link" onClick={() => trackSectionClick('latest_order', 'shop', openShopMenu)}>前往甜點選單 <ExternalLink size={15} aria-hidden="true" /></button></div>
-            : <div><h3>還沒有找到你的訂單</h3><p>使用同一個會員帳號登入下單，之後可在這裡查看最近的付款與取貨狀態。</p><button type="button" className="member-link" onClick={() => trackSectionClick('latest_order_empty', 'shop', openShopMenu)}>看看甜點選單 <ExternalLink size={15} aria-hidden="true" /></button></div>}
+            : latestOrder ? <div><div className="member-order-heading"><h3>最近一筆訂單</h3><span className="member-state">{statusLabel}</span></div><p className="member-order-number">{latestOrder.order_id}</p><dl className="member-order-facts"><div><dt>取貨時間</dt><dd>{formatPickupTime(latestOrder.pickup_time)}</dd></div><div><dt>訂單金額</dt><dd>NT$ {Number(latestOrder.final_price ?? latestOrder.total_price ?? 0).toLocaleString()}</dd></div><div><dt>訂購來源</dt><dd>{getOrderSourceLabel(latestOrder)}</dd></div></dl><p>{ORDER_STATUS_NOTE}</p><button type="button" className="member-link" onClick={() => trackSectionClick('latest_order', 'shop', openShopMenu)}>前往甜點選單 <ExternalLink size={15} aria-hidden="true" /></button></div>
+            : <div><h3>還沒有找到你的訂單</h3><p>使用同一個會員帳號登入下單，之後可在這裡查看最近的訂單；付款與取貨以店家通知為準。</p><button type="button" className="member-link" onClick={() => trackSectionClick('latest_order_empty', 'shop', openShopMenu)}>看看甜點選單 <ExternalLink size={15} aria-hidden="true" /></button></div>}
         </div>
       </details>
 

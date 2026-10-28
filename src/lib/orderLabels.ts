@@ -2,8 +2,11 @@
 // 此檔刻意只用 `import type`（編譯後零 import），讓回歸測試能直接轉譯後實跑。
 import type { ShopOrderRecord } from '../api/orders';
 
+// pending 刻意不寫「待付款」：shop 的 orders.status 沒人維護（實際付款在 LINE@／現場），
+// 已付款的客人也會停在 pending。所以只說「已收到訂單」，付款與取貨以店家通知為準（見 ORDER_STATUS_NOTE）。
+// 其他狀態由 shop 後台／LINE Pay 確認流程實際寫入：paid、ready、completed、cancelled；confirmed／preparing 為舊流程值，照原本顯示。
 const ORDER_STATUS_LABEL: Record<string, string> = {
-  pending: '待付款',
+  pending: '已收到訂單',
   paid: '已付款',
   confirmed: '已確認',
   preparing: '製作中',
@@ -13,7 +16,8 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 };
 
 const ORDER_STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  // pending 不再用黃色警示色（不代表欠款），改中性灰。
+  pending: 'bg-gray-100 text-gray-700 border-gray-200',
   paid: 'bg-[#E6E8D9] text-[#304F2F] border-[#D8D7C4]',
   // confirmed／preparing 沿用 paid 色票；ready（可取貨）維持獨立的綠色，避免製作中被誤讀成可取貨。
   confirmed: 'bg-[#E6E8D9] text-[#304F2F] border-[#D8D7C4]',
@@ -32,6 +36,8 @@ const ORDER_SOURCE_LABEL: Record<string, string> = {
 };
 
 export const ORDER_STATUS_FALLBACK_LABEL = '請向門市確認';
+// 顯示訂單狀態的地方旁邊要附上這句，避免客人把 pending 誤讀成未付款／已付款。
+export const ORDER_STATUS_NOTE = '付款與取貨以店家通知為準。';
 export const ORDER_SOURCE_FALLBACK_LABEL = '月島甜點';
 
 // 一律用 Object.hasOwn 查表：`__proto__`、`constructor` 等原型鍵不能變成顯示值。
