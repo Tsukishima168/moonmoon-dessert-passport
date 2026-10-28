@@ -483,7 +483,6 @@ function App() {
               'order_with_staff',
               'secret_qr_1',
               'secret_qr_2',
-              'google_review',
             ],
             redeemedRewards: [],
             createdAt: Date.now(),
