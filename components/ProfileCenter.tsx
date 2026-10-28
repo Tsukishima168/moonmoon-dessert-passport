@@ -15,6 +15,7 @@ import {
   ProfileCenterSyncStatus,
   PROFILE_CENTER_AVATAR_URL,
   ProfileCenterDraft,
+  LOCKED_PASSPORT_TITLE,
   resolvePassportTitle,
 } from '../src/lib/profileCenter';
 import { KiwimuPanel } from './kiwimu/KiwimuPanel';
@@ -55,7 +56,7 @@ const PrivacySeal: React.FC<PrivacySealProps> = ({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[12px] font-black uppercase tracking-[0.18em] text-brand-black/65">
-            公開印記
+            公開偏好
           </p>
           <h4 className="mt-1 text-sm font-black">{label}</h4>
         </div>
@@ -67,7 +68,7 @@ const PrivacySeal: React.FC<PrivacySealProps> = ({
           }`}
         >
           {checked ? <Eye size={12} /> : <EyeOff size={12} />}
-          {checked ? '公開' : '隱藏'}
+          {checked ? '願意公開' : '不公開'}
         </span>
       </div>
 
@@ -136,7 +137,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                   Holder Record
                 </p>
                 <p className="mt-1 text-xs font-bold text-[#5F6856]">
-                  這裡維護護照名稱、公開印記與陪伴角色。
+                  這裡維護護照名稱、公開偏好與陪伴角色。
                 </p>
               </div>
               <span
@@ -231,12 +232,12 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
               <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/65">
                 Privacy Seals
               </p>
-              <h4 className="text-sm font-black">公開印記</h4>
+              <h4 className="text-sm font-black">公開偏好</h4>
             </div>
           </div>
 
           <p className="mt-2 text-[12px] font-medium leading-relaxed text-white/65">
-            決定哪些身份痕跡會留在你的公開護照頁上。
+            先記下你的公開偏好。公開護照頁目前只顯示護照編號、名稱與邀請進度，不會展示下面這些資料。
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-3">
@@ -245,7 +246,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
               label="靈魂甜點"
               description={
                 mbtiType
-                  ? `目前已帶入 ${mbtiType}，之後可決定是否出現在公開護照頁。`
+                  ? `目前已帶入 ${mbtiType}。這是偏好設定，公開護照頁目前不會顯示。`
                   : '還沒有測驗結果。完成免費 MBTI 測驗後，可回來查看。'
               }
               onToggle={() => updateDraft('isMbtiPublic', !draft.isMbtiPublic)}
@@ -253,7 +254,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
             <PrivacySeal
               checked={draft.isFootprintPublic}
               label="月島足跡"
-              description={`目前累積 ${visitedSiteCount}/${PUBLIC_MOONMOON_SITES.length} 站，之後可決定是否展示探索進度。`}
+              description={`目前累積 ${visitedSiteCount}/${PUBLIC_MOONMOON_SITES.length} 站。這是偏好設定，公開護照頁目前不會顯示。`}
               onToggle={() => updateDraft('isFootprintPublic', !draft.isFootprintPublic)}
             />
           </div>
@@ -271,7 +272,7 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
           </div>
 
           <p className="mt-2 text-[12px] font-medium leading-relaxed text-brand-black/65">
-            先選一位最像你的角色，之後再把解鎖條件綁進來。
+            選一位最像你的陪伴角色，會顯示在你的身份資料裡。
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
@@ -326,11 +327,11 @@ const ProfileCenter: React.FC<ProfileCenterProps> = ({
                     {passportTitle.label}
                   </p>
                   <p className="mt-2 text-[12px] font-medium leading-relaxed text-white/65">
-                    {passportTitle.hint}。這裡先保留為系統發放欄位。
+                    {passportTitle.hint}
                   </p>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-brand-gold">
-                  {draft.passportTitleId}
+                  {draft.passportTitleId === LOCKED_PASSPORT_TITLE.id ? '尚未開放' : draft.passportTitleId}
                 </span>
               </div>
             </div>

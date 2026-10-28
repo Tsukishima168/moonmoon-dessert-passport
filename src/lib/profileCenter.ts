@@ -48,7 +48,7 @@ export const KIWIMU_CHARACTER_OPTIONS: KiwimuCharacterOption[] = [
 export const LOCKED_PASSPORT_TITLE: PassportTitleOption = {
   id: 'locked',
   label: '待解鎖稱號',
-  hint: '之後由點數或名額條件發放',
+  hint: '目前尚未開放。',
 };
 
 export function resolvePassportTitle(passportTitleId: string): PassportTitleOption {
