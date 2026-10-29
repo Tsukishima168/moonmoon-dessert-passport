@@ -47,10 +47,14 @@ export const STREAK_BONUS_TABLE: Record<number, number> = {
 /**
  * 根據連續簽到天數計算應得點數
  * 斷簽不歸零，但 streak 重置到 1
+ *
+ * 連簽 7 天以上一律維持 5 點（不循環回 1）：必須與伺服端 src/lib/checkinService.ts 的
+ * calcStreakPoints 一致（>=7 → 5、>=5 → 3、>=3 → 2、其餘 1）。伺服端是真相；
+ * 前端若先顯示別的數字，簽到後又會出現一筆「補正」流水。
  */
 export function getCheckinPoints(streakCount: number): number {
-    const normalizedStreak = ((streakCount - 1) % 7) + 1;
-    return STREAK_BONUS_TABLE[normalizedStreak] ?? 1;
+    if (streakCount >= 7) return STREAK_BONUS_TABLE[7];
+    return STREAK_BONUS_TABLE[Math.max(1, Math.floor(streakCount))] ?? 1;
 }
 
 // ─── 任務定義 ──────────────────────────────────────────────

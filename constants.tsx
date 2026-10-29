@@ -5,7 +5,6 @@ export const LINKS = {
   MBTI_TEST: "https://kiwimu.com",
   LINE_OA: "https://lin.ee/vpkYztb",
   INSTAGRAM: "https://www.instagram.com/moon_moon_dessert/",
-  GOOGLE_MAPS: "https://g.page/r/CdR9ng9TTJF3EBM/review",
   NAVIGATION: "https://map.kiwimu.com",
 };
 
@@ -16,8 +15,10 @@ export const BRANDING = {
   LANDING_ILLUSTRATION: "https://res.cloudinary.com/dvizdsv4m/image/upload/f_auto,q_70,w_640/v1768744158/Enter-05_nrt403.webp",
 };
 
-// ─── Simplified Passport Stamp System (8 stamps) ───
+// ─── Simplified Passport Stamp System (7 stamps) ───
 // Emojis removed, animations added
+// 2026-10-28：移除「Google 評論」章（Google 規定不得以獎勵換取評論），旅程章數 8 → 7。
+// 已存在使用者本機的 google_review 紀錄不動；它不在 STAMPS 內，不再計入章數。
 export const STAMPS: Stamp[] = [
   {
     id: 'shop_checkin',
@@ -100,20 +101,9 @@ export const STAMPS: Stamp[] = [
     guideHint: '還有一個哦，仔細看看四周！'
   },
   {
-    id: 'google_review',
-    name: 'Google 評論',
-    description: '留下你的真心評價',
-    icon: 'Star',
-    animationType: 'spin',
-    unlockMethod: 'external',
-    externalLink: LINKS.GOOGLE_MAPS,
-    guideCta: '寫評論',
-    guideHint: '幫月島留下評論，讓更多人認識我們！'
-  },
-  {
     id: 'egg_master_2026_q1',
     name: '島主限定徽章',
-    description: '於月島地圖找齊 8 顆彩蛋後解鎖的限定徽章',
+    description: '於月島地圖找齊 9 顆彩蛋後解鎖的限定徽章',
     icon: 'Sparkles',
     animationType: 'float',
     unlockMethod: 'qr',
@@ -150,8 +140,9 @@ export const REWARD_TIERS: RewardTier[] = [
     redemptionMethod: 'show-screen'
   },
   {
+    // id 維持 tier_8：使用者本機 redeemedRewards 以此 id 記錄，改名會孤立既有資料。門檻 2026-10-28 由 8 改 7。
     id: 'tier_8',
-    requiredStamps: 8,
+    requiredStamps: 7,
     title: '經典烤布丁',
     description: '招牌經典烤布丁乙個，全收集獎勵。',
     imageUrl: 'https://xlqwfaailjyvsycjnzkz.supabase.co/storage/v1/object/public/menu-images/classic_pudding.webp',
@@ -179,9 +170,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'island_guardian',
     name: '月島守護者',
-    description: '全 8 章收集完成',
+    description: '全 7 章收集完成',
     icon: 'Crown',
-    condition: { type: 'stamp_count', target: 8 }
+    condition: { type: 'stamp_count', target: 7 }
   },
 ];
 

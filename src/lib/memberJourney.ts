@@ -46,8 +46,8 @@ export function parseJourneyMode(value: string | null): JourneyMode {
 
 export function getNextMission(stamps: Stamp[], unlocked: string[], mode: JourneyMode): Stamp | null {
   return stamps.find(stamp => {
-    // Review requests stay voluntary; do not promote them in the reward journey.
-    if (stamp.isSecret || stamp.id === 'google_review' || unlocked.includes(stamp.id)) return false;
+    // 評論不再是集章任務（Google 規定不得以獎勵換取評論），google_review 章已自 STAMPS 移除。
+    if (stamp.isSecret || unlocked.includes(stamp.id)) return false;
     const online = stamp.id === 'quiz_completed' || stamp.unlockMethod === 'external';
     return mode === 'online' ? online : !online;
   }) ?? null;

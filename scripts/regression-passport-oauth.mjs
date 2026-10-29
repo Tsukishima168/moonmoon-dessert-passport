@@ -746,6 +746,20 @@ for (const [needle, label] of [
 }
 assert(read('types/gamification-types.ts').includes('7: 5, // Day 7 大獎'), 'STREAK_BONUS_TABLE max changed: update c_max_daily_award in the adjust_points migration');
 
+// 每日簽到點數：前端顯示（getCheckinPoints）必須和伺服端 calcStreakPoints 完全一致（伺服端是真相）。
+// 連簽超過 7 天不得循環回 1，否則簽到後會多出一筆「補正」流水。
+{
+  const { getCheckinPoints } = await loadTsModule('types/gamification-types.ts');
+  const checkinServiceSource = read('src/lib/checkinService.ts');
+  const serverFn = /export function calcStreakPoints\(streakCount: number\): number \{([\s\S]*?)\n\}/.exec(checkinServiceSource);
+  assert(serverFn, 'calcStreakPoints must exist in checkinService.ts');
+  const calcStreakPoints = new Function('streakCount', serverFn[1].replace(/: number/g, ''));
+  for (let streak = 1; streak <= 40; streak++) {
+    assertEqual(String(getCheckinPoints(streak)), String(calcStreakPoints(streak)), `client getCheckinPoints(${streak}) must match server calcStreakPoints`);
+  }
+  assertEqual([1, 2, 3, 4, 5, 6, 7, 8, 14, 15, 30].map(getCheckinPoints).join(','), '1,1,2,2,3,3,5,5,5,5,5', 'streak points: 1,1,2,2,3,3,5 then stay at 5');
+}
+
 // profiles 受保護欄位 trigger migration（草稿，尚未套用）：關鍵條款不得被改掉
 const profilesGuardMigration = read('supabase/migrations/20261004160000_profiles_server_managed_columns_guard.sql');
 for (const [needle, label] of [
@@ -1016,7 +1030,8 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
 
   // shop 仍會產生 confirmed／preparing，不能掉到「請向門市確認」。
   const expectedStatus = {
-    pending: '待付款',
+    // pending 不能寫「待付款」：shop orders.status 沒人維護，已付款的客人也會停在 pending（2026-10-28）。
+    pending: '已收到訂單',
     paid: '已付款',
     confirmed: '已確認',
     preparing: '製作中',
@@ -1033,7 +1048,11 @@ assert(rewardsApi.includes("new Error(result.error || 'reward_redeem_failed')"),
   assertEqual(getOrderStatusStyle('preparing'), getOrderStatusStyle('paid'), 'preparing reuses the paid palette');
   assertEqual(getOrderStatusLabel('totally_unknown'), '請向門市確認', 'unknown status keeps the store-confirmation fallback');
   assertEqual(getOrderStatusLabel(null), '請向門市確認', 'null status keeps the fallback');
-  // 「待取貨」統計：已付款、已確認、製作中、可取貨都算；待付款、完成、取消與未知狀態不算。
+  assert(!/待付款|未付款/.test(getOrderStatusLabel('pending')), 'pending must not claim the order is unpaid');
+  assert(!getOrderStatusStyle('pending').includes('yellow'), 'pending must not use the warning-yellow badge');
+  assert(labels.ORDER_STATUS_NOTE.includes('店家通知為準'), 'order status needs the "payment and pickup follow store notice" note');
+  assert(read('components/PassportHomeDashboard.tsx').includes('ORDER_STATUS_NOTE'), 'PassportHomeDashboard must render the order status note next to the status');
+  // 「待取貨」統計：已付款、已確認、製作中、可取貨都算；pending（已收到訂單）、完成、取消與未知狀態不算。
   for (const status of ['paid', 'confirmed', 'preparing', 'ready']) {
     assert(isPendingPickupStatus(status) === true, `${status} orders are awaiting pickup`);
   }

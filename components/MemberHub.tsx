@@ -8,7 +8,7 @@ import {
     Sparkles,
     BookOpen,
 } from 'lucide-react';
-import { PUBLIC_MOONMOON_SITES, DESSERTS } from '../constants';
+import { PUBLIC_MOONMOON_SITES, DESSERTS, STAMPS } from '../constants';
 import { useLiff } from '../src/contexts/LiffContext';
 import { useSupabaseAuth } from '../src/contexts/SupabaseAuthContext';
 import { getVisitedSites, markSiteVisited, getPassportState } from '../passportUtils';
@@ -61,9 +61,10 @@ const MemberHub: React.FC<MemberHubProps> = ({ onProfileSnapshotChange }) => {
         const storedMbti = readStoredMbtiResult();
         if (storedMbti) setMbtiType(storedMbti.mbtiType);
 
-        // 2. Get stamp count
+        // 2. Get stamp count：只算目前印章清單裡還存在的 id（已移除的 google_review 等舊紀錄不計入）
         const state = getPassportState();
-        setStampCount(state.unlockedStamps.length);
+        const knownStampIds = new Set(STAMPS.map(stamp => stamp.id));
+        setStampCount(state.unlockedStamps.filter(stampId => knownStampIds.has(stampId)).length);
 
         const hydrateFootprints = async () => {
             const saved = getVisitedSites();

@@ -53,6 +53,13 @@ const IconMap: Record<string, any> = {
     Sparkles,
 };
 
+// QR 類章的行動提示要跟上方 guideHint 同一個動作：「點餐成功」是店員出示 QR，秘密角落才是客人自己去找。
+const getQrActionHint = (stamp: Stamp): string => {
+    if (stamp.id === 'quiz_completed') return '完成甜點測驗自動解鎖';
+    if (stamp.requiredParam === 'order') return '點餐後，請掃描店員出示的 QR Code';
+    return '尋找店內 QR Code 掃描';
+};
+
 const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStampUnlocked, onGpsCheckin, isCheckingLocation, gpsDebug }) => {
     const [externalPending, setExternalPending] = useState<string | null>(null);
     const [showCollected, setShowCollected] = useState(false);
@@ -180,7 +187,7 @@ const BadgeJourney: React.FC<BadgeJourneyProps> = ({ mode, onModeChange, onStamp
                                 </a>
                             ) : nextStamp.unlockMethod === 'qr' && (
                                 <div className="w-full py-2.5 bg-gray-50 text-brand-black/60 rounded-xl text-[11px] font-bold text-center border border-dashed border-gray-300">
-                                    {nextStamp.id === 'quiz_completed' ? '完成甜點測驗自動解鎖' : '尋找店內 QR Code 掃描'}
+                                    {getQrActionHint(nextStamp)}
                                 </div>
                             )}
                         </div>
