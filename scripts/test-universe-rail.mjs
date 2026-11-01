@@ -65,7 +65,7 @@ const button = tree => nodes(tree).find(n => n.type === 'button');
 const panel = tree => nodes(tree).find(n => n.props?.id === 'fixture-menu');
 const anchors = tree => nodes(tree).filter(n => n.type === 'a');
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
-const bases = { kiwimu: 'https://kiwimu.com/', passport: 'https://passport.kiwimu.com/', map: 'https://map.kiwimu.com/', gacha: 'https://gacha.kiwimu.com/', shop: 'https://shop.kiwimu.com/' };
+const bases = { kiwimu: 'https://kiwimu.com/', passport: 'https://passport.kiwimu.com/', map: 'https://map.kiwimu.com/', gacha: 'https://gacha.kiwimu.com/', shop: 'https://map.kiwimu.com/menu' };
 const order = ['kiwimu', 'passport', 'map', 'gacha', 'shop'];
 
 // 1. Six links per site, hrefs keep the current contract, forest opens a new tab safely.
