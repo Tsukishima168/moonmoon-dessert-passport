@@ -9,7 +9,7 @@ import ts from 'typescript';
 const src = readFileSync(new URL('../src/lib/oauthSafety.ts', import.meta.url), 'utf8');
 const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 let seq = 0;
-async function run(href) {
+async function run(href, fn = 'removeOAuthCallbackParamsFromCurrentUrl') {
   const calls = [];
   const u = new URL(href);
   globalThis.window = {
@@ -17,7 +17,7 @@ async function run(href) {
     history: { replaceState: (_s, _t, next) => calls.push(next) },
   };
   const mod = await import(`data:text/javascript;base64,${Buffer.from(`${js}\n//${seq++}`).toString('base64')}`);
-  mod.removeOAuthCallbackParamsFromCurrentUrl();
+  mod[fn]();
   return calls;
 }
 
@@ -36,6 +36,14 @@ assert.deepEqual(await run(`${base}?error=access_denied&error_description=x`), [
 
 // 3. 沒有回跳訊號：不動
 assert.deepEqual(await run(`${base}?from=map`), []);
+
+// 3b. liff.init 結束後：回跳參數清掉、其他參數保留（LIFF 自己不會清 query 的 code/state）
+const clean = 'removeLiffCallbackParamsFromCurrentUrl';
+assert.deepEqual(await run(`${base}?tab=stamps&code=abc&state=xyz&${liffQuery}`, clean), ['/?tab=stamps'], 'after init: LIFF params gone, tab kept');
+assert.deepEqual(await run(`${base}?code=abc&state=xyz&error=e&error_description=d&${liffQuery}`, clean), ['/']);
+assert.deepEqual(await run(`${base}?tab=stamps`, clean), [], 'nothing to clean -> untouched');
+const ctxSrc = readFileSync(new URL('../src/contexts/LiffContext.tsx', import.meta.url), 'utf8');
+assert.ok(/finally\s*\{[^}]*removeLiffCallbackParamsFromCurrentUrl\(\)/.test(ctxSrc), 'LiffContext must clean the URL in a finally after liff.init');
 
 // 4. needsLiffNow 要涵蓋 Android 從 LINE 跳出的 liffIsEscapedFromApp
 const ctx = readFileSync(new URL('../src/contexts/LiffContext.tsx', import.meta.url), 'utf8');

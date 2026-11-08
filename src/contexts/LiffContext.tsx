@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { loadLiff, type LiffSdk } from '../lib/liffLoader';
+import { removeLiffCallbackParamsFromCurrentUrl } from '../lib/oauthSafety';
 
 export interface LiffProfile {
     userId: string;
@@ -131,7 +132,12 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 )
             ]);
 
-            await liffInit;
+            try {
+                await liffInit;
+            } finally {
+                // 回跳參數（code／state／liffClientId…）要等 init 讀完才能清；成功失敗都清，免得被 GA 記進 page_location
+                removeLiffCallbackParamsFromCurrentUrl();
+            }
             setLiffObject(liff);
             console.log('[LIFF] 初始化成功');
 
