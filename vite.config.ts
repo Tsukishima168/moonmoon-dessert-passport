@@ -20,7 +20,9 @@ export default defineConfig(({ mode }) => {
           manualChunks(id: string) {
             if (!id.includes('node_modules')) return undefined;
             if (/node_modules\/(react|react-dom|react-router|react-router-dom)\//.test(id)) return 'vendor-react';
-            if (/node_modules\/(@supabase|@line)\//.test(id)) return 'vendor-supabase-line';
+            // @line/liff 不放進手動分組：分組會讓入口 chunk 靜態 import 它，SDK 就回到首屏。
+            // 交給動態 import() 自然切出獨立 chunk（見 guard-liff-lazy-loading）。
+            if (/node_modules\/@supabase\//.test(id)) return 'vendor-supabase';
             if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
             return undefined;
           },
@@ -30,6 +32,28 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
+      {
+        name: 'guard-liff-lazy-loading',
+        apply: 'build',
+        generateBundle(_options, bundle) {
+          // 每次 build 都檢查：從入口 chunk 靜態可達的 chunk 裡不能出現 LINE SDK。
+          // manualChunks 的共用分組可能讓 SDK 悄悄回到首屏。
+          const visited = new Set<string>();
+          const visit = (fileName: string) => {
+            if (visited.has(fileName)) return;
+            visited.add(fileName);
+            const chunk = bundle[fileName];
+            if (!chunk || chunk.type !== 'chunk') return;
+            if (chunk.code.includes('LIFF_STORE:')) {
+              this.error(`LINE SDK must remain lazy: ${fileName}`);
+            }
+            chunk.imports.forEach(visit);
+          };
+          Object.values(bundle).forEach((chunk) => {
+            if (chunk.type === 'chunk' && chunk.isEntry) visit(chunk.fileName);
+          });
+        },
+      },
       ...(!disablePwa ? [VitePWA({
         injectRegister: false,
         registerType: 'prompt',

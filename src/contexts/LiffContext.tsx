@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import liff from '@line/liff';
+import { loadLiff, type LiffSdk } from '../lib/liffLoader';
 
 export interface LiffProfile {
     userId: string;
@@ -9,7 +9,7 @@ export interface LiffProfile {
 }
 
 export interface LiffContextType {
-    liff: typeof liff | null;
+    liff: LiffSdk | null;
     /** LIFF 初始化流程已結束（成功或失敗都算），可以開始渲染依賴 LIFF 的 UI */
     isReady: boolean;
     isLoggedIn: boolean;
@@ -35,8 +35,50 @@ export const LiffContext = createContext<LiffContextType | undefined>(undefined)
 
 const PROFILE_CACHE_KEY = 'liff_profile_cache';
 
+/**
+ * 這次載入是不是「現在就需要 LIFF」：
+ * - 網址帶 LINE 登入回跳參數（liff.state／liffClientId／code+state，或 hash 裡的 token）：
+ *   liff.init 必須在這一刻處理網址，時機不能比改前晚；
+ * - 在 LINE App 內建瀏覽器（UA 含 Line/）；
+ * - 以前登入過（有 profile 快取，或 LIFF 自己的 LIFF_STORE 登入狀態）：要盡快更新名字。
+ * 判斷不出來（storage 被擋等）一律當成需要，維持改前的行為。
+ * 以上都不是（一般訪客）才把 SDK 延後到瀏覽器閒置。
+ */
+const needsLiffNow = (): boolean => {
+    try {
+        const { search, hash } = window.location;
+        const q = new URLSearchParams(search);
+        if (q.has('liff.state') || q.has('liffClientId') || q.has('liffRedirectUri')) return true;
+        if (q.has('code') && q.has('state')) return true;
+        if (/[#&?](access_token|id_token|context_token|liff\.state)=/.test(hash)) return true;
+        if (/\bLine\//i.test(navigator.userAgent)) return true;
+        if (localStorage.getItem(PROFILE_CACHE_KEY)) return true;
+        for (let i = 0; i < localStorage.length; i += 1) {
+            if (localStorage.key(i)?.startsWith('LIFF_STORE')) return true;
+        }
+        return false;
+    } catch {
+        return true;
+    }
+};
+
+// 回跳／LINE 內／回訪的情況：模組一執行就開始下載 SDK，和 React 首次渲染並行，
+// 到 useEffect 呼叫 liff.init 時多半已經下載完（改前是等整包 vendor 下載完才 init）。
+if (typeof window !== 'undefined' && import.meta.env.VITE_LIFF_ID && needsLiffNow()) {
+    loadLiff().catch(() => { /* 真正的錯誤由 initLiffInBackground 處理 */ });
+}
+
+const runWhenIdle = (task: () => void): (() => void) => {
+    if (typeof window.requestIdleCallback === 'function') {
+        const id = window.requestIdleCallback(task, { timeout: 3000 });
+        return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(task, 1500);
+    return () => window.clearTimeout(id);
+};
+
 export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [liffObject, setLiffObject] = useState<typeof liff | null>(null);
+    const [liffObject, setLiffObject] = useState<LiffSdk | null>(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [profile, setProfile] = useState<LiffProfile | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -55,8 +97,13 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // P0 優化：立即標記為 ready，不等 LIFF 初始化
         setIsReady(true);
 
-        // 後台初始化 LIFF，不阻塞主線程
-        initLiffInBackground(liffId);
+        // 後台初始化 LIFF，不阻塞主線程。
+        // 需要馬上用到（回跳／LINE 內／回訪）就立刻 init；一般訪客等瀏覽器閒置再載入 SDK。
+        if (needsLiffNow()) {
+            initLiffInBackground(liffId);
+            return;
+        }
+        return runWhenIdle(() => { void initLiffInBackground(liffId); });
     }, [liffId]);
 
     const initLiffInBackground = async (id: string) => {
@@ -73,7 +120,10 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 console.log('[LIFF] 使用快取 profile');
             }
 
-            // 2. 超時控制：5 秒後自動 fallback
+            // 2. 取得 SDK（延後載入的 chunk；前面的快取 profile 已先畫出來，不等這一步）
+            const liff = await loadLiff();
+
+            // 3. 超時控制：5 秒後自動 fallback（只算 init 本身，不含下載 SDK）
             const liffInit = Promise.race([
                 liff.init({ liffId: id }),
                 new Promise((_, reject) =>
@@ -85,7 +135,7 @@ export const LiffProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLiffObject(liff);
             console.log('[LIFF] 初始化成功');
 
-            // 3. 並行獲取最新 profile
+            // 4. 並行獲取最新 profile
             if (liff.isLoggedIn()) {
                 const profilePromise = Promise.race([
                     liff.getProfile(),
