@@ -48,7 +48,7 @@ const needsLiffNow = (): boolean => {
     try {
         const { search, hash } = window.location;
         const q = new URLSearchParams(search);
-        if (q.has('liff.state') || q.has('liffClientId') || q.has('liffRedirectUri')) return true;
+        if (q.has('liff.state') || q.has('liffClientId') || q.has('liffRedirectUri') || q.has('liffIsEscapedFromApp')) return true;
         if (q.has('code') && q.has('state')) return true;
         if (/[#&?](access_token|id_token|context_token|liff\.state)=/.test(hash)) return true;
         if (/\bLine\//i.test(navigator.userAgent)) return true;
