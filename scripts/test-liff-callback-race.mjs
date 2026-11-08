@@ -42,6 +42,7 @@ const clean = 'removeLiffCallbackParamsFromCurrentUrl';
 assert.deepEqual(await run(`${base}?tab=stamps&code=abc&state=xyz&${liffQuery}`, clean), ['/?tab=stamps'], 'after init: LIFF params gone, tab kept');
 assert.deepEqual(await run(`${base}?code=abc&state=xyz&error=e&error_description=d&${liffQuery}`, clean), ['/']);
 assert.deepEqual(await run(`${base}?tab=stamps`, clean), [], 'nothing to clean -> untouched');
+assert.deepEqual(await run(`${base}?code=abc&state=xyz`, clean), [], 'after init: a Supabase (non-LIFF) callback must be left for Supabase');
 const ctxSrc = readFileSync(new URL('../src/contexts/LiffContext.tsx', import.meta.url), 'utf8');
 assert.ok(/finally\s*\{[^}]*removeLiffCallbackParamsFromCurrentUrl\(\)/.test(ctxSrc), 'LiffContext must clean the URL in a finally after liff.init');
 

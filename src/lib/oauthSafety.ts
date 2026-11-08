@@ -70,6 +70,10 @@ export function removeLiffCallbackParamsFromCurrentUrl() {
   }
 
   const url = new URL(window.location.href);
+  // 只清 LINE 自己的回跳；沒有 liffClientId／liffRedirectUri 的 code/state 可能是 Supabase（Google）回跳，留給 Supabase 處理
+  if (!isLiffCallback(url)) {
+    return;
+  }
   let changed = false;
   LIFF_CLEANUP_PARAMS.forEach((param) => {
     if (url.searchParams.has(param)) {
