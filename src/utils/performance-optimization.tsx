@@ -4,7 +4,7 @@
 // ================================================================
 
 import React from 'react';
-import liff from '@line/liff';
+import { loadLiff, getLoadedLiff } from '../lib/liffLoader';
 import { getUnlockedStampCount } from '../../passportUtils';
 import { LiffContext, type LiffContextType } from '../contexts/LiffContext';
 
@@ -19,6 +19,7 @@ import { LiffContext, type LiffContextType } from '../contexts/LiffContext';
 
 export async function initLiffWithTimeout(liffId: string, timeoutMs: number = 5000) {
   try {
+    const liff = await loadLiff();
     // 使用 Promise.race 設置超時
     const liffInit = Promise.race([
       liff.init({ liffId }),
@@ -76,6 +77,7 @@ export function createOptimizedLiffProvider() {
 
           await initLiffWithTimeout(liffId, 5000);
 
+          const liff = await loadLiff();
           if (!liff.isLoggedIn()) {
             return;
           }
@@ -106,13 +108,15 @@ export function createOptimizedLiffProvider() {
     }, []);
 
     const login = () => {
-      if (!liff.isLoggedIn()) {
+      const liff = getLoadedLiff();
+      if (liff && !liff.isLoggedIn()) {
         liff.login();
       }
     };
 
     const logout = () => {
-      if (liff.isLoggedIn()) {
+      const liff = getLoadedLiff();
+      if (liff?.isLoggedIn()) {
         liff.logout();
       }
 
@@ -126,7 +130,8 @@ export function createOptimizedLiffProvider() {
     // 與正式的 LiffProvider 保持同一份契約：好友狀態問不到就回 null（不知道），
     // 身分憑證一律走 ID token，不得改用 profile.userId。
     const getFriendship = async (): Promise<boolean | null> => {
-      if (!liff.isLoggedIn()) return null;
+      const liff = getLoadedLiff();
+      if (!liff || !liff.isLoggedIn()) return null;
       try {
         const friendship = await liff.getFriendship();
         return Boolean(friendship?.friendFlag);
@@ -136,7 +141,8 @@ export function createOptimizedLiffProvider() {
     };
 
     const getIdToken = (): string | null => {
-      if (!liff.isLoggedIn()) return null;
+      const liff = getLoadedLiff();
+      if (!liff || !liff.isLoggedIn()) return null;
       try {
         return liff.getIDToken();
       } catch {
@@ -147,7 +153,7 @@ export function createOptimizedLiffProvider() {
     return (
       <LiffContext.Provider
         value={{
-          liff,
+          liff: getLoadedLiff(),
           isReady: true,
           isLoggedIn: state.isLoggedIn,
           profile: state.profile,
